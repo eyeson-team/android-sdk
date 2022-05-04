@@ -1,0 +1,92 @@
+<?xml version="1.0" encoding="utf-8"?>
+<layout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools">
+
+    <data>
+
+        <import type="android.view.View" />
+
+        <import type="android.text.TextUtils" />
+
+        <variable
+            name="viewModel"
+            type="com.eyeson.android.ui.connection.ConnectionViewModel" />
+    </data>
+
+    <androidx.constraintlayout.widget.ConstraintLayout
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        tools:context=".ui.connection.ConnectionFragment">
+
+        <EditText
+            android:id="@+id/accessKey"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="40dp"
+            android:hint="Access key"
+            android:importantForAutofill="no"
+            android:inputType="text"
+            app:layout_constraintTop_toTopOf="parent"
+            tools:ignore="HardcodedText" />
+
+        <Button
+            android:id="@+id/connect"
+            android:layout_width="wrap_content"
+            android:layout_height="60dp"
+            android:layout_marginTop="16dp"
+            android:enabled="@{!TextUtils.isEmpty(accessKey.text)}"
+            android:text="Connect"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@id/accessKey"
+            tools:ignore="HardcodedText" />
+
+
+        <EditText
+            android:id="@+id/guestToken"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="120dp"
+            android:hint="Guest token OR link"
+            android:importantForAutofill="no"
+            android:inputType="text"
+            app:layout_constraintTop_toBottomOf="@id/connect"
+            tools:ignore="HardcodedText" />
+
+        <Button
+            android:id="@+id/startScanner"
+            android:layout_width="wrap_content"
+            android:layout_height="60dp"
+            android:text="Scan guest link"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@id/guestToken"
+            tools:ignore="HardcodedText" />
+
+        <EditText
+            android:id="@+id/guestName"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:hint="Guest name"
+            android:text="I'm a suuuper fancy guest name"
+            android:importantForAutofill="no"
+            android:inputType="text"
+            app:layout_constraintTop_toBottomOf="@id/startScanner"
+            tools:ignore="HardcodedText" />
+
+        <Button
+            android:id="@+id/guestConnect"
+            android:layout_width="wrap_content"
+            android:layout_height="60dp"
+            android:layout_marginTop="16dp"
+            android:enabled="@{!TextUtils.isEmpty(guestToken.text) &amp;&amp; !TextUtils.isEmpty(guestName.text)}"
+            android:text="Connect as guest"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@id/guestName"
+            tools:ignore="HardcodedText" />
+
+
+    </androidx.constraintlayout.widget.ConstraintLayout>
+</layout>
