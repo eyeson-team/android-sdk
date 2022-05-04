@@ -20,7 +20,6 @@ Add them to you manifest and make sure that you have requested the CAMERA and RE
 See the [Android documentation](https://developer.android.com/training/permissions/requesting) on how to request them.
 
 # Usage
-## Init
 Create a meeting instance. For `eventListener` see [Events](#events)  
 
 ```kotlin

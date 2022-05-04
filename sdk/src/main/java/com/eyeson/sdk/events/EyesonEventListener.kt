@@ -14,7 +14,7 @@ abstract class EyesonEventListener {
         startedAt: Date,
         user: UserInfo,
         locked: Boolean,
-        guestToke: String,
+        guestToken: String,
         guestLink: String,
         activeRecording: Recording?,
         activeBroadcasts: BroadcastUpdate?,
