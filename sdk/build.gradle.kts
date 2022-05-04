@@ -5,6 +5,9 @@ plugins {
     id("maven-publish")
 }
 
+group = Versions.groupId
+version = Versions.versionName
+
 android {
     compileSdk = Versions.compileSdk
 
@@ -64,4 +67,18 @@ dependencies {
     testImplementation(Libraries.jUnit)
     androidTestImplementation(Libraries.jUnitTest)
     androidTestImplementation(Libraries.espressoCore)
+}
+
+afterEvaluate {
+    publishing {
+        publications {
+            // Creates a Maven publication called "release".
+            create<MavenPublication>("sdk") {
+                from(components["release"])
+                groupId = Versions.groupId
+                artifactId = "sdk"
+                version = Versions.versionName
+            }
+        }
+    }
 }

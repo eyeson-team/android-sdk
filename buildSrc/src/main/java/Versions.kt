@@ -1,6 +1,7 @@
 object Versions {
     // Config
     const val versionCode = 1
+    const val groupId = "com.eyeson"
     const val versionName = "1.0.0" // X.Y.Z; X = Major, Y = minor, Z = Patch level
     const val compileSdk = 32
     const val targetSdk = 32
