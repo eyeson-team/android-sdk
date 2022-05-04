@@ -1,5 +1,7 @@
 # eyeson Android SDK
 
+Android SDK for eyeson video service incl. demo app
+
 ## Prerequisites
 
 A webservice to host and maintain eyeson meetings is required.
