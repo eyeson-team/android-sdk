@@ -9,7 +9,27 @@ The eyeson Android SDK acts as communication client for a valid meeting room *ac
 The respective keys can be obtained in exchange for an API key.
 See API documentation at [eyeson developers](https://developers.eyeson.team/).
 
-## Permissions 
+# Installation
+Add [JitPack](https://jitpack.io/) to your root `build.gradle` at the end of repositories:
+```gradle
+allprojects {
+	repositories {
+		...
+		maven { url 'https://jitpack.io' }
+	}
+}
+```
+
+Add the dependency to your app-level `build.gradle`. Latest version: [![](https://jitpack.io/v/eyeson-team/android-sdk.svg)](https://jitpack.io/#eyeson-team/android-sdk)
+
+```gradle
+dependencies {
+	implementation 'com.github.eyeson-team:android-sdk:VERSION'
+}
+```
+
+
+# Permissions 
 
 The eyeson Android SDK uses the following permissions:
 ```xml
@@ -131,7 +151,7 @@ abstract class EyesonEventListener {
         startedAt: Date,
         user: UserInfo,
         locked: Boolean,
-        guestToke: String,
+        guestToken: String,
         guestLink: String,
         activeRecording: Recording?,
         activeBroadcasts: BroadcastUpdate?,

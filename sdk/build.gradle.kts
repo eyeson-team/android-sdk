@@ -3,6 +3,7 @@ plugins {
     id("kotlin-android")
     id("kotlin-kapt")
     id("maven-publish")
+    id("com.kezong.fat-aar")
 }
 
 group = Versions.groupId
@@ -51,7 +52,8 @@ android {
 }
 
 dependencies {
-    api(project(":webrtc", configuration = "default"))
+    releaseEmbed(project(":webrtc", configuration = "default"))
+    debugApi(project(":webrtc", configuration = "default"))
 
     implementation(Libraries.coreKtx)
     implementation(Libraries.appcompat)
@@ -72,7 +74,6 @@ dependencies {
 afterEvaluate {
     publishing {
         publications {
-            // Creates a Maven publication called "release".
             create<MavenPublication>("sdk") {
                 from(components["release"])
                 groupId = Versions.groupId
