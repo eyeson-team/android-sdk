@@ -71,6 +71,10 @@ dependencies {
     androidTestImplementation(Libraries.espressoCore)
 }
 
+fataar {
+    transitive = true
+}
+
 afterEvaluate {
     publishing {
         publications {
