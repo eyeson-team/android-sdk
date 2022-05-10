@@ -49,6 +49,7 @@ android {
         viewBinding = true
         dataBinding = true
     }
+    namespace = "com.eyeson.sdk"
 }
 
 dependencies {

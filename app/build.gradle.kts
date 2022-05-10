@@ -38,6 +38,7 @@ android {
         viewBinding = true
         dataBinding = true
     }
+    namespace = "com.eyeson.android"
 }
 
 dependencies {
