@@ -17,6 +17,7 @@ import com.eyeson.sdk.model.local.base.LocalBaseCommand
 import com.eyeson.sdk.model.local.call.CameraSwitchDone
 import com.eyeson.sdk.model.local.call.CameraSwitchError
 import com.eyeson.sdk.model.local.call.MeetingJoined
+import com.eyeson.sdk.model.local.call.ResumeCallLocal
 import com.eyeson.sdk.model.local.call.StartCallLocal
 import com.eyeson.sdk.model.local.datachannel.ChatIncoming
 import com.eyeson.sdk.model.local.datachannel.MemberListUpdate
@@ -31,9 +32,12 @@ import com.eyeson.sdk.model.local.meeting.Recording
 import com.eyeson.sdk.model.local.meeting.SnapshotUpdate
 import com.eyeson.sdk.model.local.sepp.CallAccepted
 import com.eyeson.sdk.model.local.sepp.CallRejected
+import com.eyeson.sdk.model.local.sepp.CallResume
+import com.eyeson.sdk.model.local.sepp.CallResumed
 import com.eyeson.sdk.model.local.sepp.CallStart
 import com.eyeson.sdk.model.local.sepp.CallTerminated
 import com.eyeson.sdk.model.local.sepp.SdpUpdate
+import com.eyeson.sdk.model.local.ws.ReconnectSignaling
 import com.eyeson.sdk.model.local.ws.WsClosed
 import com.eyeson.sdk.model.local.ws.WsFailure
 import com.eyeson.sdk.model.meeting.incoming.BroadcastUpdateDto
@@ -210,10 +214,20 @@ class EyesonMeeting(
                 meeting = command.meeting
                 startCall(command.meeting, audiOnly, frontCamera, local, remote)
             }
+            is ResumeCallLocal -> {
+                resumeCall(command.callId)
+            }
             is CallAccepted -> {
                 callLogic?.setRemoteDescription(
                     command.sdp,
                     SessionDescription.Type.ANSWER
+                )
+                eventListener.onStreamingModeChanged(callLogic?.isSfuMode() ?: return)
+            }
+            is CallResumed -> {
+                callLogic?.setRemoteDescription(
+                    command.sdp,
+                    SessionDescription.Type.OFFER
                 )
                 eventListener.onStreamingModeChanged(callLogic?.isSfuMode() ?: return)
             }
@@ -266,7 +280,34 @@ class EyesonMeeting(
                 leave()
                 eventListener.onMeetingTerminated(CallTerminationReason.OK)
             }
+            is ReconnectSignaling -> {
+                val accessKey = meeting?.accessKey
+                if (accessKey == null) {
+                    terminateCallWithError()
+                    return
+                }
+
+                eyesonMeetingScope.launch {
+                    val meetingInfo = try {
+                        restCommunicator.getMeetingInfo(accessKey)
+                    } catch (e: Exception) {
+                        if (e is CancellationException) {
+                            throw e
+                        } else {
+                            terminateCallWithError()
+                            return@launch
+                        }
+                    }
+                    meeting = meetingInfo
+                    webSocketCommunicator?.reconnectToSignaling(meetingInfo)
+                }
+            }
         }
+    }
+
+    private fun terminateCallWithError() {
+        leave()
+        eventListener.onMeetingTerminated(CallTerminationReason.ERROR)
     }
 
     fun leave() {
@@ -348,6 +389,15 @@ class EyesonMeeting(
         }
     }
 
+    private fun resumeCall(callId: String) {
+        val sdp = callLogic?.getSdpForCallResume() ?: ""
+        if (sdp.isBlank()) {
+            return
+        }
+
+        webSocketCommunicator?.resumeCall(CallResume(callId, sdp))
+    }
+
     private suspend fun handleCallEvents(
         command: LocalBaseCommand,
         meeting: MeetingDto
@@ -356,7 +406,6 @@ class EyesonMeeting(
             is CallStart -> {
                 webSocketCommunicator?.startCall(command)
             }
-
             is MemberListUpdate -> {
                 withContext(nameLookupScope.coroutineContext) {
                     val infoNeededFor = command.added.filterNot {
