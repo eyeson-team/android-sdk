@@ -35,7 +35,7 @@ android {
     productFlavors {
         create("production") {
             dimension = "version"
-            buildConfigField("String", "API_URL", "\"https://app.eyeson.team/\"")
+            buildConfigField("String", "API_URL", "\"https://api.eyeson.team/\"")
         }
     }
 
