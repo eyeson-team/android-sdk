@@ -30,6 +30,15 @@ android {
         }
     }
 
+    flavorDimensions += "version"
+
+    productFlavors {
+        create("production") {
+            dimension = "version"
+            buildConfigField("String", "API_URL", "\"https://app.eyeson.team/\"")
+        }
+    }
+
     publishing {
         singleVariant("release") {
             withSourcesJar()
@@ -49,7 +58,12 @@ android {
         viewBinding = true
         dataBinding = true
     }
+
     namespace = "com.eyeson.sdk"
+}
+
+if (project.file("flavor-configurations.gradle").exists()) {
+    apply(from = "flavor-configurations.gradle")
 }
 
 dependencies {
@@ -80,7 +94,7 @@ afterEvaluate {
     publishing {
         publications {
             create<MavenPublication>("sdk") {
-                from(components["release"])
+                from(components["productionRelease"])
                 groupId = Versions.groupId
                 artifactId = "sdk"
                 version = Versions.versionName
