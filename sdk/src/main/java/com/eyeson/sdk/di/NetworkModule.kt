@@ -19,8 +19,6 @@ import java.util.*
 
 internal object NetworkModule {
 
-    private var API_URL = "https://api.eyeson.team"
-
     private val okHttpClient: OkHttpClient by lazy { provideOkHttpClient() }
     private val retrofit: Retrofit by lazy { provideRetrofit(okHttpClient, moshi) }
 
@@ -62,7 +60,7 @@ internal object NetworkModule {
     private fun provideRetrofit(okHttpClient: OkHttpClient, moshi: Moshi): Retrofit {
         return Retrofit.Builder()
             .addConverterFactory(MoshiConverterFactory.create(moshi))
-            .baseUrl(API_URL)
+            .baseUrl(BuildConfig.API_URL)
             .client(okHttpClient)
             .build()
     }
