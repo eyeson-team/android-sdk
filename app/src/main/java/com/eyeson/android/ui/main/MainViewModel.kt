@@ -50,12 +50,14 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
             guestLink: String,
             activeRecording: Recording?,
             activeBroadcasts: BroadcastUpdate?,
-            snapshots: SnapshotUpdate?
+            snapshots: SnapshotUpdate?,
+            isWidescreen: Boolean
         ) {
             addEvent(
                 "onMeetingJoining: name $name; startedAt $startedAt; user $user; " +
                         "locked $locked; guestToke $guestToken; guestLink $guestLink; activeRecording " +
-                        "$activeRecording; activeBroadcasts $activeBroadcasts; snapshots $snapshots"
+                        "$activeRecording; activeBroadcasts $activeBroadcasts; snapshots $snapshots;" +
+                        " isWidescreen $isWidescreen"
             )
         }
 

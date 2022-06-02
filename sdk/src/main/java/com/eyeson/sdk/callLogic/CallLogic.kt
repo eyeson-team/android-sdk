@@ -172,7 +172,7 @@ internal class CallLogic(
         PeerConnectionClient(
             context,
             rootEglBase,
-            PeerConnectionClient.PeerConnectionParameters(audioOnly),
+            PeerConnectionClient.PeerConnectionParameters(audioOnly, meeting.options.widescreen),
             peerConnectionEvents,
             dataChannelEvents
         ).apply { createPeerConnectionFactory(PeerConnectionFactory.Options()) }

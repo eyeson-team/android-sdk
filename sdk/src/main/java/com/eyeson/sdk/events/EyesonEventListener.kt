@@ -18,7 +18,8 @@ abstract class EyesonEventListener {
         guestLink: String,
         activeRecording: Recording?,
         activeBroadcasts: BroadcastUpdate?,
-        snapshots: SnapshotUpdate?
+        snapshots: SnapshotUpdate?,
+        isWidescreen: Boolean
     ) {
     }
 

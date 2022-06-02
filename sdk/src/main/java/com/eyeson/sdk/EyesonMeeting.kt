@@ -189,7 +189,8 @@ class EyesonMeeting(
                 meetingInfo.links.guestJoin,
                 meetingInfo.recording?.toLocal(),
                 BroadcastUpdateDto("", meetingInfo.broadcasts).toLocal(),
-                SnapshotUpdateDto("", meetingInfo.snapshots).toLocal()
+                SnapshotUpdateDto("", meetingInfo.snapshots).toLocal(),
+                meetingInfo.options.widescreen
             )
 
             webSocketCommunicator = WebSocketCommunicator(meetingInfo).apply {
@@ -368,6 +369,10 @@ class EyesonMeeting(
 
     fun disableLogging() {
         Logger.enabled = false
+    }
+
+    fun isWidescreen(): Boolean {
+        return meeting?.options?.widescreen ?: false
     }
 
     private fun startCall(
