@@ -1,6 +1,7 @@
 package com.eyeson.sdk.events
 
 import com.eyeson.sdk.model.local.api.UserInfo
+import com.eyeson.sdk.model.local.call.ConnectionStatistic
 import com.eyeson.sdk.model.local.meeting.BroadcastUpdate
 import com.eyeson.sdk.model.local.meeting.PlaybackUpdate.Playback
 import com.eyeson.sdk.model.local.meeting.Recording
@@ -35,11 +36,12 @@ abstract class EyesonEventListener {
     open fun onBroadcastUpdate(activeBroadcasts: BroadcastUpdate) {}
     open fun onRecordingUpdate(recording: Recording) {}
     open fun onSnapshotUpdate(snapshots: SnapshotUpdate) {}
+    open fun onConnectionStatisticUpdate(statistic: ConnectionStatistic) {}
 
     open fun onUserJoinedMeeting(users: List<UserInfo>) {}
     open fun onUserLeftMeeting(users: List<UserInfo>) {}
     open fun onUserListUpdate(users: List<UserInfo>) {}
-    open fun onVoiceActivity(user: UserInfo, active: Boolean){}
+    open fun onVoiceActivity(user: UserInfo, active: Boolean) {}
 
     open fun onChatMessageReceived(user: UserInfo, message: String, timestamp: Date) {}
 

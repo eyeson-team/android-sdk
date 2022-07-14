@@ -60,6 +60,8 @@ internal class CallLogic(
 
     private val moshi = NetworkModule.moshi
 
+    private val connectionStatisticsRepository = ConnectionStatisticsRepository()
+
     internal class ProxyVideoSink : VideoSink {
         private var target: VideoSink? = null
 
@@ -102,7 +104,10 @@ internal class CallLogic(
         }
 
         override fun onPeerConnectionStatsReady(report: RTCStatsReport) {
-            Logger.d("onPeerConnectionStatsReady: $report")
+            connectionStatisticsRepository.addNewRTCStatsReport(report)
+            connectionStatisticsRepository.getStatsInfo()?.let {
+                emitEvent(it)
+            }
         }
 
         override fun onPeerConnectionError(description: String) {
@@ -200,8 +205,10 @@ internal class CallLogic(
             videoEnabledOnStart
         ) {
             peerConnectionClient.createOffer()
+            peerConnectionClient.enableStatsEvents(true, STATS_INTERVAL_MS)
         }
     }
+
 
     fun disconnectCall() {
         remoteProxyVideoSink.setTarget(null)
@@ -359,5 +366,6 @@ internal class CallLogic(
         private const val SFU_ON_SDP_PARAMETER = "a=sfu-mode:on"
         private const val DATA_CHANNEL_CAPABLE_SDP_PARAMETER = "a=eyeson-datachan-capable"
         private const val DATA_CHANNEL_KEEP_ALIVE_SDP_PARAMETER = "a=eyeson-datachan-keepalive"
+        const val STATS_INTERVAL_MS = 1000
     }
 }

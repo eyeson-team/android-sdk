@@ -10,6 +10,7 @@ import com.eyeson.sdk.events.CallTerminationReason
 import com.eyeson.sdk.events.EyesonEventListener
 import com.eyeson.sdk.events.NeededPermissions
 import com.eyeson.sdk.model.local.api.UserInfo
+import com.eyeson.sdk.model.local.call.ConnectionStatistic
 import com.eyeson.sdk.model.local.meeting.BroadcastUpdate
 import com.eyeson.sdk.model.local.meeting.PlaybackUpdate
 import com.eyeson.sdk.model.local.meeting.Recording
@@ -111,6 +112,11 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
 
         override fun onSnapshotUpdate(snapshots: SnapshotUpdate) {
             addEvent("onSnapshotUpdate: snapshots $snapshots")
+        }
+
+        override fun onConnectionStatisticUpdate(statistic: ConnectionStatistic) {
+//            addEvent("onConnectionStatisticUpdate: statistic $statistic")
+//            Timber.d("onConnectionStatisticUpdate: statistic $statistic")
         }
 
         override fun onUserJoinedMeeting(users: List<UserInfo>) {

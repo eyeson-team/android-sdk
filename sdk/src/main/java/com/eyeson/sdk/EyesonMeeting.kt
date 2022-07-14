@@ -16,6 +16,7 @@ import com.eyeson.sdk.model.local.api.UserInfo
 import com.eyeson.sdk.model.local.base.LocalBaseCommand
 import com.eyeson.sdk.model.local.call.CameraSwitchDone
 import com.eyeson.sdk.model.local.call.CameraSwitchError
+import com.eyeson.sdk.model.local.call.ConnectionStatistic
 import com.eyeson.sdk.model.local.call.MeetingJoined
 import com.eyeson.sdk.model.local.call.ResumeCallLocal
 import com.eyeson.sdk.model.local.call.StartCallLocal
@@ -504,6 +505,9 @@ class EyesonMeeting(
             }
             is CameraSwitchError -> {
                 eventListener.onCameraSwitchError(command.error)
+            }
+            is ConnectionStatistic -> {
+                eventListener.onConnectionStatisticUpdate(command)
             }
         }
     }
