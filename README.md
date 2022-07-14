@@ -140,6 +140,8 @@ fun setMicrophoneEnabled(enable: Boolean)
 fun sendChatMessage(message: String)
 
 fun getEglContext(): EglBase.Context?
+
+fun isWidescreen(): Boolean
 ```
 
 ## Events
@@ -155,7 +157,8 @@ abstract class EyesonEventListener {
         guestLink: String,
         activeRecording: Recording?,
         activeBroadcasts: BroadcastUpdate?,
-        snapshots: SnapshotUpdate?
+        snapshots: SnapshotUpdate?,
+        isWidescreen: Boolean
     ) {
     }
 

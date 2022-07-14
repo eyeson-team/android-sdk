@@ -2,6 +2,7 @@ package com.eyeson.sdk.callLogic
 
 import android.content.Context
 import com.eyeson.sdk.di.NetworkModule
+import com.eyeson.sdk.events.CallTerminationReason
 import com.eyeson.sdk.model.api.MeetingDto
 import com.eyeson.sdk.model.datachannel.base.DataChannelCommandDto
 import com.eyeson.sdk.model.datachannel.base.UnknownCommandDto
@@ -59,6 +60,8 @@ internal class CallLogic(
 
     private val moshi = NetworkModule.moshi
 
+    private val connectionStatisticsRepository = ConnectionStatisticsRepository()
+
     internal class ProxyVideoSink : VideoSink {
         private var target: VideoSink? = null
 
@@ -90,21 +93,30 @@ internal class CallLogic(
             peerConnectionClient.removeRemoteIceCandidates(candidates)
         }
 
-        override fun onIceConnected() {
+        override fun onConnected() {
+            Logger.d("onConnected")
             emitEvent(MeetingJoined())
         }
 
+        override fun onDisconnected() {
+            Logger.d("onDisconnected")
+            emitEvent(CallTerminated(CallTerminationReason.OK.terminationCode))
+        }
+
         override fun onPeerConnectionStatsReady(report: RTCStatsReport) {
-            Logger.d("onPeerConnectionStatsReady: $report")
+            connectionStatisticsRepository.addNewRTCStatsReport(report)
+            connectionStatisticsRepository.getStatsInfo()?.let {
+                emitEvent(it)
+            }
         }
 
         override fun onPeerConnectionError(description: String) {
-            emitEvent(CallTerminated(PEER_CONNECTION_ERROR_CODE))
+            emitEvent(CallTerminated(CallTerminationReason.ERROR.terminationCode))
         }
 
         override fun onIceGatheringComplete(sdpToBeSent: String) {
             Logger.d("Ice gathering complete.")
-            prepareAndSendSdp(sdpToBeSent)
+            sendSdpCallStart(sdpToBeSent)
         }
 
         override fun onCameraSwitchDone(isFrontCamera: Boolean) {
@@ -165,7 +177,7 @@ internal class CallLogic(
         PeerConnectionClient(
             context,
             rootEglBase,
-            PeerConnectionClient.PeerConnectionParameters(audioOnly),
+            PeerConnectionClient.PeerConnectionParameters(audioOnly, meeting.options.widescreen),
             peerConnectionEvents,
             dataChannelEvents
         ).apply { createPeerConnectionFactory(PeerConnectionFactory.Options()) }
@@ -193,8 +205,10 @@ internal class CallLogic(
             videoEnabledOnStart
         ) {
             peerConnectionClient.createOffer()
+            peerConnectionClient.enableStatsEvents(true, STATS_INTERVAL_MS)
         }
     }
+
 
     fun disconnectCall() {
         remoteProxyVideoSink.setTarget(null)
@@ -270,10 +284,10 @@ internal class CallLogic(
         return preferredCapturer
     }
 
-    private fun prepareAndSendSdp(sdpToBeSent: String) {
-        if (sdpToBeSent.isBlank()) {
+    private fun prepareSdpForSending(sdpToBeSent: String?): String {
+        if (sdpToBeSent.isNullOrBlank()) {
             Logger.i("prepareAndSendSdp: SDP is blank. Nothing to send")
-            return
+            return ""
         }
 
         var newSdpToBeSent = ""
@@ -290,9 +304,23 @@ internal class CallLogic(
             newSdpToBeSent += "$line\r\n"
         }
 
-        WebRTCUtils.logSdp("prepareAndSendSdp newSdp", newSdpToBeSent)
+        return newSdpToBeSent
+    }
 
-        emitEvent(CallStart(meeting.user.name, newSdpToBeSent))
+    private fun sendSdpCallStart(sdpToBeSent: String) {
+        val preparedSdp = prepareSdpForSending(sdpToBeSent)
+        if (preparedSdp.isBlank()) {
+            return
+        }
+        WebRTCUtils.logSdp("sendSdpCallStart newSdp", preparedSdp)
+
+        emitEvent(CallStart(meeting.user.name, preparedSdp))
+    }
+
+    fun getSdpForCallResume(): String {
+        return prepareSdpForSending(peerConnectionClient.localSdp?.description).also {
+            WebRTCUtils.logSdp("getSdpForCallResume newSdp", it)
+        }
     }
 
     fun setRemoteDescription(description: String, type: SessionDescription.Type) {
@@ -338,7 +366,6 @@ internal class CallLogic(
         private const val SFU_ON_SDP_PARAMETER = "a=sfu-mode:on"
         private const val DATA_CHANNEL_CAPABLE_SDP_PARAMETER = "a=eyeson-datachan-capable"
         private const val DATA_CHANNEL_KEEP_ALIVE_SDP_PARAMETER = "a=eyeson-datachan-keepalive"
-        private const val PEER_CONNECTION_ERROR_CODE = 500
-
+        const val STATS_INTERVAL_MS = 1000
     }
 }

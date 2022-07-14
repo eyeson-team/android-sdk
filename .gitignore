@@ -64,3 +64,5 @@ lint/tmp/
 .idea/.name
 app/stage/debug/output-metadata.json
 .idea/deploymentTargetDropDown.xml
+app/flavor-configurations.gradle
+sdk/flavor-configurations.gradle

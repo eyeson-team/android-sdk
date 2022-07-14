@@ -39,6 +39,7 @@ import org.webrtc.PeerConnection
 import org.webrtc.PeerConnection.IceConnectionState
 import org.webrtc.PeerConnection.IceGatheringState
 import org.webrtc.PeerConnection.IceServer
+import org.webrtc.PeerConnection.PeerConnectionState
 import org.webrtc.PeerConnection.RTCConfiguration
 import org.webrtc.PeerConnection.SignalingState
 import org.webrtc.PeerConnectionFactory
@@ -124,8 +125,10 @@ internal class PeerConnectionClient(
     // remote peer after both local and remote description are set.
     private var queuedRemoteCandidates: MutableList<IceCandidate>? = null
     private var isInitiator = false
-    private var localSdp // either offer or answer SDP
+    var localSdp // either offer or answer SDP
             : SessionDescription? = null
+        private set
+
     private var videoCapturer: VideoCapturer? = null
     private val muteVideoOnStart = AtomicBoolean(false)
 
@@ -926,6 +929,18 @@ internal class PeerConnectionClient(
         open fun onIceDisconnected() {}
 
         /**
+         * Callback fired once DTLS connection is established (PeerConnectionState
+         * is CONNECTED).
+         */
+        open fun onConnected() {}
+
+        /**
+         * Callback fired once DTLS connection is disconnected (PeerConnectionState
+         * is DISCONNECTED).
+         */
+        open fun onDisconnected() {}
+
+        /**
          * Callback fired once peer connection is closed.
          */
         open fun onPeerConnectionClosed() {}
@@ -984,36 +999,36 @@ internal class PeerConnectionClient(
         val useLegacyAudioDevice: Boolean,
         val dataChannelParameters: DataChannelParameters
     ) {
-        constructor(ecoMode: Boolean) : this(
-            !ecoMode,
-            false,
-            false,
-            640,
-            480,
-            30,
-            2000,
-            "VP8",
-            true,
-            true,
-            200,
-            "",
-            false,
-            false,
-            false,
-            false,
-            false,
-            false,
-            false,
-            false,
-            false,
-            false,
-            DataChannelParameters(
-                true,
-                -1,
-                -1,
-                "",
-                true,
-                0
+        constructor(ecoMode: Boolean, widescreen: Boolean) : this(
+            videoCallEnabled = !ecoMode,
+            loopback = false,
+            tracing = false,
+            videoWidth = 640,
+            videoHeight = if (widescreen) 360 else 480,
+            videoFps = 30,
+            videoMaxBitrate = 2000,
+            videoCodec = "VP8",
+            videoCodecHwAcceleration = true,
+            videoFlexfecEnabled = true,
+            audioStartBitrate = 200,
+            audioCodec = "",
+            noAudioProcessing = false,
+            aecDump = false,
+            saveInputAudioToFile = false,
+            useOpenSLES = false,
+            disableBuiltInAEC = false,
+            disableBuiltInAGC = false,
+            disableBuiltInNS = false,
+            disableWebRtcAGCAndHPF = false,
+            enableRtcEventLog = false,
+            useLegacyAudioDevice = false,
+            dataChannelParameters = DataChannelParameters(
+                ordered = true,
+                maxRetransmitTimeMs = -1,
+                maxRetransmits = -1,
+                protocol = "",
+                negotiated = true,
+                id = 0
             )
         )
     }
@@ -1035,7 +1050,6 @@ internal class PeerConnectionClient(
 
         override fun onIceConnectionChange(newState: IceConnectionState) {
             executor.execute {
-                Logger.d("IceConnectionState: $newState")
                 when (newState) {
                     IceConnectionState.CONNECTED -> {
                         events.onIceConnected()
@@ -1093,12 +1107,38 @@ internal class PeerConnectionClient(
             }
         }
 
+        override fun onConnectionChange(newState: PeerConnectionState) {
+            Logger.d("onConnectionChange: $newState")
+            executor.execute {
+                when (newState) {
+                    PeerConnectionState.CONNECTED -> {
+                        events.onConnected()
+                    }
+                    PeerConnectionState.DISCONNECTED -> {
+                        events.onDisconnected()
+                    }
+                    PeerConnectionState.FAILED -> {
+                        reportError("DTLS connection failed.")
+                    }
+                    else -> {
+                        // NOOP
+                    }
+                }
+            }
+        }
+
+
         override fun onIceConnectionReceivingChange(receiving: Boolean) {
             Logger.d("IceConnectionReceiving changed to $receiving")
         }
 
-        override fun onAddStream(stream: MediaStream) {}
-        override fun onRemoveStream(stream: MediaStream) {}
+        override fun onAddStream(stream: MediaStream) {
+            // NOOP
+        }
+
+        override fun onRemoveStream(stream: MediaStream) {
+            // NOOP
+        }
 
         // NOT IN USE
         // For pre-negotiated data channels PeerConnection.Observer.onDataChannel
@@ -1135,7 +1175,9 @@ internal class PeerConnectionClient(
             // signaling/negotiation protocol.
         }
 
-        override fun onAddTrack(receiver: RtpReceiver, mediaStreams: Array<MediaStream>) {}
+        override fun onAddTrack(receiver: RtpReceiver, mediaStreams: Array<MediaStream>) {
+            // NOOP
+        }
     }
 
     // Implementation detail: handle offer creation/signaling and answer setting,
@@ -1178,12 +1220,12 @@ internal class PeerConnectionClient(
                     // local SDP, then after receiving answer set remote SDP.
                     if (peerConnection?.remoteDescription == null) {
                         // We've just set our local SDP so time to send it.
-                        Logger.d("Local SDP set successfully")
+                        Logger.d("Local SDP set successfully 1")
                         events.onLocalDescription(localSdp)
                     } else {
                         // We've just set remote description, so drain remote
                         // and send local ICE candidates.
-                        Logger.d("Remote SDP set successfully")
+                        Logger.d("Remote SDP set successfully 1")
                         drainCandidates()
                     }
                 } else {
@@ -1192,13 +1234,13 @@ internal class PeerConnectionClient(
                     if (peerConnection?.localDescription != null) {
                         // We've just set our local SDP so time to send it, drain
                         // remote and send local ICE candidates.
-                        Logger.d("Local SDP set successfully")
+                        Logger.d("Local SDP set successfully 2")
                         events.onLocalDescription(localSdp)
                         drainCandidates()
                     } else {
                         // We've just set remote SDP - do nothing for now -
                         // answer will be created soon.
-                        Logger.d("Remote SDP set successfully")
+                        Logger.d("Remote SDP set successfully 2")
                     }
                 }
             }

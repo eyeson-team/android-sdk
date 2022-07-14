@@ -26,6 +26,16 @@ android {
             )
         }
     }
+
+    flavorDimensions += "version"
+
+    productFlavors {
+        create("production") {
+            dimension = "version"
+            resValue("string", "app_name", "eyeson Android SDK")
+        }
+    }
+
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_11
         targetCompatibility = JavaVersion.VERSION_11
@@ -38,6 +48,11 @@ android {
         viewBinding = true
         dataBinding = true
     }
+    namespace = "com.eyeson.android"
+}
+
+if (project.file("flavor-configurations.gradle").exists()) {
+    apply(from = "flavor-configurations.gradle")
 }
 
 dependencies {

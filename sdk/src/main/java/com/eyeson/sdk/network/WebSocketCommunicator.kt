@@ -3,17 +3,23 @@ package com.eyeson.sdk.network
 import com.eyeson.sdk.di.NetworkModule
 import com.eyeson.sdk.model.api.MeetingDto
 import com.eyeson.sdk.model.local.base.LocalBaseCommand
+import com.eyeson.sdk.model.local.call.ResumeCallLocal
 import com.eyeson.sdk.model.local.call.StartCallLocal
 import com.eyeson.sdk.model.local.meeting.MuteLocalAudio
 import com.eyeson.sdk.model.local.meeting.RoomReady
 import com.eyeson.sdk.model.local.sepp.CallAccepted
+import com.eyeson.sdk.model.local.sepp.CallResume
 import com.eyeson.sdk.model.local.sepp.CallStart
 import com.eyeson.sdk.model.local.sepp.CallTerminate
+import com.eyeson.sdk.model.local.ws.ReconnectSignaling
+import com.eyeson.sdk.model.local.ws.WsFailure
 import com.eyeson.sdk.model.local.ws.WsOpen
 import com.eyeson.sdk.model.meeting.outgoing.MuteAllDto
+import com.eyeson.sdk.model.sepp.outgoing.CallResumeDto
 import com.eyeson.sdk.model.sepp.outgoing.CallStartDto
 import com.eyeson.sdk.model.sepp.outgoing.CallTerminateDto
 import com.eyeson.sdk.model.sepp.outgoing.fromLocal
+import com.eyeson.sdk.utils.Logger
 import com.eyeson.sdk.utils.collectIn
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -35,7 +41,11 @@ internal class WebSocketCommunicator(
     private val meetingReady = AtomicBoolean(false)
     private var callId: String = ""
 
+    private val meetingTryToReconnect = AtomicBoolean(true)
+    private val signalingTryToReconnect = AtomicBoolean(true)
+
     private var signalingConnection: SignalingConnection? = null
+    private val signalingIsReconnecting = AtomicBoolean(false)
 
     private val _events = MutableSharedFlow<LocalBaseCommand>(0)
     val events = _events.asSharedFlow()
@@ -50,6 +60,12 @@ internal class WebSocketCommunicator(
         val callStartDto = callStart.fromLocal(meeting)
         val adapter = moshi.adapter(CallStartDto::class.java)
         signalingConnection?.sendMessage(adapter.toJson(callStartDto))
+    }
+
+    fun resumeCall(callResume: CallResume) {
+        val callResumeDto = callResume.fromLocal(meeting)
+        val adapter = moshi.adapter(CallResumeDto::class.java)
+        signalingConnection?.sendMessage(adapter.toJson(callResumeDto))
     }
 
     fun sendMuteAll() {
@@ -109,6 +125,19 @@ internal class WebSocketCommunicator(
                     emitEvent(command)
                 }
             }
+            is WsFailure -> {
+                if (meetingTryToReconnect.getAndSet(false)) {
+                    meetingCommunicator?.disconnect()
+                    meetingCommunicator = null
+                    connect()
+                } else {
+                    emitEvent(command)
+                }
+            }
+            is WsOpen -> {
+                meetingTryToReconnect.set(true)
+                emitEvent(command)
+            }
             else -> {
                 emitEvent(command)
             }
@@ -118,15 +147,38 @@ internal class WebSocketCommunicator(
     private fun handleSignalingCommands(command: LocalBaseCommand) {
         when (command) {
             is WsOpen -> {
-                emitEvent(StartCallLocal(meeting))
+                signalingTryToReconnect.set(true)
+                if (signalingIsReconnecting.getAndSet(false)) {
+                    emitEvent(ResumeCallLocal(meeting, callId))
+
+                } else {
+                    emitEvent(StartCallLocal(meeting))
+                }
             }
             is CallAccepted -> {
                 callId = command.callId
                 emitEvent(command)
             }
+            is WsFailure -> {
+                if (signalingTryToReconnect.getAndSet(false)) {
+                    signalingConnection?.disconnect()
+                    signalingConnection = null
+                    emitEvent(ReconnectSignaling(command.response))
+                } else {
+                    emitEvent(command)
+                }
+            }
             else -> {
                 emitEvent(command)
             }
+        }
+    }
+
+    fun reconnectToSignaling(newMeetingInfo: MeetingDto) {
+        meeting = newMeetingInfo
+        signalingIsReconnecting.set(true)
+        communicatorScope.launch {
+            signalingConnection = connectToSignalingWs()
         }
     }
 

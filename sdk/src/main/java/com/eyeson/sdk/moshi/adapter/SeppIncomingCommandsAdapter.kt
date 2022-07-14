@@ -4,8 +4,10 @@ import com.eyeson.sdk.model.sepp.base.SeppBaseCommandDto
 import com.eyeson.sdk.model.sepp.base.UnknownCommandDto
 import com.eyeson.sdk.model.sepp.incoming.CallAcceptedDto
 import com.eyeson.sdk.model.sepp.incoming.CallRejectedDto
+import com.eyeson.sdk.model.sepp.incoming.CallResumedDto
 import com.eyeson.sdk.model.sepp.incoming.CallTerminatedDto
 import com.eyeson.sdk.model.sepp.incoming.SeppCommandsIncoming
+import com.eyeson.sdk.model.sepp.outgoing.CallResumeDto
 import com.eyeson.sdk.model.sepp.outgoing.CallStartDto
 import com.eyeson.sdk.model.sepp.outgoing.CallTerminateDto
 import com.eyeson.sdk.model.sepp.outgoing.SeppCommandsOutgoing
@@ -20,8 +22,10 @@ internal object SeppIncomingCommandsAdapter {
             .withSubtype(CallAcceptedDto::class.java, SeppCommandsIncoming.CALL_ACCEPTED.type)
             .withSubtype(CallRejectedDto::class.java, SeppCommandsIncoming.CALL_REJECTED.type)
             .withSubtype(CallTerminatedDto::class.java, SeppCommandsIncoming.CALL_TERMINATED.type)
+            .withSubtype(CallResumedDto::class.java, SeppCommandsIncoming.CALL_RESUMED.type)
             .withSubtype(CallStartDto::class.java, SeppCommandsOutgoing.CALL_START.type)
             .withSubtype(CallTerminateDto::class.java, SeppCommandsOutgoing.CALL_TERMINATE.type)
+            .withSubtype(CallResumeDto::class.java, SeppCommandsOutgoing.CALL_RESUME.type)
             .withSubtype(SdpUpdateDto::class.java, SeppCommandsShared.SDP_UPDATE.type)
             .withDefaultValue(UnknownCommandDto())
     }
