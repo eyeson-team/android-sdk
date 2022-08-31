@@ -2,7 +2,9 @@ package com.eyeson.sdk
 
 import android.Manifest
 import android.app.Application
+import android.app.Notification
 import android.content.Context
+import android.content.Intent
 import android.content.pm.PackageManager
 import androidx.core.content.ContextCompat
 import com.eyeson.sdk.callLogic.CallLogic
@@ -204,6 +206,28 @@ class EyesonMeeting(
         }
     }
 
+    fun startScreenShare(
+        mediaProjectionPermissionResultData: Intent,
+        asPresentation: Boolean,
+        notificationId: Int,
+        notification: Notification
+    ): Boolean {
+        return callLogic?.startScreenShare(
+            mediaProjectionPermissionResultData,
+            asPresentation,
+            notificationId,
+            notification
+        ) ?: false
+    }
+
+    fun stopScreenShare(resumeLocalVideo: Boolean) {
+        callLogic?.stopScreenShare(resumeLocalVideo)
+    }
+
+    fun isScreenShareActive(): Boolean {
+        return callLogic?.isScreenShareActive() ?: false
+    }
+
     private suspend fun handleWebSocketEvents(
         command: LocalBaseCommand,
         audiOnly: Boolean,
@@ -315,9 +339,15 @@ class EyesonMeeting(
     fun leave() {
         eyesonMeetingScope.cancel()
         nameLookupScope.cancel()
+
         webSocketCommunicator?.terminateCall()
+        webSocketCommunicator = null
+
         callLogic?.disconnectCall()
+        callLogic = null
+
         joined.set(false)
+        meeting = null
     }
 
     fun setLocalVideoTarget(target: VideoSink?) {

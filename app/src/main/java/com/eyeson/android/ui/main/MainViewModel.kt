@@ -1,6 +1,8 @@
 package com.eyeson.android.ui.main
 
 import android.app.Application
+import android.app.Notification
+import android.content.Intent
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.eyeson.android.ui.events.Event
@@ -172,6 +174,27 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
             }
         }
     }
+
+    fun startScreenShare(
+        mediaProjectionPermissionResultData: Intent,
+        asPresentation: Boolean,
+        notificationId: Int,
+        notification: Notification
+    ) {
+        val started = eyesonMeeting?.startScreenShare(
+            mediaProjectionPermissionResultData,
+            asPresentation,
+            notificationId,
+            notification
+        )
+
+        Timber.d("Screen share started: $started")
+    }
+
+    fun stopScreenShare() {
+        eyesonMeeting?.stopScreenShare(true)
+    }
+
 
     fun connectAsGuest(
         guestToken: String,

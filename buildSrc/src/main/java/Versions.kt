@@ -3,15 +3,15 @@ object Versions {
     const val versionCode = 1
     const val groupId = "com.eyeson"
     const val versionName = "1.0.0" // X.Y.Z; X = Major, Y = minor, Z = Patch level
-    const val compileSdk = 32
-    const val targetSdk = 32
+    const val compileSdk = 33
+    const val targetSdk = 33
     const val minSdk = 23
 
     // UI and appcompat
     const val coreKtx = "1.7.0"
     const val appCompat = "1.4.0"
     const val material = "1.5.0"
-    const val fragmentKtx = "1.4.0"
+    const val fragmentKtx = "1.5.2"
 
     const val appcompat = "1.4.1"
     const val constraintLayout = "2.1.3"

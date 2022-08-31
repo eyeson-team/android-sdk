@@ -46,6 +46,7 @@ import org.webrtc.PeerConnectionFactory
 import org.webrtc.RTCStatsReport
 import org.webrtc.RtpReceiver
 import org.webrtc.RtpSender
+import org.webrtc.ScreenCapturerAndroid
 import org.webrtc.SdpObserver
 import org.webrtc.SessionDescription
 import org.webrtc.SoftwareVideoDecoderFactory
@@ -286,7 +287,6 @@ internal class PeerConnectionClient(
         // Enable/disable OpenSL ES playback.
         if (!peerConnectionParameters.useOpenSLES) {
             Logger.w("External OpenSLES ADM not implemented yet.")
-            // TODO(magjed): Add support for external OpenSLES ADM.
         }
 
         // Set audioOnly record error callbacks.
@@ -611,9 +611,6 @@ internal class PeerConnectionClient(
         Logger.d("Closing peer connection done.")
     }
 
-    val isHDVideo: Boolean
-        get() = isVideoCallEnabled && videoWidth * videoHeight >= 1280 * 720
-
     private fun getStats() {
         if (peerConnection == null || isError) {
             return
@@ -803,17 +800,58 @@ internal class PeerConnectionClient(
 
     private fun createVideoTrack(
         capturer: VideoCapturer?,
-        videoEnabledOnStart: Boolean
+        videoEnabledOnStart: Boolean,
+        customVideoWidth: Int? = null,
+        customVideoHeight: Int? = null
     ): VideoTrack? {
         surfaceTextureHelper =
             SurfaceTextureHelper.create("CaptureThread", rootEglBase.eglBaseContext)
         videoSource = factory?.createVideoSource(capturer?.isScreencast ?: false)
         capturer?.initialize(surfaceTextureHelper, appContext, videoSource?.capturerObserver)
-        capturer?.startCapture(videoWidth, videoHeight, videoFps)
+        capturer?.startCapture(
+            customVideoWidth ?: videoWidth,
+            customVideoHeight ?: videoHeight,
+            videoFps
+        )
         localVideoTrack = factory?.createVideoTrack(VIDEO_TRACK_ID, videoSource)
         localVideoTrack?.setEnabled(videoEnabledOnStart)
         localVideoTrack?.addSink(localRender)
         return localVideoTrack
+    }
+
+    fun replaceVideoCapturer(
+        capturer: VideoCapturer?,
+        videoEnabledOnStart: Boolean,
+        customVideoWidth: Int? = null,
+        customVideoHeight: Int? = null
+    ) {
+        try {
+            (videoCapturer as? ScreenCapturerAndroid)?.mediaProjection?.stop()
+            videoSource?.dispose()
+            videoCapturer?.stopCapture()
+
+            surfaceTextureHelper?.stopListening()
+            surfaceTextureHelper?.dispose()
+            surfaceTextureHelper = null
+        } catch (e: InterruptedException) {
+            throw RuntimeException(e)
+        }
+        videoCapturerStopped = true
+        videoCapturer?.dispose()
+        videoCapturer = capturer
+
+        localVideoTrack?.removeSink(localRender)
+
+        createVideoTrack(capturer, videoEnabledOnStart, customVideoWidth, customVideoHeight)
+
+        peerConnection?.senders?.forEach { sender ->
+            if (sender.track() != null) {
+                val trackType = sender.track()?.kind()
+                if (trackType == VIDEO_TRACK_TYPE) {
+                    sender?.setTrack(localVideoTrack, false)
+                }
+            }
+        }
     }
 
     private fun findVideoSender() {
@@ -869,6 +907,10 @@ internal class PeerConnectionClient(
 
     fun changeCaptureFormat(width: Int, height: Int, framerate: Int) {
         executor.execute { changeCaptureFormatInternal(width, height, framerate) }
+    }
+
+    fun isScreencastActive(): Boolean {
+        return videoCapturer?.isScreencast ?: false
     }
 
     private fun changeCaptureFormatInternal(width: Int, height: Int, framerate: Int) {

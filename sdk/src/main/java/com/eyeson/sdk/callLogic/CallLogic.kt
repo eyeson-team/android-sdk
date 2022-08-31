@@ -1,6 +1,12 @@
 package com.eyeson.sdk.callLogic
 
+import android.app.Notification
+import android.content.ComponentName
 import android.content.Context
+import android.content.Intent
+import android.content.ServiceConnection
+import android.media.projection.MediaProjection
+import android.os.IBinder
 import com.eyeson.sdk.di.NetworkModule
 import com.eyeson.sdk.events.CallTerminationReason
 import com.eyeson.sdk.model.api.MeetingDto
@@ -37,11 +43,13 @@ import org.webrtc.EglBase
 import org.webrtc.IceCandidate
 import org.webrtc.PeerConnectionFactory
 import org.webrtc.RTCStatsReport
+import org.webrtc.ScreenCapturerAndroid
 import org.webrtc.SessionDescription
 import org.webrtc.VideoCapturer
 import org.webrtc.VideoFrame
 import org.webrtc.VideoSink
 import java.util.concurrent.atomic.AtomicBoolean
+
 
 internal class CallLogic(
     @Volatile private var meeting: MeetingDto,
@@ -61,6 +69,8 @@ internal class CallLogic(
     private val moshi = NetworkModule.moshi
 
     private val connectionStatisticsRepository = ConnectionStatisticsRepository()
+    private var screenCapturerService: ScreenCapturerService? = null
+    private var screenCapturerServiceBound: Boolean = false
 
     internal class ProxyVideoSink : VideoSink {
         private var target: VideoSink? = null
@@ -183,7 +193,6 @@ internal class CallLogic(
         ).apply { createPeerConnectionFactory(PeerConnectionFactory.Options()) }
     }
 
-
     fun startCall(
         frontCamera: Boolean,
         microphoneEnabledOnStart: Boolean,
@@ -209,8 +218,9 @@ internal class CallLogic(
         }
     }
 
-
     fun disconnectCall() {
+        endScreenShareForeground()
+
         remoteProxyVideoSink.setTarget(null)
         localProxyVideoSink.setTarget(null)
 
@@ -223,6 +233,69 @@ internal class CallLogic(
 
     fun setRemoteVideoTarget(target: VideoSink?) {
         remoteProxyVideoSink.setTarget(target)
+    }
+
+    fun startScreenShare(
+        mediaProjectionPermissionResultData: Intent,
+        asPresentation: Boolean,
+        notificationId: Int,
+        notification: Notification
+    ): Boolean {
+        if (screenCapturerServiceBound) {
+            return false
+        }
+
+        val connection: ServiceConnection = object : ServiceConnection {
+            override fun onServiceConnected(className: ComponentName, service: IBinder) {
+                val binder = service as ScreenCapturerService.LocalBinder
+                screenCapturerService = binder.getService()
+                screenCapturerService?.startForegroundWithNotification(notificationId, notification)
+
+                val screenCapturer = ScreenCapturerAndroid(mediaProjectionPermissionResultData,
+                    object : MediaProjection.Callback() {
+                        override fun onStop() {
+                            Logger.d("ScreenCapturer stopped")
+                            endScreenShareForeground()
+                        }
+                    })
+                peerConnectionClient.replaceVideoCapturer(
+                    screenCapturer,
+                    true,
+                    FUll_HD_VIDEO_WIDTH,
+                    FUll_HD_VIDEO_HEIGHT
+                )
+
+                screenCapturerServiceBound = true
+            }
+
+            override fun onServiceDisconnected(arg0: ComponentName) {
+                endScreenShareForeground()
+            }
+        }
+
+        val intent = Intent(context, ScreenCapturerService::class.java)
+        context.bindService(intent, connection, Context.BIND_AUTO_CREATE)
+
+        return true
+    }
+
+    private fun endScreenShareForeground() {
+        screenCapturerService?.endForeground()
+        screenCapturerService = null
+        screenCapturerServiceBound = false
+    }
+
+    fun stopScreenShare(resumeLocalVideo: Boolean) {
+        endScreenShareForeground()
+
+        peerConnectionClient.replaceVideoCapturer(
+            createVideoCapturer(!cameraIsFrontFacing.get()),
+            resumeLocalVideo
+        )
+    }
+
+    fun isScreenShareActive(): Boolean {
+        return peerConnectionClient.isScreencastActive()
     }
 
 
@@ -367,5 +440,8 @@ internal class CallLogic(
         private const val DATA_CHANNEL_CAPABLE_SDP_PARAMETER = "a=eyeson-datachan-capable"
         private const val DATA_CHANNEL_KEEP_ALIVE_SDP_PARAMETER = "a=eyeson-datachan-keepalive"
         const val STATS_INTERVAL_MS = 1000
+
+        private const val FUll_HD_VIDEO_WIDTH = 1920
+        private const val FUll_HD_VIDEO_HEIGHT = 1080
     }
 }
