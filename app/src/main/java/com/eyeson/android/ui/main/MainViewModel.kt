@@ -39,6 +39,9 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
 
     var inCall = false
 
+    private var lastCameraState = isVideoEnabled()
+    private var presentationActive = false
+
     private val eventListener = object : EyesonEventListener() {
         override fun onPermissionsNeeded(neededPermissions: List<NeededPermissions>) {
             addEvent("onPermissionsNeeded: neededPermissions $neededPermissions")
@@ -67,6 +70,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         override fun onMeetingJoined() {
             addEvent("onMeetingJoined")
             inCall = true
+            lastCameraState = isVideoEnabled()
         }
 
         override fun onMeetingJoinFailed(callRejectionReason: CallRejectionReason) {
@@ -94,6 +98,17 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
             presenter: UserInfo?
         ) {
             addEvent("onVideoSourceUpdate: $visibleUsers; presenter $presenter")
+            if (!presentationActive && presenter?.id != null && presenter.id != eyesonMeeting?.getUserInfo()?.id) {
+                presentationActive = true
+                lastCameraState = isVideoEnabled()
+                eyesonMeeting?.setVideoEnabled(false)
+
+            }
+            if (presentationActive && presenter == null) {
+                presentationActive = false
+                eyesonMeeting?.setVideoEnabled(lastCameraState)
+                lastCameraState = isVideoEnabled()
+            }
         }
 
         override fun onAudioMutedBy(user: UserInfo) {
@@ -154,8 +169,27 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         }
     }
 
-    fun connect(accessKey: String, local: VideoSink?, remote: VideoSink?) {
+    fun connect(
+        accessKey: String,
+        local: VideoSink?,
+        remote: VideoSink?,
+        mediaProjectionPermissionResultData: Intent? = null,
+        notificationId: Int? = null,
+        notification: Notification? = null
+    ) {
         _callTerminated.value = false
+
+        val screenShareInfo = if (mediaProjectionPermissionResultData != null &&
+            notificationId != null && notification != null
+        ) {
+            EyesonMeeting.ScreenShareInfo(
+                mediaProjectionPermissionResultData,
+                notificationId,
+                notification
+            )
+        } else {
+            null
+        }
 
         viewModelScope.launch {
             eyesonMeeting = EyesonMeeting(
@@ -169,7 +203,8 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                     local = local,
                     remote = remote,
                     microphoneEnabledOnStart = true,
-                    videoEnabledOnStart = true
+                    videoEnabledOnStart = true,
+                    screenShareInfo = screenShareInfo
                 )
             }
         }
@@ -182,10 +217,12 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         notification: Notification
     ) {
         val started = eyesonMeeting?.startScreenShare(
-            mediaProjectionPermissionResultData,
-            asPresentation,
-            notificationId,
-            notification
+            EyesonMeeting.ScreenShareInfo(
+                mediaProjectionPermissionResultData,
+                notificationId,
+                notification
+            ),
+            asPresentation
         )
 
         Timber.d("Screen share started: $started")
@@ -193,6 +230,15 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
 
     fun stopScreenShare() {
         eyesonMeeting?.stopScreenShare(true)
+        eyesonMeeting?.stopPresentation()
+    }
+
+    fun setVideoAsPresentation() {
+        eyesonMeeting?.setVideoAsPresentation()
+    }
+
+    fun stopPresentation() {
+        eyesonMeeting?.stopPresentation()
     }
 
 
@@ -200,9 +246,25 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         guestToken: String,
         name: String,
         local: VideoSink?,
-        remote: VideoSink?
+        remote: VideoSink?,
+        mediaProjectionPermissionResultData: Intent? = null,
+        notificationId: Int? = null,
+        notification: Notification? = null
     ) {
         _callTerminated.value = false
+
+        val screenShareInfo = if (mediaProjectionPermissionResultData != null &&
+            notificationId != null && notification != null
+        ) {
+            EyesonMeeting.ScreenShareInfo(
+                mediaProjectionPermissionResultData,
+                notificationId,
+                notification
+            )
+        } else {
+            null
+        }
+
 
         viewModelScope.launch {
             eyesonMeeting = EyesonMeeting(
@@ -219,7 +281,8 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                     local = local,
                     remote = remote,
                     microphoneEnabledOnStart = true,
-                    videoEnabledOnStart = true
+                    videoEnabledOnStart = true,
+                    screenShareInfo = screenShareInfo
                 )
             }
         }
@@ -244,17 +307,13 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         eyesonMeeting?.setRemoteVideoTarget(remote)
     }
 
-    var localVideoEnabled = false
     fun muteVideoLocal() {
-        eyesonMeeting?.setVideoEnabled(localVideoEnabled)
-        localVideoEnabled = localVideoEnabled.not()
-        Timber.d("localVideoEnabled :$localVideoEnabled")
+        lastCameraState = !isVideoEnabled()
+        eyesonMeeting?.setVideoEnabled(!isVideoEnabled())
     }
 
-    var audioEnabled = true
     fun muteAudio() {
-        audioEnabled = audioEnabled.not()
-        eyesonMeeting?.setMicrophoneEnabled(audioEnabled)
+        eyesonMeeting?.setMicrophoneEnabled(!isMicrophoneEnabled())
     }
 
     fun muteAll() {

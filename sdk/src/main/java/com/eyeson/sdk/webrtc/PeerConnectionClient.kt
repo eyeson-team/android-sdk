@@ -14,8 +14,12 @@
 package com.eyeson.sdk.webrtc
 
 import android.content.Context
+import android.os.Build
 import android.os.Environment
 import android.os.ParcelFileDescriptor
+import android.util.DisplayMetrics
+import android.view.WindowManager
+import android.view.WindowMetrics
 import com.eyeson.sdk.BuildConfig.DEBUG
 import com.eyeson.sdk.di.NetworkModule
 import com.eyeson.sdk.model.api.TurnServerDto
@@ -83,7 +87,7 @@ import java.util.regex.Pattern
  * This class is a singleton.
  */
 internal class PeerConnectionClient(
-    private val appContext: Context?,
+    private val appContext: Context,
     private val rootEglBase: EglBase,
     private val peerConnectionParameters: PeerConnectionParameters,
     private val events: PeerConnectionEvents,
@@ -535,13 +539,13 @@ internal class PeerConnectionClient(
         val date = Date()
         val outputFileName = "event_log_${dateFormat.format(date)}.log"
         return File(
-            appContext?.getDir(RTCEVENTLOG_OUTPUT_DIR_NAME, Context.MODE_PRIVATE),
+            appContext.getDir(RTCEVENTLOG_OUTPUT_DIR_NAME, Context.MODE_PRIVATE),
             outputFileName
         )
     }
 
     private fun maybeCreateAndStartRtcEventLog() {
-        if (appContext == null || peerConnection == null) {
+        if (peerConnection == null) {
             return
         }
         if (!peerConnectionParameters.enableRtcEventLog) {
@@ -802,16 +806,40 @@ internal class PeerConnectionClient(
         capturer: VideoCapturer?,
         videoEnabledOnStart: Boolean,
         customVideoWidth: Int? = null,
-        customVideoHeight: Int? = null
+        customVideoHeight: Int? = null,
+        customFps: Int? = null
     ): VideoTrack? {
         surfaceTextureHelper =
             SurfaceTextureHelper.create("CaptureThread", rootEglBase.eglBaseContext)
         videoSource = factory?.createVideoSource(capturer?.isScreencast ?: false)
         capturer?.initialize(surfaceTextureHelper, appContext, videoSource?.capturerObserver)
+
+        val captureResolution = when {
+            customVideoWidth != null && customVideoHeight != null -> {
+                Pair(customVideoWidth, customVideoHeight)
+            }
+            capturer?.isScreencast == true -> {
+                val windowManager = appContext.getSystemService(WindowManager::class.java)
+                @Suppress("DEPRECATION")
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+                    val windowMetrics: WindowMetrics = windowManager.currentWindowMetrics
+                    windowMetrics.bounds.width()
+                    Pair(windowMetrics.bounds.width(), windowMetrics.bounds.height())
+                } else {
+                    val metrics = DisplayMetrics()
+                    windowManager.defaultDisplay.getRealMetrics(metrics)
+                    Pair(metrics.widthPixels, metrics.heightPixels)
+                }
+            }
+            else -> {
+                Pair(videoWidth, videoHeight)
+            }
+        }
+
         capturer?.startCapture(
-            customVideoWidth ?: videoWidth,
-            customVideoHeight ?: videoHeight,
-            videoFps
+            captureResolution.first,
+            captureResolution.second,
+            customFps ?: videoFps
         )
         localVideoTrack = factory?.createVideoTrack(VIDEO_TRACK_ID, videoSource)
         localVideoTrack?.setEnabled(videoEnabledOnStart)
@@ -823,7 +851,8 @@ internal class PeerConnectionClient(
         capturer: VideoCapturer?,
         videoEnabledOnStart: Boolean,
         customVideoWidth: Int? = null,
-        customVideoHeight: Int? = null
+        customVideoHeight: Int? = null,
+        customFps: Int? = null
     ) {
         try {
             (videoCapturer as? ScreenCapturerAndroid)?.mediaProjection?.stop()
@@ -842,7 +871,13 @@ internal class PeerConnectionClient(
 
         localVideoTrack?.removeSink(localRender)
 
-        createVideoTrack(capturer, videoEnabledOnStart, customVideoWidth, customVideoHeight)
+        createVideoTrack(
+            capturer,
+            videoEnabledOnStart,
+            customVideoWidth,
+            customVideoHeight,
+            customFps
+        )
 
         peerConnection?.senders?.forEach { sender ->
             if (sender.track() != null) {

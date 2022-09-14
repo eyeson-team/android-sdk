@@ -38,7 +38,7 @@ The eyeson Android SDK uses the following permissions:
 <uses-permission android:name="android.permission.CAMERA" />
 <uses-permission android:name="android.permission.RECORD_AUDIO" />
 ```
-Add them to you manifest and make sure that you have requested the CAMERA and RECORD_AUDIO runtime permission before joining a meeting.
+Add them to your manifest and make sure that you have requested the CAMERA and RECORD_AUDIO runtime permission before joining a meeting.
 See the [Android documentation](https://developer.android.com/training/permissions/requesting) on how to request them.
 
 # Usage
@@ -93,7 +93,8 @@ eyesonMeeting.join(
     local = local,
     remote = remote,
     microphoneEnabledOnStart = true,
-    videoEnabledOnStart = true
+    videoEnabledOnStart = true,
+    screenShareInfo: ScreenShareInfo? = null
 )           
 ```
 
@@ -108,9 +109,99 @@ eyesonMeeting.joinAsGuest(
     local = local,
     remote = remote,
     microphoneEnabledOnStart = true,
-    videoEnabledOnStart = true
+    videoEnabledOnStart = true,
+    screenShareInfo: ScreenShareInfo? = null
 )            
 ```
+## Screen share
+The local camera stream can be replaced with a capture of the screen. Either as a simple replacement of the own video, or as a full screen presentation.
+
+In order to start the capturing, you need to acquire a media projection token. For that we will use the API from the [Jetpack Fragments](https://developer.android.com/jetpack/androidx/releases/fragment) library. 
+
+```kotlin
+val requestScreenCapturePermission =
+registerForActivityResult(
+    ActivityResultContracts.StartActivityForResult()
+) { result ->
+    if (result.resultCode == AppCompatActivity.RESULT_OK) {
+        // Start screen share for running meeting 
+        viewModel.startScreenShare(
+            it.data ?: return@registerForActivityResult,
+            screenCaptureAsPresentation,
+            NOTIFICATION_ID,
+            NOTIFICATION
+        )
+    }
+} 
+
+val manager = requireContext().getSystemService(MediaProjectionManager::class.java)
+requestScreenCapturePermission.launch(manager.createScreenCaptureIntent())
+```
+
+From here you can join a meeting with the captured screen as your local video or switch from the local camera to the screen capture for an already running meeting. The SDK will start a foreground service on your behalf and post the provided notification.
+
+```kotlin
+if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+    requireContext().getSystemService(NotificationManager::class.java).apply {
+        createNotificationChannel(
+            NotificationChannel(
+                "7", "CHANNEL_NAME", NotificationManager.IMPORTANCE_HIGH
+            )
+        )
+    }
+}
+val notification = NotificationCompat.Builder(requireContext(), "7")
+    .setOngoing(true)
+    .setContentText("ScreenCapturerService is running in the foreground")
+    .setContentTitle("Attention")
+    .setPriority(PRIORITY_HIGH)
+    .setSmallIcon(R.drawable.icon)
+    .setCategory(Notification.CATEGORY_SERVICE)
+    .build()
+
+val screenShareInfo = EyesonMeeting.ScreenShareInfo(
+    mediaProjectionPermissionResultData,
+    42,
+    notification
+)
+
+// Join meeting 
+EyesonMeeting(
+    eventListener = eventListener,
+    application = getApplication()
+).apply {
+    join(
+        accessKey = accessKey,
+        frontCamera = true,
+        audiOnly = false,
+        local = local,
+        remote = remote,
+        microphoneEnabledOnStart = true,
+        videoEnabledOnStart = true,
+        screenShareInfo = screenShareInfo
+    )
+}
+
+// Switch to screen share (running meeting)
+eyesonMeeting.startScreenShare(screenShareInfo, asPresentation)
+```
+
+For Android API >= 33 make sure to add the `POST_NOTIFICATIONS` permission to your manifest and request the runtime permission as well.
+```xml
+<uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+```
+
+In order to stop sharing call `stopScreenShare` or `leave`. This has to be done at some point, otherwise the foreground service continues to run, even if the user swipes the app from the Recents screen. To prevent this, call `leave` from your Activity /Fragment `onDestroy`
+
+```kotlin
+override fun onDestroy() {
+    if (requireActivity().isFinishing) {
+        eyesonMeeting.leave()
+    }
+    super.onDestroy()
+}
+```
+
 
 ## Instance methods
 ```kotlin
@@ -142,6 +233,19 @@ fun sendChatMessage(message: String)
 fun getEglContext(): EglBase.Context?
 
 fun isWidescreen(): Boolean
+
+fun getUserInfo(): UserInfo?
+
+// Switch to local video muted/unmuted
+fun stopScreenShare(resumeLocalVideo: Boolean)
+
+fun isScreenShareActive(): Boolean 
+
+// Set current video (local or shared screen) as sole video 
+fun setVideoAsPresentation()
+
+// Stop the current presentation, regardless who stated it 
+fun stopPresentation()
 ```
 
 ## Events

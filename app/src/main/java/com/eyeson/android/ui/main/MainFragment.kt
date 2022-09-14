@@ -20,6 +20,7 @@ import androidx.activity.addCallback
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.app.NotificationCompat
+import androidx.core.app.NotificationCompat.PRIORITY_HIGH
 import androidx.core.view.MenuHost
 import androidx.core.view.MenuProvider
 import androidx.databinding.DataBindingUtil
@@ -47,6 +48,8 @@ class MainFragment : Fragment() {
     private var accessKey: String? = null
     private var guestToken: String? = null
     private var guestName: String? = null
+
+    private var screenCaptureAsPresentation = false
 
     private val requestNotificationPermission =
         registerForActivityResult(
@@ -80,12 +83,53 @@ class MainFragment : Fragment() {
 
             viewModel.startScreenShare(
                 it.data ?: return@registerForActivityResult,
-                false,
+                screenCaptureAsPresentation,
                 7,
                 generateScreenShareNotification()
             )
+        }
 
-//            bindVideoViews()
+    private val requestConnectWithScreenCapturePermission =
+        registerForActivityResult(
+            ActivityResultContracts.StartActivityForResult()
+        ) {
+            if (it.resultCode != AppCompatActivity.RESULT_OK) {
+                Toast.makeText(
+                    requireContext(),
+                    "Permission not granted",
+                    Toast.LENGTH_SHORT
+                ).show()
+                return@registerForActivityResult
+            }
+
+            viewModel.disconnect()
+            clearTargets()
+
+
+            when {
+                !accessKey.isNullOrBlank() -> {
+                    viewModel.connect(
+                        accessKey ?: return@registerForActivityResult,
+                        binding.localVideo,
+                        binding.remoteVideo,
+                        it.data ?: return@registerForActivityResult,
+                        7,
+                        generateScreenShareNotification()
+                    )
+                }
+                !guestToken.isNullOrBlank() -> {
+                    viewModel.connectAsGuest(
+                        guestToken ?: return@registerForActivityResult,
+                        guestName ?: "I'm a guest name!",
+                        binding.localVideo,
+                        binding.remoteVideo,
+                        it.data ?: return@registerForActivityResult,
+                        7,
+                        generateScreenShareNotification()
+                    )
+                }
+            }
+            bindVideoViews()
         }
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -207,18 +251,43 @@ class MainFragment : Fragment() {
             viewModel.setTargets(binding.localVideo, binding.remoteVideo)
         }
 
-        binding.startScreenShare.setOnClickListener {
+        val startScreenShare: (Boolean) -> Unit = { asPresentation: Boolean ->
+            screenCaptureAsPresentation = asPresentation
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
                 requestNotificationPermission.launch(Manifest.permission.POST_NOTIFICATIONS)
-
             }
-            val manager =
-                requireContext().getSystemService(Context.MEDIA_PROJECTION_SERVICE) as MediaProjectionManager
+            val manager = requireContext().getSystemService(MediaProjectionManager::class.java)
             requestScreenCapturePermission.launch(manager.createScreenCaptureIntent())
         }
 
-        binding.fromShareToLocal.setOnClickListener {
+        binding.startScreenShare.setOnClickListener {
+            startScreenShare(false)
+        }
+
+        binding.startPresenting.setOnClickListener {
+            startScreenShare(true)
+        }
+
+        binding.stopScreenShare.setOnClickListener {
             viewModel.stopScreenShare()
+        }
+
+        binding.stopPresenting.setOnClickListener {
+            viewModel.stopPresentation()
+        }
+
+        binding.setVideoAsPresentation.setOnClickListener {
+            viewModel.setVideoAsPresentation()
+        }
+
+        binding.connectScreenShare.setOnClickListener {
+            screenCaptureAsPresentation = false
+
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                requestNotificationPermission.launch(Manifest.permission.POST_NOTIFICATIONS)
+            }
+            val manager = requireContext().getSystemService(MediaProjectionManager::class.java)
+            requestConnectWithScreenCapturePermission.launch(manager.createScreenCaptureIntent())
         }
 
         val menuHost: MenuHost = requireActivity() as MenuHost
@@ -279,34 +348,24 @@ class MainFragment : Fragment() {
     }
 
     private fun generateScreenShareNotification(): Notification {
-        return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-            val chan = NotificationChannel(
-                "7", "CHANNEL_NAME", NotificationManager.IMPORTANCE_NONE
-            )
-            val manager =
-                (requireContext().getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager)
-            manager.createNotificationChannel(chan)
-
-            val notificationBuilder: NotificationCompat.Builder =
-                NotificationCompat.Builder(requireContext(), "7")
-            notificationBuilder
-                .setOngoing(true)
-                .setContentTitle("ScreenCapturerService is running in the foreground")
-                .setPriority(NotificationManager.IMPORTANCE_MIN)
-                .setCategory(Notification.CATEGORY_SERVICE)
-                .build()
-        } else {
-            val notificationBuilder: NotificationCompat.Builder =
-                NotificationCompat.Builder(requireContext(), "7")
-            notificationBuilder
-                .setOngoing(true)
-                .setContentText("HALLOOOOOOO")
-                .setContentTitle("ScreenCapturerService is running in the foreground")
-                .setPriority(2)
-                .setSmallIcon(R.drawable.menu)
-                .setCategory(Notification.CATEGORY_SERVICE)
-                .build()
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            requireContext().getSystemService(NotificationManager::class.java).apply {
+                createNotificationChannel(
+                    NotificationChannel(
+                        "7", "CHANNEL_NAME", NotificationManager.IMPORTANCE_HIGH
+                    )
+                )
+            }
         }
+
+        return NotificationCompat.Builder(requireContext(), "7")
+            .setOngoing(true)
+            .setContentText("ScreenCapturerService is running in the foreground")
+            .setContentTitle("Attention")
+            .setPriority(PRIORITY_HIGH)
+            .setSmallIcon(R.drawable.menu)
+            .setCategory(Notification.CATEGORY_SERVICE)
+            .build()
     }
 
     companion object {

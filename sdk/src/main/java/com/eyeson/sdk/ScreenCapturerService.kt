@@ -1,4 +1,4 @@
-package com.eyeson.sdk.callLogic
+package com.eyeson.sdk
 
 import android.app.Notification
 import android.app.Service
