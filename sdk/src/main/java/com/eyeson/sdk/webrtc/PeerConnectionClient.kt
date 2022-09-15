@@ -820,16 +820,21 @@ internal class PeerConnectionClient(
             }
             capturer?.isScreencast == true -> {
                 val windowManager = appContext.getSystemService(WindowManager::class.java)
+
                 @Suppress("DEPRECATION")
-                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
-                    val windowMetrics: WindowMetrics = windowManager.currentWindowMetrics
-                    windowMetrics.bounds.width()
+                var resolution = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+                    val windowMetrics: WindowMetrics = windowManager.maximumWindowMetrics
                     Pair(windowMetrics.bounds.width(), windowMetrics.bounds.height())
                 } else {
                     val metrics = DisplayMetrics()
                     windowManager.defaultDisplay.getRealMetrics(metrics)
                     Pair(metrics.widthPixels, metrics.heightPixels)
                 }
+
+                if (resolution.first < resolution.second) {
+                    resolution = Pair(resolution.second, resolution.first)
+                }
+                resolution
             }
             else -> {
                 Pair(videoWidth, videoHeight)
