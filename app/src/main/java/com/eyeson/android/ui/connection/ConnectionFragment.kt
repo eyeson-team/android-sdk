@@ -6,6 +6,7 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.TextView
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.databinding.DataBindingUtil
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.commit
@@ -16,11 +17,26 @@ import com.eyeson.android.R
 import com.eyeson.android.databinding.ConnectionFragmentBinding
 import com.eyeson.android.ui.main.MainFragment
 import com.eyeson.android.ui.scanner.ScannerFragment
+import timber.log.Timber
 
 class ConnectionFragment : Fragment() {
 
     private lateinit var binding: ConnectionFragmentBinding
     private val viewModel: ConnectionViewModel by viewModels()
+
+    private val requestMultiplePermissions =
+        registerForActivityResult(
+            ActivityResultContracts.RequestMultiplePermissions()
+        ) { permissions ->
+            permissions.entries.forEach {
+                if (it.value) {
+                    Timber.d("Permission request \"${it.key}\" granted")
+                } else {
+                    Timber.d("Permission request \"${it.key}\" was denied.")
+                }
+            }
+        }
+
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -29,9 +45,14 @@ class ConnectionFragment : Fragment() {
                 binding.guestToken.setText(it, TextView.BufferType.EDITABLE)
             }
         }
-        @Suppress("DEPRECATION")
-        requestPermissions(arrayOf(Manifest.permission.CAMERA, Manifest.permission.RECORD_AUDIO), 7)
+        requestMultiplePermissions.launch(
+            arrayOf(
+                Manifest.permission.CAMERA,
+                Manifest.permission.RECORD_AUDIO
+            )
+        )
     }
+
 
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?,

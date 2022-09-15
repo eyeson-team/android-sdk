@@ -2,7 +2,9 @@ package com.eyeson.sdk
 
 import android.Manifest
 import android.app.Application
+import android.app.Notification
 import android.content.Context
+import android.content.Intent
 import android.content.pm.PackageManager
 import androidx.core.content.ContextCompat
 import com.eyeson.sdk.callLogic.CallLogic
@@ -85,11 +87,16 @@ class EyesonMeeting(
     private var audioOnStart = true
     private var videoOnStart = true
 
-
     private val userInMeeting = mutableMapOf<String, UserInfo>()
     private val userListMutex = Mutex()
 
     private val rootEglBase: EglBase = EglBase.create()
+
+    data class ScreenShareInfo(
+        val mediaProjectionPermissionResultData: Intent,
+        val notificationId: Int,
+        val notification: Notification
+    )
 
     fun join(
         accessKey: String,
@@ -98,7 +105,8 @@ class EyesonMeeting(
         local: VideoSink?,
         remote: VideoSink?,
         microphoneEnabledOnStart: Boolean = true,
-        videoEnabledOnStart: Boolean = true
+        videoEnabledOnStart: Boolean = true,
+        screenShareInfo: ScreenShareInfo? = null
     ) {
         joinMeeting(
             { restCommunicator.getMeetingInfo(accessKey) },
@@ -107,7 +115,8 @@ class EyesonMeeting(
             local,
             remote,
             microphoneEnabledOnStart,
-            videoEnabledOnStart
+            videoEnabledOnStart,
+            screenShareInfo
         )
     }
 
@@ -121,7 +130,8 @@ class EyesonMeeting(
         local: VideoSink?,
         remote: VideoSink?,
         microphoneEnabledOnStart: Boolean = true,
-        videoEnabledOnStart: Boolean = true
+        videoEnabledOnStart: Boolean = true,
+        screenShareInfo: ScreenShareInfo? = null
     ) {
         joinMeeting(
             {
@@ -137,7 +147,8 @@ class EyesonMeeting(
             local,
             remote,
             microphoneEnabledOnStart,
-            videoEnabledOnStart
+            videoEnabledOnStart,
+            screenShareInfo
         )
     }
 
@@ -148,7 +159,8 @@ class EyesonMeeting(
         local: VideoSink?,
         remote: VideoSink?,
         microphoneEnabledOnStart: Boolean = true,
-        videoEnabledOnStart: Boolean = true
+        videoEnabledOnStart: Boolean = true,
+        screenShareInfo: ScreenShareInfo?
     ) {
         if (joined.getAndSet(true)) {
             return
@@ -198,10 +210,45 @@ class EyesonMeeting(
                 connect()
 
                 events.collectIn(eyesonMeetingScope) { command ->
-                    handleWebSocketEvents(command, audiOnly, frontCamera, local, remote)
+                    handleWebSocketEvents(
+                        command,
+                        audiOnly,
+                        frontCamera,
+                        local,
+                        remote,
+                        screenShareInfo
+                    )
                 }
             }
         }
+    }
+
+    fun startScreenShare(
+        screenShareInfo: ScreenShareInfo,
+        asPresentation: Boolean,
+    ): Boolean {
+        return callLogic?.startScreenShare(
+            screenShareInfo.mediaProjectionPermissionResultData,
+            asPresentation,
+            screenShareInfo.notificationId,
+            screenShareInfo.notification
+        ) ?: false
+    }
+
+    fun stopScreenShare(resumeLocalVideo: Boolean) {
+        callLogic?.stopScreenShare(resumeLocalVideo)
+    }
+
+    fun isScreenShareActive(): Boolean {
+        return callLogic?.isScreenShareActive() ?: false
+    }
+
+    fun setVideoAsPresentation() {
+        callLogic?.setVideoAsPresentation()
+    }
+
+    fun stopPresentation() {
+        callLogic?.stopPresentation()
     }
 
     private suspend fun handleWebSocketEvents(
@@ -209,12 +256,13 @@ class EyesonMeeting(
         audiOnly: Boolean,
         frontCamera: Boolean,
         local: VideoSink?,
-        remote: VideoSink?
+        remote: VideoSink?,
+        screenShareInfo: ScreenShareInfo?
     ) {
         when (command) {
             is StartCallLocal -> {
                 meeting = command.meeting
-                startCall(command.meeting, audiOnly, frontCamera, local, remote)
+                startCall(command.meeting, audiOnly, frontCamera, local, remote, screenShareInfo)
             }
             is ResumeCallLocal -> {
                 resumeCall(command.callId)
@@ -315,9 +363,15 @@ class EyesonMeeting(
     fun leave() {
         eyesonMeetingScope.cancel()
         nameLookupScope.cancel()
+
         webSocketCommunicator?.terminateCall()
+        webSocketCommunicator = null
+
         callLogic?.disconnectCall()
+        callLogic = null
+
         joined.set(false)
+        meeting = null
     }
 
     fun setLocalVideoTarget(target: VideoSink?) {
@@ -376,20 +430,34 @@ class EyesonMeeting(
         return meeting?.options?.widescreen ?: false
     }
 
+    fun getUserInfo(): UserInfo? {
+        return meeting?.user?.toLocal(Date())
+    }
+
     private fun startCall(
         meeting: MeetingDto,
         audiOnly: Boolean,
         frontCamera: Boolean,
         local: VideoSink?,
-        remote: VideoSink?
+        remote: VideoSink?,
+        screenShareInfo: ScreenShareInfo?
     ) {
         callLogic = CallLogic(meeting, audiOnly, application, rootEglBase).apply {
             setLocalVideoTarget(local)
             setRemoteVideoTarget(remote)
-            startCall(frontCamera, audioOnStart, videoOnStart)
+            startCall(
+                frontCamera,
+                audioOnStart,
+                videoOnStart,
+                screenShareInfo?.mediaProjectionPermissionResultData,
+                screenShareInfo?.notificationId,
+                screenShareInfo?.notification
+            )
 
             events.collectIn(eyesonMeetingScope) { command ->
-                Logger.d("got Event: $command")
+                if (command !is ConnectionStatistic) {
+                    Logger.d("got Event: $command")
+                }
                 handleCallEvents(command, meeting)
             }
         }
@@ -461,7 +529,6 @@ class EyesonMeeting(
                         userInMeeting.filter {
                             videoSourceIds.contains(it.key)
                         }.values.toSet().toList(),
-
                         if (command.desktopStreamingId == null) {
                             null
                         } else {

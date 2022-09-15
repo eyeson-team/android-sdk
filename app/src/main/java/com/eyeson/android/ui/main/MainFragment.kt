@@ -1,7 +1,12 @@
 package com.eyeson.android.ui.main
 
 import android.Manifest
+import android.app.Notification
+import android.app.NotificationChannel
+import android.app.NotificationManager
 import android.content.Context
+import android.media.projection.MediaProjectionManager
+import android.os.Build
 import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.Menu
@@ -10,7 +15,14 @@ import android.view.MenuItem
 import android.view.View
 import android.view.ViewGroup
 import android.view.inputmethod.InputMethodManager
+import android.widget.Toast
 import androidx.activity.addCallback
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.appcompat.app.AppCompatActivity
+import androidx.core.app.NotificationCompat
+import androidx.core.app.NotificationCompat.PRIORITY_HIGH
+import androidx.core.view.MenuHost
+import androidx.core.view.MenuProvider
 import androidx.databinding.DataBindingUtil
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.activityViewModels
@@ -25,7 +37,7 @@ import com.eyeson.android.ui.events.EventListDialogFragment
 import com.eyeson.android.ui.events.EventsViewModel
 import kotlinx.coroutines.launch
 import org.webrtc.RendererCommon
-
+import timber.log.Timber
 
 class MainFragment : Fragment() {
 
@@ -37,10 +49,97 @@ class MainFragment : Fragment() {
     private var guestToken: String? = null
     private var guestName: String? = null
 
+    private var screenCaptureAsPresentation = false
+
+    private val requestNotificationPermission =
+        registerForActivityResult(
+            ActivityResultContracts.RequestPermission()
+        ) { isGranted: Boolean ->
+            if (isGranted) {
+                Timber.d("Permission request granted")
+            } else {
+                Timber.d("Permission request was denied.")
+            }
+        }
+
+    private val requestMultiplePermissions =
+        registerForActivityResult(
+            ActivityResultContracts.RequestMultiplePermissions()
+        ) {
+            // NOOP. Permission should be granted at this point
+        }
+    private val requestScreenCapturePermission =
+        registerForActivityResult(
+            ActivityResultContracts.StartActivityForResult()
+        ) {
+            if (it.resultCode != AppCompatActivity.RESULT_OK) {
+                Toast.makeText(
+                    requireContext(),
+                    "Permission not granted",
+                    Toast.LENGTH_SHORT
+                ).show()
+                return@registerForActivityResult
+            }
+
+            viewModel.startScreenShare(
+                it.data ?: return@registerForActivityResult,
+                screenCaptureAsPresentation,
+                7,
+                generateScreenShareNotification()
+            )
+        }
+
+    private val requestConnectWithScreenCapturePermission =
+        registerForActivityResult(
+            ActivityResultContracts.StartActivityForResult()
+        ) {
+            if (it.resultCode != AppCompatActivity.RESULT_OK) {
+                Toast.makeText(
+                    requireContext(),
+                    "Permission not granted",
+                    Toast.LENGTH_SHORT
+                ).show()
+                return@registerForActivityResult
+            }
+
+            viewModel.disconnect()
+            clearTargets()
+
+
+            when {
+                !accessKey.isNullOrBlank() -> {
+                    viewModel.connect(
+                        accessKey ?: return@registerForActivityResult,
+                        binding.localVideo,
+                        binding.remoteVideo,
+                        it.data ?: return@registerForActivityResult,
+                        7,
+                        generateScreenShareNotification()
+                    )
+                }
+                !guestToken.isNullOrBlank() -> {
+                    viewModel.connectAsGuest(
+                        guestToken ?: return@registerForActivityResult,
+                        guestName ?: "I'm a guest name!",
+                        binding.localVideo,
+                        binding.remoteVideo,
+                        it.data ?: return@registerForActivityResult,
+                        7,
+                        generateScreenShareNotification()
+                    )
+                }
+            }
+            bindVideoViews()
+        }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        @Suppress("DEPRECATION")
-        requestPermissions(arrayOf(Manifest.permission.CAMERA, Manifest.permission.RECORD_AUDIO), 7)
+        requestMultiplePermissions.launch(
+            arrayOf(
+                Manifest.permission.CAMERA,
+                Manifest.permission.RECORD_AUDIO
+            )
+        )
         setHasOptionsMenu(true)
 
         arguments?.let {
@@ -151,6 +250,66 @@ class MainFragment : Fragment() {
 
             viewModel.setTargets(binding.localVideo, binding.remoteVideo)
         }
+
+        val startScreenShare: (Boolean) -> Unit = { asPresentation: Boolean ->
+            screenCaptureAsPresentation = asPresentation
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                requestNotificationPermission.launch(Manifest.permission.POST_NOTIFICATIONS)
+            }
+            val manager = requireContext().getSystemService(MediaProjectionManager::class.java)
+            requestScreenCapturePermission.launch(manager.createScreenCaptureIntent())
+        }
+
+        binding.startScreenShare.setOnClickListener {
+            startScreenShare(false)
+        }
+
+        binding.startPresenting.setOnClickListener {
+            startScreenShare(true)
+        }
+
+        binding.stopScreenShare.setOnClickListener {
+            viewModel.stopScreenShare()
+        }
+
+        binding.stopPresenting.setOnClickListener {
+            viewModel.stopPresentation()
+        }
+
+        binding.setVideoAsPresentation.setOnClickListener {
+            viewModel.setVideoAsPresentation()
+        }
+
+        binding.connectScreenShare.setOnClickListener {
+            screenCaptureAsPresentation = false
+
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                requestNotificationPermission.launch(Manifest.permission.POST_NOTIFICATIONS)
+            }
+            val manager = requireContext().getSystemService(MediaProjectionManager::class.java)
+            requestConnectWithScreenCapturePermission.launch(manager.createScreenCaptureIntent())
+        }
+
+        val menuHost: MenuHost = requireActivity() as MenuHost
+        menuHost.addMenuProvider(object : MenuProvider {
+            override fun onCreateMenu(menu: Menu, menuInflater: MenuInflater) {
+                menuInflater.inflate(R.menu.main_menu, menu)
+            }
+
+            override fun onMenuItemSelected(menuItem: MenuItem): Boolean {
+                return when (menuItem.itemId) {
+                    R.id.showEvents -> {
+                        EventListDialogFragment.newInstance()
+                            .show(requireActivity().supportFragmentManager, "dialog")
+                        true
+                    }
+                    else -> {
+                        false
+                    }
+                }
+            }
+        }, viewLifecycleOwner, Lifecycle.State.RESUMED)
+
     }
 
     private fun disconnect() {
@@ -158,7 +317,6 @@ class MainFragment : Fragment() {
         binding.localVideo.release()
         binding.remoteVideo.release()
     }
-
 
     private fun bindVideoViews() {
         binding.localVideo.init(viewModel.getEglContext(), null)
@@ -175,26 +333,39 @@ class MainFragment : Fragment() {
         clearTargets()
     }
 
-    override fun onCreateOptionsMenu(menu: Menu, inflater: MenuInflater) {
-        inflater.inflate(R.menu.main_menu, menu)
-    }
-
-    override fun onOptionsItemSelected(item: MenuItem): Boolean {
-        return when (item.itemId) {
-            R.id.showEvents -> {
-                EventListDialogFragment.newInstance()
-                    .show(requireActivity().supportFragmentManager, "dialog")
-                true
-            }
-            else -> super.onOptionsItemSelected(item)
-        }
-    }
-
     private fun clearTargets() {
         binding.localVideo.release()
         binding.remoteVideo.release()
 
         viewModel.clearTarget()
+    }
+
+    override fun onDestroy() {
+        if (requireActivity().isFinishing) {
+            viewModel.disconnect()
+        }
+        super.onDestroy()
+    }
+
+    private fun generateScreenShareNotification(): Notification {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            requireContext().getSystemService(NotificationManager::class.java).apply {
+                createNotificationChannel(
+                    NotificationChannel(
+                        "7", "CHANNEL_NAME", NotificationManager.IMPORTANCE_HIGH
+                    )
+                )
+            }
+        }
+
+        return NotificationCompat.Builder(requireContext(), "7")
+            .setOngoing(true)
+            .setContentText("ScreenCapturerService is running in the foreground")
+            .setContentTitle("Attention")
+            .setPriority(PRIORITY_HIGH)
+            .setSmallIcon(R.drawable.menu)
+            .setCategory(Notification.CATEGORY_SERVICE)
+            .build()
     }
 
     companion object {
