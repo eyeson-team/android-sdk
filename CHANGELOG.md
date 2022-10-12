@@ -11,6 +11,7 @@ The format is based on [Keep a Changelog] and this project adheres to
   - option to stop ongoing presentations
 - Permissions and service declaration to the SDK manifest  
 - AudioManager
+- Stereo for supported devices 
 - Launcher icon
 
 ### Changed

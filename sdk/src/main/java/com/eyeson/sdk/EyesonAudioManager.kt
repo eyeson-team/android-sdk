@@ -116,7 +116,7 @@ class EyesonAudioManager constructor(
         }
     }
 
-    fun start(audioManagerEvents: AudioManagerEvents?) {
+    fun start(audioManagerEvents: AudioManagerEvents) {
         Logger.d("start")
         if (amState == AudioManagerState.RUNNING) {
             Logger.e("AudioManager is already active", true)
