@@ -10,11 +10,14 @@ The format is based on [Keep a Changelog] and this project adheres to
   - As full screen presentation or replacement of own video 
   - option to stop ongoing presentations
 - Permissions and service declaration to the SDK manifest  
+- AudioManager
+- Launcher icon
 
 ### Changed
 - targetSdk and compileSdk to API level 33
 - `EyesonMeeting.join` and `EyesonMeeting.joinAsGuest` method signature to support joining a meeting with screen share already on
-  - default signature unchanged 
+  - default signature unchanged
+- set bitrateKbps to 64
 
 ## [Released]
 

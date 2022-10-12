@@ -16,6 +16,7 @@
         android:id="@+id/main"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
+        android:keepScreenOn="true"
         tools:context=".ui.main.MainFragment">
 
         <Button
@@ -106,8 +107,8 @@
             android:layout_height="60dp"
             android:layout_marginTop="28dp"
             android:text="connect \nscreenshare"
-            app:layout_constraintStart_toEndOf="@+id/startScreenShare"
             app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toEndOf="@+id/startScreenShare"
             app:layout_constraintTop_toBottomOf="@id/chatMessage"
             tools:ignore="HardcodedText" />
 
@@ -151,6 +152,15 @@
             app:layout_constraintTop_toTopOf="@id/startPresenting"
             tools:ignore="HardcodedText" />
 
+        <Button
+            android:id="@+id/toggleSpeakerphone"
+            android:layout_width="wrap_content"
+            android:layout_height="60dp"
+            android:text="toggle\nspeakerphone"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toEndOf="@id/setVideoAsPresentation"
+            app:layout_constraintTop_toTopOf="@id/setVideoAsPresentation"
+            tools:ignore="HardcodedText" />
 
         <org.webrtc.SurfaceViewRenderer
             android:id="@+id/remoteVideo"

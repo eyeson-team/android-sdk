@@ -1,6 +1,7 @@
 package com.eyeson.android.ui.connection
 
 import android.Manifest
+import android.os.Build
 import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
@@ -45,11 +46,18 @@ class ConnectionFragment : Fragment() {
                 binding.guestToken.setText(it, TextView.BufferType.EDITABLE)
             }
         }
+
+        val permissions = mutableListOf(
+            Manifest.permission.CAMERA,
+            Manifest.permission.RECORD_AUDIO
+        )
+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+            permissions.add(Manifest.permission.BLUETOOTH_CONNECT)
+        }
+
         requestMultiplePermissions.launch(
-            arrayOf(
-                Manifest.permission.CAMERA,
-                Manifest.permission.RECORD_AUDIO
-            )
+            permissions.toTypedArray()
         )
     }
 

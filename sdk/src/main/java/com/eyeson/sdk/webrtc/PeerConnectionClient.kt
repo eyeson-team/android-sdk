@@ -14,6 +14,7 @@
 package com.eyeson.sdk.webrtc
 
 import android.content.Context
+import android.media.AudioFormat
 import android.os.Build
 import android.os.Environment
 import android.os.ParcelFileDescriptor
@@ -247,7 +248,6 @@ internal class PeerConnectionClient(
     val isVideoCallEnabled: Boolean
         get() = peerConnectionParameters.videoCallEnabled && videoCapturer != null
 
-    @Suppress("DEPRECATION")
     private fun createPeerConnectionFactoryInternal(options: PeerConnectionFactory.Options?) {
         isError = false
         if (peerConnectionParameters.tracing) {
@@ -331,6 +331,8 @@ internal class PeerConnectionClient(
             }
         }
         return JavaAudioDeviceModule.builder(appContext)
+            .setUseStereoInput(true)
+            .setUseStereoOutput(true)
             .setUseHardwareAcousticEchoCanceler(!peerConnectionParameters.disableBuiltInAEC)
             .setUseHardwareNoiseSuppressor(!peerConnectionParameters.disableBuiltInNS)
             .setAudioRecordErrorCallback(audioRecordErrorCallback)
@@ -1092,7 +1094,7 @@ internal class PeerConnectionClient(
             videoCodec = "VP8",
             videoCodecHwAcceleration = true,
             videoFlexfecEnabled = true,
-            audioStartBitrate = 200,
+            audioStartBitrate = 64,
             audioCodec = "",
             noAudioProcessing = false,
             aecDump = false,
@@ -1281,6 +1283,9 @@ internal class PeerConnectionClient(
                     false
                 )
             }
+
+            sdpDescription = setCodecStereo(sdpDescription, AUDIO_CODEC_OPUS, true)
+
             val sdp = SessionDescription(origSdp.type, "${sdpDescription.trim()}\r\n")
             localSdp = sdp
             executor.execute {
@@ -1544,6 +1549,46 @@ internal class PeerConnectionClient(
                 ?: return sdpDescription
             Logger.d("Change media description from: ${lines[mLineIndex]} to $newMLine")
             lines[mLineIndex] = newMLine
+            return joinString(listOf(*lines), "\r\n", true /* delimiterAtEnd */)
+        }
+
+        private fun setCodecStereo(
+            sdpDescription: String,
+            codec: String,
+            on: Boolean
+        ): String {
+            val lines = sdpDescription.split("\r\n".toRegex()).toTypedArray()
+            // a=rtpmap:<payload type> <encoding name>/<clock rate> [/<encoding parameters>]
+            val codecPattern = Pattern.compile("^a=rtpmap:(\\d+) $codec(/\\d+)+[\r]?$")
+            var id: String? = null
+            for (line in lines) {
+                val codecMatcher = codecPattern.matcher(line)
+                if (codecMatcher.matches()) {
+                    id = codecMatcher.group(1)
+                    break
+                }
+            }
+
+
+            val optionsPattern = Pattern.compile("^a=fmtp:$id (.+)\$")
+            val index = lines.indexOfFirst {
+                it.startsWith("a=fmtp:$id")
+            }
+
+            if (index >= 0) {
+                val optionsMatcher = optionsPattern.matcher(lines[index])
+                if (optionsMatcher.matches()) {
+                    val options =
+                        (optionsMatcher.group(1) ?: "").split(";".toRegex()).toMutableList()
+                    options.removeAll { it.contains("stereo") }
+                    options.add("stereo=${if (on) 1 else 0}")
+                    options.add("sprop-stereo=${if (on) 1 else 0}")
+
+                    lines[index] =
+                        "a=fmtp:$id ${joinString(options, ";", false /* delimiterAtEnd */)}"
+                }
+            }
+
             return joinString(listOf(*lines), "\r\n", true /* delimiterAtEnd */)
         }
     }

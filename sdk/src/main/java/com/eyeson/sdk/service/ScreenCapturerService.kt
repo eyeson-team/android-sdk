@@ -1,4 +1,4 @@
-package com.eyeson.sdk
+package com.eyeson.sdk.service
 
 import android.app.Notification
 import android.app.Service
@@ -9,7 +9,7 @@ import android.os.Build
 import android.os.IBinder
 
 
-class ScreenCapturerService : Service() {
+internal class ScreenCapturerService : Service() {
     private val binder = LocalBinder()
 
     inner class LocalBinder : Binder() {

@@ -7,7 +7,7 @@ import android.content.Intent
 import android.content.ServiceConnection
 import android.media.projection.MediaProjection
 import android.os.IBinder
-import com.eyeson.sdk.ScreenCapturerService
+import com.eyeson.sdk.service.ScreenCapturerService
 import com.eyeson.sdk.di.NetworkModule
 import com.eyeson.sdk.events.CallTerminationReason
 import com.eyeson.sdk.model.api.MeetingDto
@@ -450,8 +450,6 @@ internal class CallLogic(
         if (preparedSdp.isBlank()) {
             return
         }
-        WebRTCUtils.logSdp("sendSdpCallStart newSdp", preparedSdp)
-
         emitEvent(CallStart(meeting.user.name, preparedSdp))
     }
 

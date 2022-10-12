@@ -6,6 +6,7 @@ import android.content.Intent
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.eyeson.android.ui.events.Event
+import com.eyeson.sdk.EyesonAudioManager
 import com.eyeson.sdk.EyesonMeeting
 import com.eyeson.sdk.events.CallRejectionReason
 import com.eyeson.sdk.events.CallTerminationReason
@@ -30,6 +31,7 @@ import java.util.*
 class MainViewModel(application: Application) : AndroidViewModel(application) {
 
     private var eyesonMeeting: EyesonMeeting? = null
+    private var audioManager: EyesonAudioManager? = null
 
     private val _events = MutableSharedFlow<Event>(replay = 0)
     val events: SharedFlow<Event> = _events
@@ -207,6 +209,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                     screenShareInfo = screenShareInfo
                 )
             }
+            startAudioManager()
         }
     }
 
@@ -285,10 +288,14 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                     screenShareInfo = screenShareInfo
                 )
             }
+            startAudioManager()
         }
     }
 
     fun disconnect() {
+        audioManager?.stop()
+        audioManager = null
+
         eyesonMeeting?.leave()
         inCall = false
     }
@@ -336,6 +343,26 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
 
     fun isMicrophoneEnabled(): Boolean {
         return eyesonMeeting?.isMicrophoneEnabled() ?: false
+    }
+
+    private fun startAudioManager() {
+        audioManager = EyesonAudioManager(getApplication())
+        audioManager?.start(object : EyesonAudioManager.AudioManagerEvents {
+            override fun onAudioDeviceChanged(
+                selectedAudioDevice: EyesonAudioManager.AudioDevice,
+                availableAudioDevices: Set<EyesonAudioManager.AudioDevice>
+            ) {
+                Timber.d("onAudioManagerDevicesChanged: $availableAudioDevices, selected: $selectedAudioDevice")
+            }
+        })
+    }
+
+    fun toggleSpeakerphone() {
+        if (audioManager?.getSelectedAudioDevice() == EyesonAudioManager.AudioDevice.SpeakerPhone) {
+            audioManager?.selectAudioDevice(EyesonAudioManager.AudioDevice.None)
+        } else {
+            audioManager?.selectAudioDevice(EyesonAudioManager.AudioDevice.SpeakerPhone)
+        }
     }
 
     fun switchCamera() {
