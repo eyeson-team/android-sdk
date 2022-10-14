@@ -14,7 +14,6 @@
 package com.eyeson.sdk.webrtc
 
 import android.content.Context
-import android.media.AudioFormat
 import android.os.Build
 import android.os.Environment
 import android.os.ParcelFileDescriptor
@@ -92,7 +91,8 @@ internal class PeerConnectionClient(
     private val rootEglBase: EglBase,
     private val peerConnectionParameters: PeerConnectionParameters,
     private val events: PeerConnectionEvents,
-    private val dataChannelEvents: DataChannelEvents
+    private val dataChannelEvents: DataChannelEvents,
+    private val experimentalFeatureStereo: Boolean = false
 ) {
     private val pcObserver = PCObserver()
     private val sdpObserver = SDPObserver()
@@ -330,14 +330,17 @@ internal class PeerConnectionClient(
                 reportError(errorMessage)
             }
         }
-        return JavaAudioDeviceModule.builder(appContext)
-            .setUseStereoInput(true)
-            .setUseStereoOutput(true)
-            .setUseHardwareAcousticEchoCanceler(!peerConnectionParameters.disableBuiltInAEC)
-            .setUseHardwareNoiseSuppressor(!peerConnectionParameters.disableBuiltInNS)
-            .setAudioRecordErrorCallback(audioRecordErrorCallback)
-            .setAudioTrackErrorCallback(audioTrackErrorCallback)
-            .createAudioDeviceModule()
+        return JavaAudioDeviceModule.builder(appContext).apply {
+            if (experimentalFeatureStereo) {
+                setUseStereoInput(true)
+                setUseStereoOutput(true)
+            }
+            setUseHardwareAcousticEchoCanceler(!peerConnectionParameters.disableBuiltInAEC)
+            setUseHardwareNoiseSuppressor(!peerConnectionParameters.disableBuiltInNS)
+            setAudioRecordErrorCallback(audioRecordErrorCallback)
+            setAudioTrackErrorCallback(audioTrackErrorCallback)
+
+        }.createAudioDeviceModule()
     }
 
     private fun createMediaConstraintsInternal() {
@@ -1284,7 +1287,9 @@ internal class PeerConnectionClient(
                 )
             }
 
-            sdpDescription = setCodecStereo(sdpDescription, AUDIO_CODEC_OPUS, true)
+            if (experimentalFeatureStereo) {
+                sdpDescription = setCodecStereo(sdpDescription, AUDIO_CODEC_OPUS, true)
+            }
 
             val sdp = SessionDescription(origSdp.type, "${sdpDescription.trim()}\r\n")
             localSdp = sdp

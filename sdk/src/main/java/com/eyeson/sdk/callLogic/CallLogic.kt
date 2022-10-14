@@ -7,7 +7,6 @@ import android.content.Intent
 import android.content.ServiceConnection
 import android.media.projection.MediaProjection
 import android.os.IBinder
-import com.eyeson.sdk.service.ScreenCapturerService
 import com.eyeson.sdk.di.NetworkModule
 import com.eyeson.sdk.events.CallTerminationReason
 import com.eyeson.sdk.model.api.MeetingDto
@@ -31,6 +30,7 @@ import com.eyeson.sdk.model.local.datachannel.Pong
 import com.eyeson.sdk.model.local.datachannel.SetPresenter
 import com.eyeson.sdk.model.local.sepp.CallStart
 import com.eyeson.sdk.model.local.sepp.CallTerminated
+import com.eyeson.sdk.service.ScreenCapturerService
 import com.eyeson.sdk.utils.Logger
 import com.eyeson.sdk.utils.WebRTCUtils
 import com.eyeson.sdk.webrtc.PeerConnectionClient
@@ -60,7 +60,8 @@ internal class CallLogic(
     @Volatile private var meeting: MeetingDto,
     private val audioOnly: Boolean,
     private val context: Context,
-    private val rootEglBase: EglBase
+    private val rootEglBase: EglBase,
+    private val experimentalFeatureStereo: Boolean = false
 ) {
     private val callLogicScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
 
@@ -194,7 +195,8 @@ internal class CallLogic(
             rootEglBase,
             PeerConnectionClient.PeerConnectionParameters(audioOnly, meeting.options.widescreen),
             peerConnectionEvents,
-            dataChannelEvents
+            dataChannelEvents,
+            experimentalFeatureStereo
         ).apply { createPeerConnectionFactory(PeerConnectionFactory.Options()) }
     }
 

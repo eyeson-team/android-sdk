@@ -11,14 +11,16 @@ The format is based on [Keep a Changelog] and this project adheres to
   - option to stop ongoing presentations
 - Permissions and service declaration to the SDK manifest  
 - AudioManager
-- Stereo for supported devices 
+- Experimental supported for stereo (opt in) 
 - Launcher icon
 
 ### Changed
 - targetSdk and compileSdk to API level 33
 - `EyesonMeeting.join` and `EyesonMeeting.joinAsGuest` method signature to support joining a meeting with screen share already on
   - default signature unchanged
-- set bitrateKbps to 64
+- Set bitrateKbps to 64
+- Update libwebrtc
+  - Based on [4d47e0b2bec2c2bfeaa1e6dd40741c901414d22f](https://webrtc.googlesource.com/src/+/4d47e0b2bec2c2bfeaa1e6dd40741c901414d22f) 
 
 ## [Released]
 

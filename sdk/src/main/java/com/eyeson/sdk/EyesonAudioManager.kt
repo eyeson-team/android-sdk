@@ -132,6 +132,7 @@ class EyesonAudioManager constructor(
 
         requestAudioFocus()
         audioManager.isMicrophoneMute = false
+        audioManager.mode = AudioManager.MODE_IN_COMMUNICATION
 
         userSelectedAudioDevice = AudioDevice.None
         selectedAudioDevice = AudioDevice.None
@@ -201,19 +202,15 @@ class EyesonAudioManager constructor(
     private fun setAudioDeviceInternal(device: AudioDevice) {
         audioManager.isSpeakerphoneOn = when (device) {
             SpeakerPhone -> {
-                audioManager.mode = AudioManager.MODE_NORMAL
                 true
             }
             Earpiece -> {
-                audioManager.mode = AudioManager.MODE_IN_COMMUNICATION
                 false
             }
             WiredHeadset -> {
-                audioManager.mode = AudioManager.MODE_NORMAL
                 false
             }
             Bluetooth -> {
-                audioManager.mode = AudioManager.MODE_NORMAL
                 false
             }
             else -> {
