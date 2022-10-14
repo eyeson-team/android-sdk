@@ -5,13 +5,16 @@ The format is based on [Keep a Changelog] and this project adheres to
 [Semantic Versioning].  
 
 ## [Unreleased] 
+
+## [Released]
+## [1.0.3] - 2022-10-14
 ### Added
-- Screen share 
-  - As full screen presentation or replacement of own video 
+- Screen share
+  - As full screen presentation or replacement of own video
   - option to stop ongoing presentations
-- Permissions and service declaration to the SDK manifest  
+- Permissions and service declaration to the SDK manifest
 - AudioManager
-- Experimental supported for stereo (opt in) 
+- Experimental supported for stereo (opt in)
 - Launcher icon
 
 ### Changed
@@ -20,9 +23,8 @@ The format is based on [Keep a Changelog] and this project adheres to
   - default signature unchanged
 - Set bitrateKbps to 64
 - Update libwebrtc
-  - Based on [4d47e0b2bec2c2bfeaa1e6dd40741c901414d22f](https://webrtc.googlesource.com/src/+/4d47e0b2bec2c2bfeaa1e6dd40741c901414d22f) 
-
-## [Released]
+  - Based on [4d47e0b2bec2c2bfeaa1e6dd40741c901414d22f](https://webrtc.googlesource.com/src/+/4d47e0b2bec2c2bfeaa1e6dd40741c901414d22f)
+  
 
 
 [Keep a Changelog]: http://keepachangelog.com/en/1.0.0/
