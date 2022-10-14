@@ -291,3 +291,46 @@ abstract class EyesonEventListener {
     open fun onCameraSwitchError(error: String) {}
 }
 ```
+
+# Audio manager 
+
+Provides an implementation for automatic/manual audio routing during a call.
+
+## Permissions 
+
+Starting with Android 12 the runtime permission `BLUETOOTH_CONNECT` is needed in order to list/use connected Bluetooth devices. If the permission is not granted, Bluetooth devices can not be handled. Prior to Android 12 the `BLUETOOTH` is automatically granted.
+
+## Usage
+Create an instance of `EyesonAudioManager`. By default, the output device priority will be `Bluetooth > WiredHeadset > SpeakerPhone > Earpiece`. 
+
+**NOTE**: When a wired headset is connected it is not possible to select earpiece as it will be overruled by the headset.
+
+```kotlin
+val audioManager = EyesonAudioManager(applicationContext)
+```
+When you join a meeting also start the manager and provide a listener to receive updated to selected/available devises
+
+```kotlin
+eyesonMeeting.join(
+    accessKey,
+    .......
+)  
+audioManager.start(object : EyesonAudioManager.AudioManagerEvents {
+    override fun onAudioDeviceChanged(
+        selectedAudioDevice: EyesonAudioManager.AudioDevice,
+        availableAudioDevices: Set<EyesonAudioManager.AudioDevice>
+    ) {
+        // Selected/available devises will be reported here
+    }
+})         
+```
+Change the output device manually 
+```kotlin
+audioManager.selectAudioDevice(EyesonAudioManager.AudioDevice.SpeakerPhone)
+```
+
+After leaving the meeting also make sure to stop the manager.
+```kotlin
+audioManager.stop()
+eyesonMeeting.leave()
+```

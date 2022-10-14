@@ -290,6 +290,10 @@ class MainFragment : Fragment() {
             requestConnectWithScreenCapturePermission.launch(manager.createScreenCaptureIntent())
         }
 
+        binding.toggleSpeakerphone.setOnClickListener {
+            viewModel.toggleSpeakerphone()
+        }
+
         val menuHost: MenuHost = requireActivity() as MenuHost
         menuHost.addMenuProvider(object : MenuProvider {
             override fun onCreateMenu(menu: Menu, menuInflater: MenuInflater) {

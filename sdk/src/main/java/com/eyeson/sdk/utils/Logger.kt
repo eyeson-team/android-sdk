@@ -11,8 +11,8 @@ internal class Logger {
         var enabled = DEBUG
         private const val MAX_TAG_LENGTH = 23
 
-        private fun log(priority: Int, message: String) {
-            if (!enabled) {
+        private fun log(priority: Int, message: String, force: Boolean) {
+            if (!enabled || force) {
                 return
             }
 
@@ -38,34 +38,33 @@ internal class Logger {
         }
 
         @JvmStatic
-        fun d(message: String) {
-            log(Log.DEBUG, message)
+        fun d(message: String, force: Boolean = false) {
+            log(Log.DEBUG, message, force)
         }
 
         @JvmStatic
-        fun e(message: String) {
-            log(Log.ERROR, message)
+        fun e(message: String, force: Boolean = false) {
+            log(Log.ERROR, message, force)
         }
 
         @JvmStatic
-        fun i(message: String) {
-            log(Log.INFO, message)
+        fun i(message: String, force: Boolean = false) {
+            log(Log.INFO, message, force)
         }
 
         @JvmStatic
-        fun v(message: String) {
-            log(Log.VERBOSE, message)
+        fun v(message: String, force: Boolean = false) {
+            log(Log.VERBOSE, message, force)
         }
 
         @JvmStatic
-        fun w(message: String) {
-            log(Log.WARN, message)
+        fun w(message: String, force: Boolean = false) {
+            log(Log.WARN, message, force)
         }
 
         @JvmStatic
-        fun wtf(message: String) {
-            log(Log.ASSERT, message)
+        fun wtf(message: String, force: Boolean = false) {
+            log(Log.ASSERT, message, force)
         }
-
     }
 }

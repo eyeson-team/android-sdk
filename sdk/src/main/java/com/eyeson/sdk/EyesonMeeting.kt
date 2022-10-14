@@ -68,7 +68,8 @@ import java.util.concurrent.atomic.AtomicBoolean
 
 class EyesonMeeting(
     private val eventListener: EyesonEventListener,
-    private val application: Application
+    private val application: Application,
+    private val experimentalFeatureStereo: Boolean = false
 ) {
     private val eyesonMeetingScope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
 
@@ -442,7 +443,13 @@ class EyesonMeeting(
         remote: VideoSink?,
         screenShareInfo: ScreenShareInfo?
     ) {
-        callLogic = CallLogic(meeting, audiOnly, application, rootEglBase).apply {
+        callLogic = CallLogic(
+            meeting,
+            audiOnly,
+            application,
+            rootEglBase,
+            experimentalFeatureStereo
+        ).apply {
             setLocalVideoTarget(local)
             setRemoteVideoTarget(remote)
             startCall(

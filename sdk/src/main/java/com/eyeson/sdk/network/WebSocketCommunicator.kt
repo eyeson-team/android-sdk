@@ -19,7 +19,6 @@ import com.eyeson.sdk.model.sepp.outgoing.CallResumeDto
 import com.eyeson.sdk.model.sepp.outgoing.CallStartDto
 import com.eyeson.sdk.model.sepp.outgoing.CallTerminateDto
 import com.eyeson.sdk.model.sepp.outgoing.fromLocal
-import com.eyeson.sdk.utils.Logger
 import com.eyeson.sdk.utils.collectIn
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
