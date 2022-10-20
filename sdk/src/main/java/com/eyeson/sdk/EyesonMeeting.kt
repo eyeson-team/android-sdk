@@ -22,12 +22,9 @@ import com.eyeson.sdk.model.local.call.ConnectionStatistic
 import com.eyeson.sdk.model.local.call.MeetingJoined
 import com.eyeson.sdk.model.local.call.ResumeCallLocal
 import com.eyeson.sdk.model.local.call.StartCallLocal
-import com.eyeson.sdk.model.local.datachannel.ChatIncoming
-import com.eyeson.sdk.model.local.datachannel.MemberListUpdate
-import com.eyeson.sdk.model.local.datachannel.RecordingStatusUpdate
-import com.eyeson.sdk.model.local.datachannel.SourceUpdate
 import com.eyeson.sdk.model.local.datachannel.VoiceActivity
 import com.eyeson.sdk.model.local.meeting.BroadcastUpdate
+import com.eyeson.sdk.model.local.meeting.CustomMessage
 import com.eyeson.sdk.model.local.meeting.MeetingLocked
 import com.eyeson.sdk.model.local.meeting.MuteLocalAudio
 import com.eyeson.sdk.model.local.meeting.PlaybackUpdate
@@ -39,7 +36,11 @@ import com.eyeson.sdk.model.local.sepp.CallResume
 import com.eyeson.sdk.model.local.sepp.CallResumed
 import com.eyeson.sdk.model.local.sepp.CallStart
 import com.eyeson.sdk.model.local.sepp.CallTerminated
+import com.eyeson.sdk.model.local.sepp.ChatIncoming
+import com.eyeson.sdk.model.local.sepp.MemberListUpdate
+import com.eyeson.sdk.model.local.sepp.RecordingStatusUpdate
 import com.eyeson.sdk.model.local.sepp.SdpUpdate
+import com.eyeson.sdk.model.local.sepp.SourceUpdate
 import com.eyeson.sdk.model.local.ws.ReconnectSignaling
 import com.eyeson.sdk.model.local.ws.WsClosed
 import com.eyeson.sdk.model.local.ws.WsFailure
@@ -233,7 +234,9 @@ class EyesonMeeting(
             asPresentation,
             screenShareInfo.notificationId,
             screenShareInfo.notification
-        ) ?: false
+        ) {
+            webSocketCommunicator?.enablePresentation(asPresentation)
+        } ?: false
     }
 
     fun stopScreenShare(resumeLocalVideo: Boolean) {
@@ -245,11 +248,11 @@ class EyesonMeeting(
     }
 
     fun setVideoAsPresentation() {
-        callLogic?.setVideoAsPresentation()
+        webSocketCommunicator?.enablePresentation(true)
     }
 
     fun stopPresentation() {
-        callLogic?.stopPresentation()
+        webSocketCommunicator?.enablePresentation(false)
     }
 
     private suspend fun handleWebSocketEvents(
@@ -299,6 +302,9 @@ class EyesonMeeting(
             }
             is ChatIncoming -> {
                 handleChatIncoming(meeting ?: return, command)
+            }
+            is CustomMessage -> {
+                handleCustomMessageIncoming(meeting ?: return, command)
             }
             is MuteLocalAudio -> {
                 setMicrophoneEnabled(false)
@@ -353,6 +359,70 @@ class EyesonMeeting(
                     webSocketCommunicator?.reconnectToSignaling(meetingInfo)
                 }
             }
+            is MemberListUpdate -> {
+                withContext(nameLookupScope.coroutineContext) {
+                    val infoNeededFor = command.added.filterNot {
+                        userInMeeting.containsKey(it)
+                    }
+
+                    if (infoNeededFor.isNotEmpty()) {
+                        fetchUserInfo(meeting ?: return@withContext, infoNeededFor)
+
+                    }
+
+                    if (command.added.isNotEmpty()) {
+                        eventListener.onUserJoinedMeeting(
+                            userInMeeting.filter { command.added.contains(it.key) }
+                                .values.toSet().toList()
+                        )
+                    }
+
+                    if (command.deleted.isNotEmpty()) {
+                        eventListener.onUserLeftMeeting(
+                            userInMeeting.filter { command.deleted.contains(it.key) }
+                                .values.toSet().toList()
+                        )
+                    }
+
+                    command.deleted.forEach {
+                        userListMutex.withLock {
+                            userInMeeting.remove(it)
+                        }
+                    }
+                    eventListener.onUserListUpdate(userInMeeting.values.toSet().toList())
+                }
+            }
+            is SourceUpdate -> {
+                withContext(nameLookupScope.coroutineContext) {
+                    val infoNeeded = command.sources.filterNot {
+                        userInMeeting.containsKey(it)
+                    }
+                    if (infoNeeded.isNotEmpty()) {
+                        fetchUserInfo(meeting ?: return@withContext, infoNeeded)
+                    }
+
+                    val videoSourceIds =
+                        command.sources.slice(command.videSources.filter { it >= 0 })
+
+                    eventListener.onVideoSourceUpdate(
+                        userInMeeting.filter {
+                            videoSourceIds.contains(it.key)
+                        }.values.toSet().toList(),
+                        if (command.desktopStreamingId == null || command.desktopStreamingId == -1) {
+                            null
+                        } else {
+                            userInMeeting[command.sources[command.desktopStreamingId]]
+                        }
+                    )
+                }
+            }
+            is RecordingStatusUpdate -> {
+                /**
+                 * Not in use for now. Recording status is handled by
+                 * @see [Recording]
+                 */
+                Logger.d("RecordingStatusUpdate: enabled ${command.enabled}; active ${command.active}")
+            }
         }
     }
 
@@ -384,6 +454,7 @@ class EyesonMeeting(
     }
 
     fun setVideoEnabled(enable: Boolean) {
+        webSocketCommunicator?.setLocalVideoEnabled(enable)
         callLogic?.setLocalVideoEnabled(enable)
     }
 
@@ -412,7 +483,13 @@ class EyesonMeeting(
     }
 
     fun sendChatMessage(message: String) {
-        callLogic?.sendChatMessage(message)
+        webSocketCommunicator?.sendChatMessage(message)
+    }
+
+    fun sendCustomMessage(content: String) {
+        eyesonMeetingScope.launch {
+            restCommunicator.sendCustomMessage(meeting?.accessKey ?: return@launch, content)
+        }
     }
 
     fun getEglContext(): EglBase.Context? {
@@ -487,64 +564,6 @@ class EyesonMeeting(
             is CallStart -> {
                 webSocketCommunicator?.startCall(command)
             }
-            is MemberListUpdate -> {
-                withContext(nameLookupScope.coroutineContext) {
-                    val infoNeededFor = command.added.filterNot {
-                        userInMeeting.containsKey(it)
-                    }
-
-                    if (infoNeededFor.isNotEmpty()) {
-                        fetchUserInfo(meeting, infoNeededFor)
-
-                    }
-
-                    if (command.added.isNotEmpty()) {
-                        eventListener.onUserJoinedMeeting(
-                            userInMeeting.filter { command.added.contains(it.key) }
-                                .values.toSet().toList()
-                        )
-                    }
-
-                    if (command.deleted.isNotEmpty()) {
-                        eventListener.onUserLeftMeeting(
-                            userInMeeting.filter { command.deleted.contains(it.key) }
-                                .values.toSet().toList()
-                        )
-                    }
-
-                    command.deleted.forEach {
-                        userListMutex.withLock {
-                            userInMeeting.remove(it)
-                        }
-                    }
-                    eventListener.onUserListUpdate(userInMeeting.values.toSet().toList())
-                }
-            }
-            is SourceUpdate -> {
-                withContext(nameLookupScope.coroutineContext) {
-                    val infoNeeded = command.sources.filterNot {
-                        userInMeeting.containsKey(it)
-                    }
-                    if (infoNeeded.isNotEmpty()) {
-                        fetchUserInfo(meeting, infoNeeded)
-                    }
-
-                    val videoSourceIds =
-                        command.sources.slice(command.videSources.filter { it >= 0 })
-
-                    eventListener.onVideoSourceUpdate(
-                        userInMeeting.filter {
-                            videoSourceIds.contains(it.key)
-                        }.values.toSet().toList(),
-                        if (command.desktopStreamingId == null) {
-                            null
-                        } else {
-                            userInMeeting[command.sources[command.desktopStreamingId]]
-                        }
-                    )
-                }
-            }
-
             is VoiceActivity -> {
                 withContext(nameLookupScope.coroutineContext) {
                     if (!userInMeeting.containsKey(command.userId)) {
@@ -556,22 +575,12 @@ class EyesonMeeting(
                     )
                 }
             }
-
-            is RecordingStatusUpdate -> {
-                /**
-                 * Not in use for now. Recording status is handled by
-                 * @see [Recording]
-                 */
-                Logger.d("RecordingStatusUpdate: enabled ${command.enabled}; active ${command.active}")
-            }
             is CallTerminated -> {
                 leave()
                 eventListener.onMeetingTerminated(CallTerminationReason.fromTerminationCode(command.terminateCode))
             }
-            is ChatIncoming -> {
-                handleChatIncoming(meeting, command)
-            }
             is MeetingJoined -> {
+                webSocketCommunicator?.setLocalVideoEnabled(videoOnStart)
                 eventListener.onMeetingJoined()
             }
             is CameraSwitchDone -> {
@@ -600,23 +609,39 @@ class EyesonMeeting(
 
     private suspend fun handleChatIncoming(meeting: MeetingDto, chat: ChatIncoming) {
         withContext(nameLookupScope.coroutineContext) {
-            // NOTE: Chat messages from COM- API contain legacy (SIP) user ids
-            // e.g. 623b195ec77b9700102f380c@integrations.visocon.com
-            var id = chat.userId
-            if (id.contains("@")) {
-                id = id.substring(0, id.indexOf("@"))
-            }
-            if (!userInMeeting.containsKey(id)) {
-                fetchUserInfo(meeting, listOf(id))
-            }
+            val id = fetchUserInfoBasedOnLegacyId(chat.userId, meeting)
 
-            Logger.d("CHAT inc: ${userInMeeting[id]} -> $chat")
             eventListener.onChatMessageReceived(
                 user = userInMeeting[id] ?: return@withContext,
                 message = chat.content,
                 timestamp = chat.timestamp
             )
         }
+    }
+
+    private suspend fun handleCustomMessageIncoming(meeting: MeetingDto, message: CustomMessage) {
+        withContext(nameLookupScope.coroutineContext) {
+            val id = fetchUserInfoBasedOnLegacyId(message.userId, meeting)
+
+            eventListener.onCustomMessageReceived(
+                user = userInMeeting[id] ?: return@withContext,
+                message = message.content,
+                timestamp = message.createdAt
+            )
+        }
+    }
+
+    private suspend fun fetchUserInfoBasedOnLegacyId(userId: String, meeting: MeetingDto): String {
+        // NOTE: Chat messages from COM- API contain legacy (SIP) user ids
+        // e.g. 623b195ec77b9700102f380c@integrations.visocon.com
+        var id = userId
+        if (id.contains("@")) {
+            id = id.substring(0, id.indexOf("@"))
+        }
+        if (!userInMeeting.containsKey(id)) {
+            fetchUserInfo(meeting, listOf(id))
+        }
+        return id
     }
 
     private fun checkForNeededPermissions(

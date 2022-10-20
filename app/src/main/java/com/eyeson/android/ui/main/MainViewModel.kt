@@ -162,6 +162,10 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
             addEvent("onChatMessageReceived: user $user; message $message; timestamp $timestamp")
         }
 
+        override fun onCustomMessageReceived(user: UserInfo, message: String, timestamp: Date) {
+            addEvent("onCustomMessageReceived: user $user; message $message; timestamp $timestamp")
+        }
+
         override fun onCameraSwitchDone(isFrontCamera: Boolean) {
             addEvent("onCameraSwitchDone: isFrontCamera $isFrontCamera")
         }
@@ -327,8 +331,12 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         eyesonMeeting?.sendMuteOthers()
     }
 
-    fun sendMessage(message: String) {
+    fun sendChatMessage(message: String) {
         eyesonMeeting?.sendChatMessage(message)
+    }
+
+    fun sendCustomMessage(message: String) {
+        eyesonMeeting?.sendCustomMessage(message)
     }
 
     private fun addEvent(text: String) {

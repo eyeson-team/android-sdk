@@ -44,6 +44,7 @@ abstract class EyesonEventListener {
     open fun onVoiceActivity(user: UserInfo, active: Boolean) {}
 
     open fun onChatMessageReceived(user: UserInfo, message: String, timestamp: Date) {}
+    open fun onCustomMessageReceived(user: UserInfo, message: String, timestamp: Date) {}
 
     open fun onCameraSwitchDone(isFrontCamera: Boolean) {}
     open fun onCameraSwitchError(error: String) {}

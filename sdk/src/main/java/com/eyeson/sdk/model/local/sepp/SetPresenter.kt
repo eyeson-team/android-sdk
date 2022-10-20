@@ -1,4 +1,4 @@
-package com.eyeson.sdk.model.local.datachannel
+package com.eyeson.sdk.model.local.sepp
 
 import com.eyeson.sdk.model.local.base.LocalBaseCommand
 

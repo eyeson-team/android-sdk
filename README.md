@@ -227,8 +227,9 @@ fun sendMuteOthers()
 
 fun setMicrophoneEnabled(enable: Boolean)
 
-// send chat message to all participants (including self)
+// send chat/custom message to all participants (including self)
 fun sendChatMessage(message: String)
+fun sendCustomMessage(content: String)
 
 fun getEglContext(): EglBase.Context?
 
@@ -286,6 +287,7 @@ abstract class EyesonEventListener {
     open fun onVoiceActivity(user: UserInfo, active: Boolean){}
 
     open fun onChatMessageReceived(user: UserInfo, message: String, timestamp: Date) {}
+    open fun onCustomMessageReceived(user: UserInfo, message: String, timestamp: Date) {}
 
     open fun onCameraSwitchDone(isFrontCamera: Boolean) {}
     open fun onCameraSwitchError(error: String) {}

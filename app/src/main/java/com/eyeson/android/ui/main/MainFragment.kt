@@ -207,7 +207,14 @@ class MainFragment : Fragment() {
         }
 
         binding.sendChat.setOnClickListener {
-            viewModel.sendMessage(binding.chatMessage.text.toString())
+            viewModel.sendChatMessage(binding.chatMessage.text.toString())
+
+            val imm: InputMethodManager =
+                requireContext().getSystemService(Context.INPUT_METHOD_SERVICE) as InputMethodManager
+            imm.hideSoftInputFromWindow(view.windowToken, 0)
+        }
+        binding.sendAsCustomMessage.setOnClickListener {
+            viewModel.sendCustomMessage(binding.chatMessage.text.toString())
 
             val imm: InputMethodManager =
                 requireContext().getSystemService(Context.INPUT_METHOD_SERVICE) as InputMethodManager

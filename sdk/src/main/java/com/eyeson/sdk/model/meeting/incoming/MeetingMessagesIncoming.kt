@@ -10,6 +10,7 @@ internal enum class MeetingMessagesIncoming(val type: String) {
     RECORDING_UPDATE("recording_update"),
     BROADCASTS_UPDATE("broadcasts_update"),
     MUTE_LOCAL_AUDIO("stfu"),
-    ROOM_LOCKED("lock")
+    ROOM_LOCKED("lock"),
+    CUSTOM("custom")
 }
 

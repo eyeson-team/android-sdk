@@ -4,7 +4,13 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog] and this project adheres to
 [Semantic Versioning].  
 
-## [Unreleased] 
+## [Unreleased]
+### Added
+- Custom message support
+
+### Changed
+- Moved messaging from data channels to SEPP
+  - except for voice activity
 
 ## [Released]
 ## [1.0.3] - 2022-10-14

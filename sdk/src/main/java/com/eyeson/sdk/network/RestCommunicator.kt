@@ -43,5 +43,10 @@ internal class RestCommunicator {
                 }
             }.awaitAll().filterNotNull()
         }
+
+    suspend fun sendCustomMessage(accessKey: String, content: String): Int =
+        coroutineScope {
+            restClient.sendCustomMessage(accessKey, content).code()
+        }
 }
 

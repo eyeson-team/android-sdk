@@ -2,6 +2,7 @@ package  com.eyeson.sdk.network
 
 import com.eyeson.sdk.model.api.MeetingDto
 import com.eyeson.sdk.model.api.UserInMeetingDto
+import okhttp3.ResponseBody
 import retrofit2.Response
 import retrofit2.http.Field
 import retrofit2.http.FormUrlEncoded
@@ -30,4 +31,11 @@ internal interface EyesonApi {
         @Path("userId") userId: String
     ): Response<UserInMeetingDto>
 
+    @POST("/rooms/{accessKey}/messages")
+    @FormUrlEncoded
+    suspend fun sendCustomMessage(
+        @Path("accessKey") accessKey: String,
+        @Field("type") type: String,
+        @Field("content") content: String
+    ): Response<Unit>
 }

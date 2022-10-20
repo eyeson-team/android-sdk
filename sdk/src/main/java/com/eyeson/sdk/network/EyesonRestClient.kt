@@ -32,4 +32,10 @@ internal class EyesonRestClient(
         eyesonApi.getUsernameInRoom(accessKey, userId)
     }
 
+
+    suspend fun sendCustomMessage(accessKey: String, content: String): Response<Unit> =
+        withContext(ioDispatcher) {
+            eyesonApi.sendCustomMessage(accessKey, "custom", content)
+        }
+
 }

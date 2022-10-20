@@ -23,9 +23,6 @@ import android.view.WindowMetrics
 import com.eyeson.sdk.BuildConfig.DEBUG
 import com.eyeson.sdk.di.NetworkModule
 import com.eyeson.sdk.model.api.TurnServerDto
-import com.eyeson.sdk.model.datachannel.outgoing.MuteVideoDto
-import com.eyeson.sdk.model.datachannel.outgoing.fromLocal
-import com.eyeson.sdk.model.local.datachannel.MuteVideo
 import com.eyeson.sdk.utils.Logger
 import org.webrtc.AudioSource
 import org.webrtc.AudioTrack
@@ -136,11 +133,14 @@ internal class PeerConnectionClient(
         private set
 
     private var videoCapturer: VideoCapturer? = null
-    private val muteVideoOnStart = AtomicBoolean(false)
 
     // enableVideo is set to true if video should be rendered and sent.
-    var renderVideo = true
+    var renderLocalVideo = true
         private set
+
+    var renderRemoteVideo = true
+        private set
+
     private var localVideoTrack: VideoTrack? = null
     private var remoteVideoTrack: VideoTrack? = null
     private var localVideoSender: RtpSender? = null
@@ -222,7 +222,6 @@ internal class PeerConnectionClient(
         this.localRender = localRender
         this.remoteSinks = remoteSinks
         this.videoCapturer = videoCapturer
-        muteVideoOnStart.set(!videoEnabledOnStart)
         executor.execute {
             try {
                 createMediaConstraintsInternal()
@@ -441,15 +440,6 @@ internal class PeerConnectionClient(
 
                 override fun onStateChange() {
                     Logger.d("Data channel state changed: ${dataChannel?.label()}: ${dataChannel?.state()}")
-                    if (dataChannel?.state() == DataChannel.State.OPEN && muteVideoOnStart.get()) {
-                        muteVideoOnStart.set(false)
-                        val chatOutgoing = MuteVideo(muted = true, cid = "")
-                        val adapter = moshi.adapter(MuteVideoDto::class.java)
-                        Logger.d("setLocalVideoEnabled ${adapter.toJson(chatOutgoing.fromLocal())}")
-                        sendDataChannelMessage(adapter.toJson(chatOutgoing.fromLocal()))
-
-                        setLocalVideoEnabled(false)
-                    }
                 }
 
                 override fun onMessage(buffer: DataChannel.Buffer) {
@@ -487,7 +477,7 @@ internal class PeerConnectionClient(
             // We can add the renderers right away because we don't need to wait for an
             // answer to get the remote track.
             remoteVideoTrack = getRemoteVideoTrack()
-            remoteVideoTrack?.setEnabled(renderVideo)
+            remoteVideoTrack?.setEnabled(renderRemoteVideo)
             remoteSinks?.forEach { remoteSink ->
                 remoteVideoTrack?.addSink(remoteSink)
             }
@@ -652,16 +642,17 @@ internal class PeerConnectionClient(
 
     fun setVideoEnabled(enable: Boolean) {
         executor.execute {
-            renderVideo = enable
-            localVideoTrack?.setEnabled(renderVideo)
-            remoteVideoTrack?.setEnabled(renderVideo)
+            renderLocalVideo = enable
+            renderRemoteVideo = enable
+            localVideoTrack?.setEnabled(renderLocalVideo)
+            remoteVideoTrack?.setEnabled(renderRemoteVideo)
         }
     }
 
     fun setLocalVideoEnabled(enable: Boolean) {
         executor.execute {
-            renderVideo = enable
-            localVideoTrack?.setEnabled(renderVideo)
+            renderLocalVideo = enable
+            localVideoTrack?.setEnabled(renderLocalVideo)
         }
     }
 
@@ -852,6 +843,7 @@ internal class PeerConnectionClient(
             customFps ?: videoFps
         )
         localVideoTrack = factory?.createVideoTrack(VIDEO_TRACK_ID, videoSource)
+        renderLocalVideo = videoEnabledOnStart
         localVideoTrack?.setEnabled(videoEnabledOnStart)
         localVideoTrack?.addSink(localRender)
         return localVideoTrack

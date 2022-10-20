@@ -13,23 +13,17 @@ import com.eyeson.sdk.model.api.MeetingDto
 import com.eyeson.sdk.model.datachannel.base.DataChannelCommandDto
 import com.eyeson.sdk.model.datachannel.base.UnknownCommandDto
 import com.eyeson.sdk.model.datachannel.incoming.PingDto
-import com.eyeson.sdk.model.datachannel.outgoing.ChatOutgoingDto
-import com.eyeson.sdk.model.datachannel.outgoing.DesktopStreamingDto
-import com.eyeson.sdk.model.datachannel.outgoing.MuteVideoDto
 import com.eyeson.sdk.model.datachannel.outgoing.PongDto
-import com.eyeson.sdk.model.datachannel.outgoing.SetPresenterDto
 import com.eyeson.sdk.model.datachannel.outgoing.fromLocal
 import com.eyeson.sdk.model.local.base.LocalBaseCommand
 import com.eyeson.sdk.model.local.call.CameraSwitchDone
 import com.eyeson.sdk.model.local.call.CameraSwitchError
 import com.eyeson.sdk.model.local.call.MeetingJoined
-import com.eyeson.sdk.model.local.datachannel.ChatOutgoing
-import com.eyeson.sdk.model.local.datachannel.DesktopStreaming
-import com.eyeson.sdk.model.local.datachannel.MuteVideo
 import com.eyeson.sdk.model.local.datachannel.Pong
-import com.eyeson.sdk.model.local.datachannel.SetPresenter
 import com.eyeson.sdk.model.local.sepp.CallStart
 import com.eyeson.sdk.model.local.sepp.CallTerminated
+import com.eyeson.sdk.model.local.sepp.DesktopStreaming
+import com.eyeson.sdk.model.local.sepp.SetPresenter
 import com.eyeson.sdk.service.ScreenCapturerService
 import com.eyeson.sdk.utils.Logger
 import com.eyeson.sdk.utils.WebRTCUtils
@@ -174,11 +168,6 @@ internal class CallLogic(
 
     fun setLocalVideoEnabled(enable: Boolean) {
         peerConnectionClient.setLocalVideoEnabled(enable)
-
-        val chatOutgoing = MuteVideo(muted = !enable, cid = meeting.signaling.options.clientId)
-        val adapter = moshi.adapter(MuteVideoDto::class.java)
-        Logger.d("setLocalVideoEnabled ${adapter.toJson(chatOutgoing.fromLocal())}")
-        peerConnectionClient.sendDataChannelMessage(adapter.toJson(chatOutgoing.fromLocal()))
     }
 
     fun setAudioEnabled(enable: Boolean) {
@@ -280,7 +269,8 @@ internal class CallLogic(
         mediaProjectionPermissionResultData: Intent,
         asPresentation: Boolean,
         notificationId: Int,
-        notification: Notification
+        notification: Notification,
+        enablePresentation: () -> Unit
     ): Boolean {
         if (screenCapturerServiceBound) {
             return false
@@ -307,7 +297,7 @@ internal class CallLogic(
                 )
 
                 if (asPresentation) {
-                    enablePresentation(true)
+                    enablePresentation()
                 }
 
                 screenCapturerServiceBound = true
@@ -323,28 +313,6 @@ internal class CallLogic(
 
         return true
     }
-
-    private fun enablePresentation(enable: Boolean) {
-        val setPresenter = SetPresenter(on = enable, cid = meeting.signaling.options.clientId)
-        val desktopStreaming =
-            DesktopStreaming(on = enable, cid = meeting.signaling.options.clientId)
-
-        peerConnectionClient.sendDataChannelMessage(
-            moshi.adapter(SetPresenterDto::class.java).toJson(setPresenter.fromLocal())
-        )
-        peerConnectionClient.sendDataChannelMessage(
-            moshi.adapter(DesktopStreamingDto::class.java).toJson(desktopStreaming.fromLocal())
-        )
-    }
-
-    fun setVideoAsPresentation() {
-        enablePresentation(true)
-    }
-
-    fun stopPresentation() {
-        enablePresentation(false)
-    }
-
 
     private fun endScreenShareForeground() {
         screenCapturerService?.endForeground()
@@ -439,6 +407,7 @@ internal class CallLogic(
                 newSdpToBeSent += "$SFU_CAPABLE_SDP_PARAMETER\r\n"
                 newSdpToBeSent += "$DATA_CHANNEL_CAPABLE_SDP_PARAMETER\r\n"
                 newSdpToBeSent += "$DATA_CHANNEL_KEEP_ALIVE_SDP_PARAMETER\r\n"
+                newSdpToBeSent += "$SEPP_MESSAGING\r\n"
                 found = true
             }
             newSdpToBeSent += "$line\r\n"
@@ -476,7 +445,7 @@ internal class CallLogic(
     }
 
     fun isLocalVideoActive(): Boolean {
-        return peerConnectionClient.renderVideo
+        return peerConnectionClient.renderLocalVideo
     }
 
     fun switchCamera() {
@@ -485,12 +454,6 @@ internal class CallLogic(
 
     fun isFrontCamera(): Boolean {
         return cameraIsFrontFacing.get()
-    }
-
-    fun sendChatMessage(message: String) {
-        val chatOutgoing = ChatOutgoing(message, meeting.signaling.options.clientId)
-        val adapter = moshi.adapter(ChatOutgoingDto::class.java)
-        peerConnectionClient.sendDataChannelMessage(adapter.toJson(chatOutgoing.fromLocal()))
     }
 
     private fun emitEvent(event: LocalBaseCommand) {
@@ -504,6 +467,7 @@ internal class CallLogic(
         private const val SFU_ON_SDP_PARAMETER = "a=sfu-mode:on"
         private const val DATA_CHANNEL_CAPABLE_SDP_PARAMETER = "a=eyeson-datachan-capable"
         private const val DATA_CHANNEL_KEEP_ALIVE_SDP_PARAMETER = "a=eyeson-datachan-keepalive"
+        private const val SEPP_MESSAGING = "a=eyeson-sepp-messaging"
         const val STATS_INTERVAL_MS = 1000
 
         private const val SCREEN_SHARE_FPS = 15
