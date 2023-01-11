@@ -11,13 +11,13 @@
 
         <variable
             name="viewModel"
-            type="com.eyeson.android.ui.connection.ConnectionViewModel" />
+            type="com.eyeson.android.ui.view.connection.ConnectionViewModel" />
     </data>
 
     <androidx.constraintlayout.widget.ConstraintLayout
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        tools:context=".ui.connection.ConnectionFragment">
+        tools:context=".ui.view.connection.ConnectionFragment">
 
         <EditText
             android:id="@+id/accessKey"

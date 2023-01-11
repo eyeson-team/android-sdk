@@ -1,4 +1,4 @@
-package com.eyeson.android.ui.main
+package com.eyeson.android.ui.view.main
 
 import android.Manifest
 import android.app.Notification
@@ -33,8 +33,8 @@ import androidx.lifecycle.repeatOnLifecycle
 import com.eyeson.android.BR
 import com.eyeson.android.R
 import com.eyeson.android.databinding.MainFragmentBinding
-import com.eyeson.android.ui.events.EventListDialogFragment
-import com.eyeson.android.ui.events.EventsViewModel
+import com.eyeson.android.ui.view.EventListDialogFragment
+import com.eyeson.android.ui.view.EventsViewModel
 import kotlinx.coroutines.launch
 import org.webrtc.RendererCommon
 import timber.log.Timber

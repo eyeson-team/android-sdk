@@ -1,4 +1,4 @@
-package com.eyeson.android.ui.scanner
+package com.eyeson.android.ui.view.scanner
 
 import android.os.Bundle
 import android.view.LayoutInflater

@@ -9,7 +9,7 @@
 
         <variable
             name="viewModel"
-            type="com.eyeson.android.ui.scanner.ScannerViewModel" />
+            type="com.eyeson.android.ui.view.scanner.ScannerViewModel" />
     </data>
 
     <androidx.constraintlayout.widget.ConstraintLayout

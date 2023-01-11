@@ -1,4 +1,4 @@
-package com.eyeson.android.ui.connection
+package com.eyeson.android.ui.view.connection
 
 import android.Manifest
 import android.os.Build
@@ -16,8 +16,8 @@ import androidx.fragment.app.viewModels
 import com.eyeson.android.BR
 import com.eyeson.android.R
 import com.eyeson.android.databinding.ConnectionFragmentBinding
-import com.eyeson.android.ui.main.MainFragment
-import com.eyeson.android.ui.scanner.ScannerFragment
+import com.eyeson.android.ui.view.main.MainFragment
+import com.eyeson.android.ui.view.scanner.ScannerFragment
 import timber.log.Timber
 
 class ConnectionFragment : Fragment() {

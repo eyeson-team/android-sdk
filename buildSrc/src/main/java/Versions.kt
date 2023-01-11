@@ -6,6 +6,11 @@ object Versions {
     const val compileSdk = 33
     const val targetSdk = 33
     const val minSdk = 23
+    const val composeCompiler = "1.3.2"
+
+    // DI
+    const val hilt = "2.44.2"
+    const val hiltNavigationCompose = "1.0.0"
 
     // UI and appcompat
     const val coreKtx = "1.7.0"
@@ -20,14 +25,25 @@ object Versions {
     const val legacySupportV4 = "1.0.0"
     const val recyclerview = "1.2.1"
 
+    // Compose
+    const val androidxComposeBom = "2022.11.00"
+    const val androidxComposeMaterial = "androidx.compose.material:material"
+    const val androidxComposeUiToolingPreview = "androidx.compose.ui:ui-tooling-preview"
+    const val androidxComposeDebugUiTooling = "androidx.compose.ui:ui-tooling"
+    const val androidxActivityCompose = "1.5.1"
+    const val androidxLifecycleViewModelCompose = "2.5.1"
+    const val androidxNavigationCompose = "2.5.3"
+
+
+    const val accompanist = "0.28.0"
 
     const val qrScanner = "2.1.2"
 
     // Annotation
     const val annotation = "1.3.0"
 
-    // Coroutines
-    const val coroutines = "1.6.0"
+    // Storage
+    const val datastorePreference = "1.0.0"
 
     // Networking
     const val okhttp = "4.9.0"

@@ -1,5 +1,10 @@
 object Libraries {
 
+    // DI
+    const val hiltAndroid = "com.google.dagger:hilt-android:${Versions.hilt}"
+    const val hiltNavigationCompose =
+        "androidx.hilt:hilt-navigation-compose:${Versions.hiltNavigationCompose}"
+
     // UI and appcompat
     const val coreKtx = "androidx.core:core-ktx:${Versions.coreKtx}"
     const val appcompat = "androidx.appcompat:appcompat:${Versions.appCompat}"
@@ -16,14 +21,27 @@ object Libraries {
     const val recyclerview = "androidx.recyclerview:recyclerview:${Versions.recyclerview}"
     const val qrScanner = "com.github.yuriy-budiyev:code-scanner:${Versions.qrScanner}"
 
+    // Compose
+    const val androidxComposeBom = "androidx.compose:compose-bom:${Versions.androidxComposeBom}"
+    const val androidxComposeMaterial = Versions.androidxComposeMaterial
+    const val androidxComposeUiToolingPreview = Versions.androidxComposeUiToolingPreview
+    const val androidxComposeDebugUiTooling = Versions.androidxComposeDebugUiTooling
+    const val androidxActivityCompose =
+        "androidx.activity:activity-compose:${Versions.androidxActivityCompose}"
+    const val androidxLifecycleViewModelCompose =
+        "androidx.lifecycle:lifecycle-viewmodel-compose:${Versions.androidxLifecycleViewModelCompose}"
+    const val androidxNavigationCompose =
+        "androidx.navigation:navigation-compose:${Versions.androidxNavigationCompose}"
+
+    const val accompanistSystemUiController =
+        "com.google.accompanist:accompanist-systemuicontroller:${Versions.accompanist}"
+
     // Annotation
     const val annotation = "androidx.annotation:annotation:${Versions.annotation}"
 
-    // Coroutines
-    const val coroutinesCore =
-        "org.jetbrains.kotlinx:kotlinx-coroutines-core:${Versions.coroutines}"
-    const val coroutinesAndroid =
-        "org.jetbrains.kotlinx:kotlinx-coroutines-android:${Versions.coroutines}"
+    // Storage
+    const val datastorePreference =
+        "androidx.datastore:datastore-preferences:${Versions.datastorePreference}"
 
     // Networking
     const val okhttp = "com.squareup.okhttp3:okhttp:${Versions.okhttp}"

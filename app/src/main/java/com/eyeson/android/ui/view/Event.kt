@@ -1,4 +1,4 @@
-package com.eyeson.android.ui.events
+package com.eyeson.android.ui.view
 
 import java.util.*
 

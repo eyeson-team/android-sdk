@@ -1,4 +1,4 @@
-package com.eyeson.android.ui.connection
+package com.eyeson.android.ui.view.connection
 
 import androidx.lifecycle.ViewModel
 

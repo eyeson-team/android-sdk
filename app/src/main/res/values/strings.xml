@@ -1,2 +1,25 @@
+<?xml version="1.0" encoding="utf-8"?>
 <resources>
+
+    <!-- Start screen -->
+    <string name="label_logo">Logo</string>
+    <string name="label_settings">Settings</string>
+    <string name="label_access_key">Access key</string>
+    <string name="label_guest_name">Guest name</string>
+    <string name="label_guest_token">Guest token</string>
+
+    <string name="enter_access_key">Enter the access key of a meeting</string>
+    <string name="join_via_guest">… or join via guest token or link.</string>
+    <string name="scan_qr">Scan guest QR code</string>
+    <string name="connect">Connect</string>
+
+    <!-- Settings -->
+    <string name="settings">Settings</string>
+    <string name="microphone_on_start">Enable microphone on start</string>
+    <string name="audio_only">Audio-only mode</string>
+    <string name="enable_for_low_data_connection">Enable for low data connection</string>
+    <string name="enable_video_on_start">Enable video on start</string>
+    <string name="enable_screen_share_on_start">Enable screen share on start</string>
+    <string name="enable_rear_camera_on_start">Enable rear camera on start</string>
+
 </resources>

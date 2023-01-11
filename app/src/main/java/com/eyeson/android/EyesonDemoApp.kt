@@ -2,9 +2,11 @@ package com.eyeson.android
 
 import android.app.Application
 import com.eyeson.android.BuildConfig.DEBUG
+import dagger.hilt.android.HiltAndroidApp
 import timber.log.Timber
 
-class ExampleApp : Application() {
+@HiltAndroidApp
+class EyesonDemoApp : Application() {
     override fun onCreate() {
         super.onCreate()
         initTimber()

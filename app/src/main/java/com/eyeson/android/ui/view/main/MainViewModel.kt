@@ -1,11 +1,11 @@
-package com.eyeson.android.ui.main
+package com.eyeson.android.ui.view.main
 
 import android.app.Application
 import android.app.Notification
 import android.content.Intent
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
-import com.eyeson.android.ui.events.Event
+import com.eyeson.android.ui.view.Event
 import com.eyeson.sdk.EyesonAudioManager
 import com.eyeson.sdk.EyesonMeeting
 import com.eyeson.sdk.events.CallRejectionReason

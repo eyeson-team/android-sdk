@@ -1,4 +1,4 @@
-package com.eyeson.android.ui.events
+package com.eyeson.android.ui.view
 
 import android.annotation.SuppressLint
 import android.os.Bundle

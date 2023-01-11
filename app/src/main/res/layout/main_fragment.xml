@@ -9,7 +9,7 @@
 
         <variable
             name="viewModel"
-            type="com.eyeson.android.ui.main.MainViewModel" />
+            type="com.eyeson.android.ui.view.main.MainViewModel" />
     </data>
 
     <androidx.constraintlayout.widget.ConstraintLayout
@@ -17,7 +17,7 @@
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         android:keepScreenOn="true"
-        tools:context=".ui.main.MainFragment">
+        tools:context=".ui.view.main.MainFragment">
 
         <Button
             android:id="@+id/connect"
