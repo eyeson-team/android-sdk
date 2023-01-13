@@ -93,7 +93,7 @@ dependencies {
     implementation(Libraries.androidxLifecycleViewModelCompose)
     implementation(Libraries.androidxNavigationCompose)
     implementation(Libraries.accompanistSystemUiController)
-
+    implementation(Libraries.constraintLayoutCompose)
 
     implementation(Libraries.legacySupportV4)
     implementation(Libraries.recyclerview)

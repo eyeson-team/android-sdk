@@ -51,7 +51,7 @@ class SettingsRepository @Inject constructor(private val dataStore: DataStore<Pr
         writeSetting(rearCamOnStartKey, on)
     }
 
-    val screenShareOnStart = readSetting(screenShareOnStartKey, true)
+    val screenShareOnStart = readSetting(screenShareOnStartKey, false)
     suspend fun setScreenShareOnStart(on: Boolean) {
         writeSetting(screenShareOnStartKey, on)
     }

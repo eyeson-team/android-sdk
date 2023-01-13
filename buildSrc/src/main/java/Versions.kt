@@ -33,6 +33,7 @@ object Versions {
     const val androidxActivityCompose = "1.5.1"
     const val androidxLifecycleViewModelCompose = "2.5.1"
     const val androidxNavigationCompose = "2.5.3"
+    const val constraintLayoutCompose = "1.0.1"
 
 
     const val accompanist = "0.28.0"

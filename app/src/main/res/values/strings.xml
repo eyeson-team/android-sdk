@@ -1,5 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
-<resources>
+<resources xmlns:tools="http://schemas.android.com/tools">
+
+    <string name="label_go_back">Go back</string>
+    <string name="loading" tools:ignore="TypographyEllipsis">Loading...</string>
 
     <!-- Start screen -->
     <string name="label_logo">Logo</string>
@@ -8,6 +11,7 @@
     <string name="label_guest_name">Guest name</string>
     <string name="label_guest_token">Guest token</string>
 
+    <!--  Scanner screen -->
     <string name="enter_access_key">Enter the access key of a meeting</string>
     <string name="join_via_guest">… or join via guest token or link.</string>
     <string name="scan_qr">Scan guest QR code</string>

@@ -21,9 +21,9 @@ import com.eyeson.android.ui.theme.EyesonDemoTheme
 
 @Composable
 fun EyesonDemoTextField(
+    onValueChange: (String) -> Unit,
     modifier: Modifier = Modifier,
     label: String = "",
-    onValueChange: (String) -> Unit,
     value: String = "",
 ) {
     TextField(

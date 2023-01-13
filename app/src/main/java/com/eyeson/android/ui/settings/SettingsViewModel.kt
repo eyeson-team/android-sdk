@@ -10,6 +10,7 @@ import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.launch
 import javax.inject.Inject
 
 @HiltViewModel
@@ -40,24 +41,24 @@ class SettingsViewModel @Inject constructor(
             initialValue = Loading
         )
 
-    suspend fun setMicOnStart(on: Boolean) {
-        settingsRepository.setMicOnStart(on)
+    fun setMicOnStart(on: Boolean) {
+        viewModelScope.launch { settingsRepository.setMicOnStart(on) }
     }
 
-    suspend fun setAudioOnly(on: Boolean) {
-        settingsRepository.setAudioOnly(on)
+    fun setAudioOnly(on: Boolean) {
+        viewModelScope.launch { settingsRepository.setAudioOnly(on) }
     }
 
-    suspend fun setVideoOnStart(on: Boolean) {
-        settingsRepository.setVideoOnStart(on)
+    fun setVideoOnStart(on: Boolean) {
+        viewModelScope.launch { settingsRepository.setVideoOnStart(on) }
     }
 
-    suspend fun setRearCamOnStart(on: Boolean) {
-        settingsRepository.setRearCamOnStart(on)
+    fun setRearCamOnStart(on: Boolean) {
+        viewModelScope.launch { settingsRepository.setRearCamOnStart(on) }
     }
 
-    suspend fun setScreenShareOnStart(on: Boolean) {
-        settingsRepository.setScreenShareOnStart(on)
+    fun setScreenShareOnStart(on: Boolean) {
+        viewModelScope.launch { settingsRepository.setScreenShareOnStart(on) }
     }
 }
 

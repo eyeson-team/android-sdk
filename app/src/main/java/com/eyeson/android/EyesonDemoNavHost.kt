@@ -9,6 +9,7 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import com.eyeson.android.EyesonNavigationParameter.GUEST_TOKEN
 import com.eyeson.android.ui.scanner.ScannerScreen
+import com.eyeson.android.ui.settings.SettingsScreen
 import com.eyeson.android.ui.start.StartScreen
 import com.eyeson.android.ui.theme.EyesonDemoTheme
 import kotlinx.coroutines.Dispatchers
@@ -41,11 +42,10 @@ fun EyesonDemoNavHost(
 
             composable(route = EyesonDemoDestination.START_ROUTE) {
                 StartScreen(
-                    savedStateHandle = navController.currentBackStackEntry?.savedStateHandle
-                ) {
-                    navController.navigateSingleTopTo(EyesonDemoDestination.GUEST_QR_SCANNER_ROUTE)
-                }
-
+                    savedStateHandle = navController.currentBackStackEntry?.savedStateHandle,
+                    onScanClicked = { navController.navigateSingleTopTo(EyesonDemoDestination.GUEST_QR_SCANNER_ROUTE) },
+                    onSettingsClicked = { navController.navigateSingleTopTo(EyesonDemoDestination.START_SETTINGS_ROUTE) }
+                )
             }
             composable(route = EyesonDemoDestination.GUEST_QR_SCANNER_ROUTE) {
                 ScannerScreen { guestToken ->
@@ -57,6 +57,13 @@ fun EyesonDemoNavHost(
                         navController.popBackStack()
                     }
                 }
+            }
+
+            composable(route = EyesonDemoDestination.START_SETTINGS_ROUTE) {
+                SettingsScreen(onBack = {
+                    navController.navigateUp()
+                })
+
             }
         }
     }

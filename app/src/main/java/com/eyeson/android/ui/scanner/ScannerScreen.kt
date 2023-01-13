@@ -51,7 +51,7 @@ fun ScannerScreen(modifier: Modifier = Modifier, onBack: (String) -> Unit = {}) 
                     ) {
                         Icon(
                             imageVector = Icons.Filled.ArrowBack,
-                            stringResource(id = R.string.label_settings),
+                            stringResource(id = R.string.label_go_back),
                             tint = MaterialTheme.colors.onSurface
                         )
                     }
@@ -62,8 +62,6 @@ fun ScannerScreen(modifier: Modifier = Modifier, onBack: (String) -> Unit = {}) 
             )
         }
     ) { padding ->
-
-
         val scannerView = rememberCodeScannerViewWithLifecycle(decodeCallback = {
             Timber.d("DecodeCallback: result $it")
             onBack(extractGuestToken(it))
@@ -124,8 +122,8 @@ fun rememberCodeScannerViewWithLifecycle(
                 codeScanner.startPreview()
                 Timber.d("DecodeCallback: Lifecycle.Event.ON_RESUME")
             } else if (event == Lifecycle.Event.ON_PAUSE) {
-                codeScanner.stopPreview()
-                Timber.d("DecodeCallback: Lifecycle.Event.ON_PASE")
+                codeScanner.releaseResources()
+                Timber.d("DecodeCallback: Lifecycle.Event.ON_PAUSE")
             }
         }
 

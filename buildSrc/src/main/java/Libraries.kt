@@ -36,6 +36,9 @@ object Libraries {
     const val accompanistSystemUiController =
         "com.google.accompanist:accompanist-systemuicontroller:${Versions.accompanist}"
 
+    const val constraintLayoutCompose =
+        "androidx.constraintlayout:constraintlayout-compose:${Versions.constraintLayoutCompose}"
+
     // Annotation
     const val annotation = "androidx.annotation:annotation:${Versions.annotation}"
 

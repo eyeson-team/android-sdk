@@ -17,6 +17,7 @@ import androidx.compose.material.IconButton
 import androidx.compose.material.MaterialTheme
 import androidx.compose.material.OutlinedButton
 import androidx.compose.material.Scaffold
+import androidx.compose.material.Switch
 import androidx.compose.material.Text
 import androidx.compose.material.TopAppBar
 import androidx.compose.material.icons.Icons
@@ -47,7 +48,8 @@ import timber.log.Timber
 fun StartScreen(
     modifier: Modifier = Modifier,
     savedStateHandle: SavedStateHandle? = null,
-    onScanClicked: () -> Unit = {}
+    onScanClicked: () -> Unit = {},
+    onSettingsClicked: () -> Unit = {},
 ) {
     val screenState by rememberSaveable(stateSaver = StartScreenState.Saver) {
         mutableStateOf(StartScreenState())
@@ -73,7 +75,7 @@ fun StartScreen(
                     Text("")
                 },
                 actions = {
-                    IconButton(onClick = {/**/ }) {
+                    IconButton(onClick = {onSettingsClicked() }) {
                         Icon(
                             imageVector = Icons.Filled.Settings,
                             stringResource(id = R.string.label_settings),

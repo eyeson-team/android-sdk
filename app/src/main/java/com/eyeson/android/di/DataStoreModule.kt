@@ -13,7 +13,6 @@ import dagger.Provides
 import dagger.hilt.InstallIn
 import dagger.hilt.android.qualifiers.ApplicationContext
 import dagger.hilt.components.SingletonComponent
-import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -26,7 +25,7 @@ import javax.inject.Singleton
    https://medium.com/androiddevelopers/datastore-and-dependency-injection-ea32b95704e3
 */
 
-private const val SETTINGS = "user_preferences"
+private const val SETTINGS = "user_settings"
 
 @InstallIn(SingletonComponent::class)
 @Module
@@ -35,15 +34,14 @@ object DataStoreModule {
     @Singleton
     @Provides
     fun providePreferencesDataStore(
-        @ApplicationContext appContext: Context,
-        dispatcher: CoroutineDispatcher = Dispatchers.IO
+        @ApplicationContext appContext: Context
     ): DataStore<Preferences> {
         return PreferenceDataStoreFactory.create(
             corruptionHandler = ReplaceFileCorruptionHandler(
                 produceNewData = { emptyPreferences() }
             ),
             migrations = listOf(SharedPreferencesMigration(appContext, SETTINGS)),
-            scope = CoroutineScope(dispatcher + SupervisorJob()),
+            scope = CoroutineScope(Dispatchers.IO + SupervisorJob()),
             produceFile = { appContext.preferencesDataStoreFile(SETTINGS) }
         )
     }
