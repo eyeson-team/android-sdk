@@ -124,7 +124,6 @@ fun SettingsScreen(
                         enabled = !settings.audioOnly
                     )
                 }
-
             }
 
         }

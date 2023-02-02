@@ -1,7 +1,7 @@
 plugins {
     id("com.android.application")
     id("kotlin-android")
-    id("kotlin-kapt")
+    kotlin("kapt")
     id(Plugins.hilt)
 }
 
@@ -57,6 +57,7 @@ android {
 
     kapt {
         correctErrorTypes = true
+        generateStubs = true
     }
 
     namespace = "com.eyeson.android"
@@ -79,6 +80,8 @@ dependencies {
     implementation(Libraries.material)
     implementation(Libraries.constraintLayout)
     implementation(Libraries.lifecycleViewModelKtx)
+    implementation(Libraries.lifecycleViewModelCompose)
+    implementation(Libraries.lifecycleRuntimeCompose)
     implementation(Libraries.lifecycleRuntimeKtx)
     implementation(Libraries.fragmentKtx)
 
@@ -98,10 +101,11 @@ dependencies {
     implementation(Libraries.legacySupportV4)
     implementation(Libraries.recyclerview)
     implementation(Libraries.annotation)
-
     implementation(Libraries.datastorePreference)
 
     implementation(Libraries.qrScanner)
+    implementation(Libraries.coil)
+    implementation(Libraries.coilCompose)
 
     testImplementation(Libraries.jUnit)
     androidTestImplementation(Libraries.jUnitTest)

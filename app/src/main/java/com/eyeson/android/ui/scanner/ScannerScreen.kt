@@ -5,6 +5,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.material.Icon
 import androidx.compose.material.IconButton
 import androidx.compose.material.MaterialTheme
+import androidx.compose.material.ModalBottomSheetState
 import androidx.compose.material.Scaffold
 import androidx.compose.material.Text
 import androidx.compose.material.TopAppBar
@@ -114,7 +115,6 @@ fun rememberCodeScannerViewWithLifecycle(
             }
         })
     }
-
     val lifecycle = LocalLifecycleOwner.current.lifecycle
     DisposableEffect(key1 = lifecycle, key2 = scannerView) {
         val observer = LifecycleEventObserver { _, event ->

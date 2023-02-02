@@ -3,6 +3,13 @@
 
     <string name="label_go_back">Go back</string>
     <string name="loading" tools:ignore="TypographyEllipsis">Loading...</string>
+    <string name="start">Start</string>
+    <string name="mute">Mute</string>
+    <string name="change">Change</string>
+    <string name="show">Show</string>
+    <string name="copy">Copy</string>
+    <string name="clear">Clear</string>
+
 
     <!-- Start screen -->
     <string name="label_logo">Logo</string>
@@ -25,5 +32,39 @@
     <string name="enable_video_on_start">Enable video on start</string>
     <string name="enable_screen_share_on_start">Enable screen share on start</string>
     <string name="enable_rear_camera_on_start">Enable rear camera on start</string>
+
+    <!--  Meeting settings-->
+    <string name="share_screen">Share screen</string>
+    <string name="full_screen_presentation">Full screen presentation</string>
+    <string name="mute_all_participants">Mute all participants</string>
+    <string name="audio_settings">Audio settings</string>
+    <string name="show_event_log">Show event log</string>
+
+    <string name="bluetooth_device">Bluetooth device</string>
+    <string name="wired_headset">Wired headset</string>
+    <string name="ear_piece">Ear piece</string>
+    <string name="speaker_phone">Speaker phone</string>
+
+    <string name="event_log">Event log</string>
+
+    <!-- Meeting controls -->
+    <string name="switch_camera">Switch camera</string>
+    <string name="mute_camera">Mute camera</string>
+    <string name="unmute_camera">Unmute camera</string>
+    <string name="mute_microphone">Mute microphone</string>
+    <string name="unmute_microphone">Unmute microphone</string>
+    <string name="show_chat">Show chat</string>
+
+
+    <!-- Chat -->
+    <string name="avatar">Avatar</string>
+    <string name="you">You</string>
+    <string name="chat">Chat</string>
+    <string name="type_message">Type message…</string>
+
+
+
+    <!-- Overlay Menu -->
+    <string name="close_menu">Close menu</string>
 
 </resources>

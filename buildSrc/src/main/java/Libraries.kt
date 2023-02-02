@@ -15,6 +15,12 @@ object Libraries {
         "androidx.constraintlayout:constraintlayout:${Versions.constraintLayout}"
     const val lifecycleViewModelKtx =
         "androidx.lifecycle:lifecycle-viewmodel-ktx:${Versions.lifecycleViewModelKtx}"
+    const val lifecycleViewModelCompose =
+        "androidx.lifecycle:lifecycle-viewmodel-compose:${Versions.lifecycleViewModelKtx}"
+    const val lifecycleRuntimeCompose =
+        "androidx.lifecycle:lifecycle-runtime-compose:${Versions.lifecycleViewModelKtx}"
+
+
     const val lifecycleRuntimeKtx =
         "androidx.lifecycle:lifecycle-runtime-ktx:${Versions.lifecycleRuntimeKtx}"
     const val legacySupportV4 = "androidx.legacy:legacy-support-v4:${Versions.legacySupportV4}"
@@ -54,6 +60,8 @@ object Libraries {
     const val retrofitMoshiConverter = "com.squareup.retrofit2:converter-moshi:${Versions.retrofit}"
     const val moshi = "com.squareup.moshi:moshi:${Versions.moshi}"
     const val moshiAdapters = "com.squareup.moshi:moshi-adapters:${Versions.moshi}"
+    const val coil = "io.coil-kt:coil:${Versions.coil}"
+    const val coilCompose = "io.coil-kt:coil-compose:${Versions.coil}"
 
     // Logging
     const val timber = "com.jakewharton.timber:timber:${Versions.timber}"

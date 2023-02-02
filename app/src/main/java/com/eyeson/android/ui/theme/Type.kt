@@ -1,6 +1,7 @@
 package com.eyeson.android.ui.theme
 
 import androidx.compose.material.Typography
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.Font
 import androidx.compose.ui.text.font.FontFamily
@@ -13,7 +14,6 @@ private val OpenSans = FontFamily(
     Font(R.font.opensans_bold, FontWeight.Bold),
     Font(R.font.opensans_semibold, FontWeight.SemiBold)
 )
-
 
 val Typography = Typography(
     defaultFontFamily = OpenSans,
@@ -52,3 +52,18 @@ val Typography = Typography(
         letterSpacing = 1.sp
     )
 )
+val ChatHeader = TextStyle(
+    color = DarkGray900,
+    fontFamily = OpenSans,
+    fontSize = 12.sp,
+    fontWeight = FontWeight.SemiBold,
+    letterSpacing = 1.sp
+)
+
+val ChatMessage = TextStyle(
+    color = Color.White,
+    fontFamily = OpenSans,
+    fontSize = 15.sp,
+    fontWeight = FontWeight.Normal,
+)
+

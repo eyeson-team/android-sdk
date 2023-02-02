@@ -17,7 +17,6 @@ import androidx.compose.material.IconButton
 import androidx.compose.material.MaterialTheme
 import androidx.compose.material.OutlinedButton
 import androidx.compose.material.Scaffold
-import androidx.compose.material.Switch
 import androidx.compose.material.Text
 import androidx.compose.material.TopAppBar
 import androidx.compose.material.icons.Icons
@@ -50,6 +49,8 @@ fun StartScreen(
     savedStateHandle: SavedStateHandle? = null,
     onScanClicked: () -> Unit = {},
     onSettingsClicked: () -> Unit = {},
+    connect: (String) -> Unit = {},
+    connectAsGuest: (guestToken: String, guestName: String) -> Unit = { _, _ -> },
 ) {
     val screenState by rememberSaveable(stateSaver = StartScreenState.Saver) {
         mutableStateOf(StartScreenState())
@@ -75,7 +76,7 @@ fun StartScreen(
                     Text("")
                 },
                 actions = {
-                    IconButton(onClick = {onSettingsClicked() }) {
+                    IconButton(onClick = { onSettingsClicked() }) {
                         Icon(
                             imageVector = Icons.Filled.Settings,
                             stringResource(id = R.string.label_settings),
@@ -92,7 +93,14 @@ fun StartScreen(
             ) {
                 Divider()
                 Button(
-                    onClick = { /*TODO*/ },
+                    onClick = {
+                        if (screenState.accessKey.isNotBlank()) {
+                            connect(screenState.accessKey)
+                        } else {
+                            connectAsGuest(screenState.guestToken, screenState.guestName)
+
+                        }
+                    },
                     contentPadding = PaddingValues(top = 12.dp, bottom = 12.dp),
                     enabled = screenState.canConnect,
                     modifier = Modifier
