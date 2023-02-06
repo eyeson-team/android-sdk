@@ -13,8 +13,6 @@ import androidx.compose.material.IconButton
 import androidx.compose.material.MaterialTheme
 import androidx.compose.material.Surface
 import androidx.compose.material.ripple.LocalRippleTheme
-import androidx.compose.material.ripple.RippleAlpha
-import androidx.compose.material.ripple.RippleTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.getValue
@@ -30,6 +28,7 @@ import androidx.compose.ui.unit.dp
 import com.eyeson.android.R
 import com.eyeson.android.ui.theme.DarkGray800
 import com.eyeson.android.ui.theme.EyesonDemoTheme
+import com.eyeson.android.ui.theme.WhiteRippleTheme
 
 @Composable
 fun HorizontalMeetingControls(
@@ -58,9 +57,9 @@ fun HorizontalMeetingControls(
             }
 
             val (descriptionCam, iconCam) = if (videoMuted) {
-                Pair(R.string.unmute_camera, R.drawable.baseline_videocam_off_24)
-            } else {
                 Pair(R.string.mute_camera, R.drawable.baseline_videocam_24)
+            } else {
+                Pair(R.string.unmute_camera, R.drawable.baseline_videocam_off_24)
             }
 
             IconButton(onClick = onMuteVideo) {
@@ -107,7 +106,7 @@ fun VerticalMeetingControls(
     iconTint: Color = Color.White
 ) {
     Column(
-        modifier = modifier.padding(16.dp),
+        modifier = modifier,
         verticalArrangement = Arrangement.SpaceEvenly
     ) {
         CompositionLocalProvider(LocalRippleTheme provides WhiteRippleTheme) {
@@ -120,9 +119,9 @@ fun VerticalMeetingControls(
             }
 
             val (descriptionCam, iconCam) = if (videoMuted) {
-                Pair(R.string.unmute_camera, R.drawable.baseline_videocam_off_24)
-            } else {
                 Pair(R.string.mute_camera, R.drawable.baseline_videocam_24)
+            } else {
+                Pair(R.string.unmute_camera, R.drawable.baseline_videocam_off_24)
             }
 
             IconButton(onClick = onMuteVideo) {
@@ -148,22 +147,6 @@ fun VerticalMeetingControls(
             }
         }
     }
-}
-
-private object WhiteRippleTheme : RippleTheme {
-    @Composable
-    override fun defaultColor() =
-        RippleTheme.defaultRippleColor(
-            Color.White,
-            lightTheme = true
-        )
-
-    @Composable
-    override fun rippleAlpha(): RippleAlpha =
-        RippleTheme.defaultRippleAlpha(
-            Color.Black,
-            lightTheme = true
-        )
 }
 
 
@@ -195,7 +178,9 @@ fun VerticalMeetingControlsPreview() {
 
     EyesonDemoTheme {
 
-        Box(modifier = Modifier.background(color = DarkGray800)) {
+        Box(modifier = Modifier
+            .background(color = DarkGray800)
+            .padding(16.dp)) {
             VerticalMeetingControls(onSwitchCamera = { /*NOOP*/ },
                 videoMuted = videoMuted,
                 onMuteVideo = { videoMuted = !videoMuted },

@@ -2,12 +2,17 @@ package com.eyeson.android.ui.components
 
 import androidx.annotation.FloatRange
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.slideIn
+import androidx.compose.animation.slideOut
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -27,7 +32,6 @@ import androidx.compose.material.IconButton
 import androidx.compose.material.MaterialTheme
 import androidx.compose.material.Surface
 import androidx.compose.material.Text
-import androidx.compose.material.TopAppBar
 import androidx.compose.material.contentColorFor
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
@@ -46,11 +50,13 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Shape
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil.compose.SubcomposeAsyncImage
@@ -77,7 +83,6 @@ fun Chat(
     scrimColor: Color = MaterialTheme.colors.onSurface.copy(alpha = 0.32f),
     @FloatRange(from = 0.0, to = 1.0) horizontalContentRatio: Float = 1.0f,
     @FloatRange(from = 0.0, to = 1.0) verticalContentRatio: Float = 1.0f,
-    topBarShape: Shape = MaterialTheme.shapes.large,
     contentShape: Shape = MaterialTheme.shapes.large,
     contentBackgroundColor: Color = MaterialTheme.colors.surface
 ) {
@@ -95,32 +100,38 @@ fun Chat(
                 .wrapContentWidth(Alignment.CenterHorizontally)
                 .align(BottomEnd)
         ) {
-            if (visible) {
-                TopAppBar(
-                    modifier = Modifier.clip(topBarShape),
-                    backgroundColor = contentBackgroundColor,
-                    elevation = 0.dp,
-                    title = {
-                        Text(
-                            text = title,
-                            style = MaterialTheme.typography.h1
-                        )
-                    },
-                    actions = {
-                        IconButton(onClick = onClose) {
-                            Icon(
-                                imageVector = Icons.Filled.Close,
-                                stringResource(id = R.string.close_menu),
-                                tint = contentColorFor(contentBackgroundColor)
-                            )
-                        }
-                    }
-                )
-                Divider(Modifier.background(color = contentBackgroundColor))
-            }
-            AnimatedVisibility(visible = visible, modifier) {
+            AnimatedVisibility(
+                visible = visible,
+                enter = slideIn { fullSize ->
+                    IntOffset(fullSize.width / 4, 100)
+                } + fadeIn(),
+                exit = slideOut { fullSize ->
+                    IntOffset(fullSize.width / 4, 100)
+                } + fadeOut(),
+                modifier = modifier
+            ) {
                 Surface(shape = contentShape, color = contentBackgroundColor) {
                     Column(verticalArrangement = Arrangement.Bottom) {
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            verticalAlignment = CenterVertically,
+                            horizontalArrangement = Arrangement.SpaceBetween
+
+                        ) {
+                            Text(
+                                modifier = modifier.padding(start = 16.dp),
+                                text = title,
+                                style = MaterialTheme.typography.h1
+                            )
+                            IconButton(onClick = onClose) {
+                                Icon(
+                                    imageVector = Icons.Filled.Close,
+                                    stringResource(id = R.string.close_menu),
+                                    tint = contentColorFor(contentBackgroundColor)
+                                )
+                            }
+                        }
+                        Divider(Modifier.background(color = contentBackgroundColor))
 
                         LazyColumn(
                             reverseLayout = true, modifier = Modifier
@@ -141,13 +152,16 @@ fun Chat(
                                         )
                                     }
                                 }
+                                Spacer(modifier = Modifier.height(8.dp))
                             }
                         }
+                        Spacer(modifier = Modifier.height(12.dp))
+                        Divider(Modifier.background(color = contentBackgroundColor))
                         UserInputText(
                             textFieldValue = textState,
                             onTextChanged = { textState = it },
                             onMessageSend = {
-                                sendMessage(textState.text)
+                                sendMessage(textState.text.trim())
                                 textState = TextFieldValue()
                             }
                         )
@@ -181,6 +195,7 @@ fun ChatMessageIncoming(
                     ) { /** intentionally empty **/ }
                 },
                 contentDescription = stringResource(R.string.avatar),
+                contentScale = ContentScale.Crop,
                 modifier = Modifier
                     .size(40.dp, 40.dp)
                     .clip(CircleShape)
@@ -280,7 +295,9 @@ private fun UserInputText(
                         imeAction = ImeAction.Send
                     ),
                     keyboardActions = KeyboardActions(onSend = {
-
+                        if (textFieldValue.text.isNotBlank()) {
+                            onMessageSend()
+                        }
                     }),
                     textStyle = MaterialTheme.typography.body1.copy(fontSize = 16.sp)
                 )
@@ -305,8 +322,6 @@ private fun UserInputText(
                 Icon(
                     imageVector = Icons.Filled.Send,
                     stringResource(id = R.string.close_menu),
-//                    tint = contentColorFor(MaterialTheme.colors.onSurface)
-//                    tint = contentColorFor(MaterialTheme.colors.onSurface)
                 )
             }
         }
@@ -364,7 +379,7 @@ fun ChatPreview() {
             true,
             {},
             messages,
-            topBarShape = RoundedCornerShape(topStart = 16.dp, topEnd = 16.dp),
+            contentShape = RoundedCornerShape(topStart = 16.dp, topEnd = 16.dp),
             verticalContentRatio = 0.7f,
             sendMessage = { Timber.d("Send: $it") }
         )

@@ -1,13 +1,13 @@
 package com.eyeson.android.ui.meeting
 
 import android.app.Application
+import android.content.ClipData
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.eyeson.android.EyesonNavigationParameter.ACCESS_KEY
 import com.eyeson.android.ui.meeting.ChatMessage.IncomingMessage
 import com.eyeson.android.ui.meeting.ChatMessage.OutgoingMessage
-import com.eyeson.android.ui.view.Event
 import com.eyeson.sdk.EyesonMeeting
 import com.eyeson.sdk.events.CallRejectionReason
 import com.eyeson.sdk.events.CallTerminationReason
@@ -37,14 +37,15 @@ class MeetingViewModel @Inject constructor(
     application: Application
 ) : ViewModel() {
 
-    private val _events = MutableStateFlow<List<Event>>(emptyList())
-    val events: StateFlow<List<Event>> = _events
+    private val _events = MutableStateFlow<List<EventEntry>>(emptyList())
+    val events: StateFlow<List<EventEntry>> = _events
 
     private val _chatMessages = MutableStateFlow<List<ChatMessage>>(emptyList())
     val chatMessages: StateFlow<List<ChatMessage>> = _chatMessages
 
     private val _inCall = AtomicBoolean(false)
     fun inCall(): Boolean = _inCall.get()
+
 
     private val _p2p = MutableStateFlow(false)
     val p2p: StateFlow<Boolean> = _p2p.stateIn(
@@ -54,10 +55,9 @@ class MeetingViewModel @Inject constructor(
     )
 
 
-    private val eventListener = object : EyesonEventListener() {
+    private val eventListener: EyesonEventListener = object : EyesonEventListener() {
         override fun onPermissionsNeeded(neededPermissions: List<NeededPermissions>) {
             addEvent("onPermissionsNeeded: neededPermissions $neededPermissions")
-
         }
 
         override fun onMeetingJoining(
@@ -83,11 +83,12 @@ class MeetingViewModel @Inject constructor(
         override fun onMeetingJoined() {
             addEvent("onMeetingJoined")
             _inCall.set(true)
-//            lastCameraState = isVideoEnabled()
+            lastCameraState = isVideoEnabled()
+            _cameraActive.value = isVideoEnabled()
         }
 
         override fun onMeetingJoinFailed(callRejectionReason: CallRejectionReason) {
-            addEvent("onMeetingJoinFailed: callRejectionReason $callRejectionReason")
+            addEvent("onMeetingJoinFailed: callRejectionReason $callRejectionReason", true)
 //            _callTerminated.value = true
         }
 
@@ -99,7 +100,7 @@ class MeetingViewModel @Inject constructor(
         }
 
         override fun onMeetingLocked(locked: Boolean) {
-            addEvent("onMeetingLocked: locked $locked")
+            addEvent("onMeetingLocked: locked $locked", true)
         }
 
         override fun onStreamingModeChanged(p2p: Boolean) {
@@ -112,21 +113,25 @@ class MeetingViewModel @Inject constructor(
             presenter: UserInfo?
         ) {
             addEvent("onVideoSourceUpdate: $visibleUsers; presenter $presenter")
-//            if (!presentationActive && presenter?.id != null && presenter.id != eyesonMeeting?.getUserInfo()?.id) {
-//                presentationActive = true
-//                lastCameraState = isVideoEnabled()
-//                eyesonMeeting?.setVideoEnabled(false)
-//
-//            }
-//            if (presentationActive && presenter == null) {
-//                presentationActive = false
-//                eyesonMeeting?.setVideoEnabled(lastCameraState)
-//                lastCameraState = isVideoEnabled()
-//            }
+            Timber.d("onVideoSourceUpdate: $visibleUsers; presenter $presenter")
+            if (!presentationActive && presenter?.id != null && presenter.id != eyesonMeeting.getUserInfo()?.id) {
+                presentationActive = true
+                lastCameraState = isVideoEnabled()
+                _cameraActive.value = isVideoEnabled()
+                eyesonMeeting.setVideoEnabled(false)
+
+            }
+            if (presentationActive && presenter == null) {
+                presentationActive = false
+                eyesonMeeting.setVideoEnabled(lastCameraState)
+                lastCameraState = isVideoEnabled()
+                _cameraActive.value = isVideoEnabled()
+            }
         }
 
         override fun onAudioMutedBy(user: UserInfo) {
             addEvent("onAudioMutedBy: user $user")
+            _microphoneActive.value = isMicrophoneEnabled()
         }
 
         override fun onMediaPlayback(playing: List<PlaybackUpdate.Playback>) {
@@ -174,7 +179,6 @@ class MeetingViewModel @Inject constructor(
             addEvent("onChatMessageReceived: user $user; message $message; timestamp $timestamp")
 
             emitChatMessage(user, message, timestamp)
-
         }
 
         override fun onCustomMessageReceived(user: UserInfo, message: String, timestamp: Date) {
@@ -186,32 +190,26 @@ class MeetingViewModel @Inject constructor(
         }
 
         override fun onCameraSwitchError(error: String) {
-            addEvent("onCameraSwitchError: error $error")
+            addEvent("onCameraSwitchError: error $error", true)
         }
     }
 
-
-
-    private val eyesonMeeting by lazy {
+    private val eyesonMeeting: EyesonMeeting by lazy {
         EyesonMeeting(eventListener = eventListener, application = application)
     }
 
-    init {
-        Timber.d(
-            "MeetingViewModel: ${
-                savedStateHandle.keys().map {
-                    "$it -> ${savedStateHandle.get<String?>(it)}"
-                }
-            }"
-        )
+    private var lastCameraState = isVideoEnabled()
+    private var presentationActive = false
 
-        Timber.d("MeetingViewModel: ${eyesonMeeting.getEglContext()}")
-
-    }
+    private val _cameraActive = MutableStateFlow(isVideoEnabled())
+    val cameraActive: StateFlow<Boolean> = _cameraActive
 
 
-    private fun addEvent(text: String) {
-        _events.value = _events.value + Event(Date(), text)
+    private val _microphoneActive = MutableStateFlow(isMicrophoneEnabled())
+    val microphoneActive: StateFlow<Boolean> = _microphoneActive
+
+    private fun addEvent(text: String, error: Boolean = false) {
+        _events.value = emptyList<EventEntry>() + EventEntry(text, Date(), error) + _events.value
     }
 
     fun getEglContext(): EglBase.Context? {
@@ -242,13 +240,53 @@ class MeetingViewModel @Inject constructor(
     }
 
     private fun emitChatMessage(user: UserInfo, message: String, timestamp: Date) {
-        val chatMessage = if (user == eyesonMeeting.getUserInfo()) {
+        val chatMessage = if (user.id == eyesonMeeting.getUserInfo()?.id) {
             OutgoingMessage(message, timestamp)
         } else {
             IncomingMessage(message, user.name, timestamp, user.avatar)
         }
 
-        _chatMessages.value = _chatMessages.value + chatMessage
+        _chatMessages.value = emptyList<ChatMessage>() + chatMessage + _chatMessages.value
+    }
+
+    private fun isVideoEnabled(): Boolean {
+        return eyesonMeeting.isVideoEnabled()
+    }
+
+    private fun isMicrophoneEnabled(): Boolean {
+        return eyesonMeeting.isMicrophoneEnabled()
+    }
+
+    fun toggleLocalVideo() {
+        lastCameraState = !isVideoEnabled()
+        _cameraActive.value = !isVideoEnabled()
+        eyesonMeeting.setVideoEnabled(!isVideoEnabled())
+    }
+
+    fun toggleLocalMicrophone() {
+        eyesonMeeting.setMicrophoneEnabled(!isMicrophoneEnabled())
+        _microphoneActive.value = isMicrophoneEnabled()
+    }
+
+    fun switchCamera() {
+        eyesonMeeting.switchCamera()
+    }
+
+    fun sendChatMessage(message: String) {
+        eyesonMeeting.sendChatMessage(message)
+    }
+
+    fun getEventsClip(): ClipData {
+        return ClipData.newPlainText(
+            "Eyeson SDK event log", "${
+                _events.value.map {
+                    "$it\n"
+                }
+            }")
+    }
+
+    fun clearLog() {
+        _events.value = emptyList()
     }
 
 }
@@ -262,3 +300,5 @@ sealed class ChatMessage {
         val avatarUrl: String? = null
     ) : ChatMessage()
 }
+
+data class EventEntry(val event: String, val time: Date, val error: Boolean = false)
