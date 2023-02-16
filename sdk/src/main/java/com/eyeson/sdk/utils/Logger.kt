@@ -12,7 +12,7 @@ internal class Logger {
         private const val MAX_TAG_LENGTH = 23
 
         private fun log(priority: Int, message: String, force: Boolean) {
-            if (!enabled || force) {
+            if (!enabled || !force) {
                 return
             }
 

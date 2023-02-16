@@ -5,7 +5,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.material.Icon
 import androidx.compose.material.IconButton
 import androidx.compose.material.MaterialTheme
-import androidx.compose.material.ModalBottomSheetState
 import androidx.compose.material.Scaffold
 import androidx.compose.material.Text
 import androidx.compose.material.TopAppBar
@@ -40,6 +39,7 @@ import timber.log.Timber
 
 @Composable
 fun ScannerScreen(modifier: Modifier = Modifier, onBack: (String) -> Unit = {}) {
+
     Scaffold(
         modifier = modifier, topBar = {
             TopAppBar(

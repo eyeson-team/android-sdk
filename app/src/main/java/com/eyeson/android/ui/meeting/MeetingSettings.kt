@@ -41,8 +41,10 @@ fun MeetingSettings(
     visible: Boolean,
     onClose: () -> Unit,
     screenShareActive: Boolean,
+    presentationActive: Boolean,
     onScreenShareActiveChange: (Boolean) -> Unit,
     startFullScreenPresentation: () -> Unit,
+    stopFullScreenPresentation: () -> Unit,
     muteAll: () -> Unit,
     showAudioSettings: () -> Unit,
     showEventLog: () -> Unit,
@@ -68,13 +70,23 @@ fun MeetingSettings(
                 SettingsToggle(
                     value = screenShareActive,
                     onValueChange = onScreenShareActiveChange,
-                    title = stringResource(id = R.string.share_screen)
+                    title = stringResource(id = R.string.share_screen),
+                    enabled = !presentationActive
                 )
-                SettingsTextButton(
-                    title = stringResource(id = R.string.full_screen_presentation),
-                    buttonText = stringResource(id = R.string.start),
-                    onClick = startFullScreenPresentation
-                )
+                if (presentationActive) {
+                    SettingsTextButton(
+                        title = stringResource(id = R.string.full_screen_presentation),
+                        buttonText = stringResource(id = R.string.stop),
+                        onClick = stopFullScreenPresentation
+                    )
+                } else {
+                    SettingsTextButton(
+                        title = stringResource(id = R.string.full_screen_presentation),
+                        buttonText = stringResource(id = R.string.start),
+                        onClick = startFullScreenPresentation
+                    )
+                }
+
                 SettingsTextButton(
                     title = stringResource(id = R.string.mute_all_participants),
                     buttonText = stringResource(id = R.string.mute),
@@ -95,14 +107,6 @@ fun MeetingSettings(
         }
     }
 }
-
-data class AudioDevice(
-    val title: String,
-    val selected: Boolean,
-    val onClick: () -> Unit,
-    val enabled: Boolean = true
-)
-
 
 @Composable
 fun AudioSettings(
@@ -132,7 +136,7 @@ fun AudioSettings(
                     .verticalScroll(rememberScrollState())
                     .padding(start = 16.dp)
             ) {
-                audioDevices.forEachIndexed { index, audioDevice ->
+                audioDevices.forEach { audioDevice ->
                     SettingsRadioButton(
                         title = audioDevice.title,
                         selected = audioDevice.selected,

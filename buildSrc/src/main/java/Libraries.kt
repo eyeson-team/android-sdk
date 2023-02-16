@@ -42,6 +42,9 @@ object Libraries {
     const val accompanistSystemUiController =
         "com.google.accompanist:accompanist-systemuicontroller:${Versions.accompanist}"
 
+    const val accompanistPermissions =
+        "com.google.accompanist:accompanist-permissions:${Versions.accompanist}"
+
     const val constraintLayoutCompose =
         "androidx.constraintlayout:constraintlayout-compose:${Versions.constraintLayoutCompose}"
 

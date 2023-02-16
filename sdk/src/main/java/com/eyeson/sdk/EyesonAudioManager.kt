@@ -179,7 +179,11 @@ class EyesonAudioManager constructor(
             return
         }
         amState = AudioManagerState.UNINITIALIZED
-        apprtcContext.unregisterReceiver(wiredHeadsetReceiver)
+        try {
+            apprtcContext.unregisterReceiver(wiredHeadsetReceiver)
+        } catch (e: Exception) {
+            Logger.e("Trying to stop AudioManager before startup finished.", true)
+        }
         bluetoothManager.stop()
 
         // Restore previously stored audio states.
@@ -360,7 +364,8 @@ class EyesonAudioManager constructor(
             userSelectedAudioDevice = WiredHeadset
         }
         if (!hasWiredHeadset && userSelectedAudioDevice == WiredHeadset) {
-            userSelectedAudioDevice = SpeakerPhone
+            userSelectedAudioDevice =
+                devicePriority.first { it == SpeakerPhone || it == Earpiece }
         }
     }
 }

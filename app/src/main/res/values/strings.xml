@@ -4,6 +4,7 @@
     <string name="label_go_back">Go back</string>
     <string name="loading" tools:ignore="TypographyEllipsis">Loading...</string>
     <string name="start">Start</string>
+    <string name="stop">Stop</string>
     <string name="mute">Mute</string>
     <string name="change">Change</string>
     <string name="show">Show</string>
@@ -17,6 +18,11 @@
     <string name="label_access_key">Access key</string>
     <string name="label_guest_name">Guest name</string>
     <string name="label_guest_token">Guest token</string>
+
+    <string name="permissions">Permissions</string>
+    <string name="permissions_description">Please grant all permissions for the demo app to function properly</string>
+    <string name="go_to_settings">Go to settings</string>
+    <string name="screen_sharing_permission_denied">screen sharing permission denied</string>
 
     <!--  Scanner screen -->
     <string name="enter_access_key">Enter the access key of a meeting</string>
@@ -44,8 +50,14 @@
     <string name="wired_headset">Wired headset</string>
     <string name="ear_piece">Ear piece</string>
     <string name="speaker_phone">Speaker phone</string>
+    <string name="none">None</string>
 
     <string name="event_log">Event log</string>
+
+
+    <!-- Meeting -->
+    <string name="no_video_is_sent_or_received">No video stream is sent or received to save bandwidth in poor connection environments</string>
+    <string name="participants">Participants</string>
 
     <!-- Meeting controls -->
     <string name="switch_camera">Switch camera</string>
@@ -61,7 +73,6 @@
     <string name="you">You</string>
     <string name="chat">Chat</string>
     <string name="type_message">Type message…</string>
-
 
 
     <!-- Overlay Menu -->

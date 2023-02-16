@@ -10,6 +10,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.Icon
 import androidx.compose.material.IconButton
+import androidx.compose.material.LocalContentColor
 import androidx.compose.material.MaterialTheme
 import androidx.compose.material.Surface
 import androidx.compose.material.ripple.LocalRippleTheme
@@ -32,6 +33,8 @@ import com.eyeson.android.ui.theme.WhiteRippleTheme
 
 @Composable
 fun HorizontalMeetingControls(
+    audioOnly: Boolean,
+    cameraChangeable: Boolean,
     onSwitchCamera: () -> Unit,
     videoMuted: Boolean,
     onMuteVideo: () -> Unit,
@@ -48,48 +51,46 @@ fun HorizontalMeetingControls(
         shape = RoundedCornerShape(16.dp)
     ) {
         Row(horizontalArrangement = Arrangement.SpaceEvenly) {
-            IconButton(onClick = onSwitchCamera) {
-                Icon(
-                    painter = painterResource(id = R.drawable.baseline_cameraswitch_24),
-                    stringResource(id = R.string.label_go_back),
-                    tint = iconTint
-                )
-            }
+            CompositionLocalProvider(LocalContentColor provides iconTint) {
+                IconButton(onClick = onSwitchCamera, enabled = !audioOnly && cameraChangeable) {
+                    Icon(
+                        painter = painterResource(id = R.drawable.baseline_cameraswitch_24),
+                        stringResource(id = R.string.switch_camera),
+                    )
+                }
 
-            val (descriptionCam, iconCam) = if (videoMuted) {
-                Pair(R.string.mute_camera, R.drawable.baseline_videocam_24)
-            } else {
-                Pair(R.string.unmute_camera, R.drawable.baseline_videocam_off_24)
-            }
+                val (descriptionCam, iconCam) = if (audioOnly || !videoMuted) {
+                    Pair(R.string.unmute_camera, R.drawable.baseline_videocam_off_24)
+                } else {
+                    Pair(R.string.mute_camera, R.drawable.baseline_videocam_24)
+                }
 
-            IconButton(onClick = onMuteVideo) {
-                Icon(
-                    painter = painterResource(id = iconCam),
-                    stringResource(id = descriptionCam),
-                    tint = iconTint
-                )
-            }
+                IconButton(onClick = onMuteVideo, enabled = !audioOnly && cameraChangeable) {
+                    Icon(
+                        painter = painterResource(id = iconCam),
+                        stringResource(id = descriptionCam),
+                    )
+                }
 
-            val (descriptionMic, iconMic) = if (microphoneMuted) {
-                Pair(R.string.unmute_microphone, R.drawable.baseline_mic_off_24)
-            } else {
-                Pair(R.string.mute_microphone, R.drawable.baseline_mic_24)
-            }
+                val (descriptionMic, iconMic) = if (microphoneMuted) {
+                    Pair(R.string.unmute_microphone, R.drawable.baseline_mic_off_24)
+                } else {
+                    Pair(R.string.mute_microphone, R.drawable.baseline_mic_24)
+                }
 
-            IconButton(onClick = onMuteMicrophone) {
-                Icon(
-                    painter = painterResource(id = iconMic),
-                    stringResource(id = descriptionMic),
-                    tint = iconTint
-                )
-            }
+                IconButton(onClick = onMuteMicrophone) {
+                    Icon(
+                        painter = painterResource(id = iconMic),
+                        stringResource(id = descriptionMic),
+                    )
+                }
 
-            IconButton(onClick = onShowChat) {
-                Icon(
-                    painter = painterResource(id = R.drawable.baseline_chat_24),
-                    stringResource(id = R.string.show_chat),
-                    tint = iconTint
-                )
+                IconButton(onClick = onShowChat) {
+                    Icon(
+                        painter = painterResource(id = R.drawable.baseline_chat_24),
+                        stringResource(id = R.string.show_chat),
+                    )
+                }
             }
         }
     }
@@ -97,6 +98,8 @@ fun HorizontalMeetingControls(
 
 @Composable
 fun VerticalMeetingControls(
+    audioOnly: Boolean,
+    cameraChangeable: Boolean,
     onSwitchCamera: () -> Unit,
     videoMuted: Boolean,
     onMuteVideo: () -> Unit,
@@ -109,41 +112,40 @@ fun VerticalMeetingControls(
         modifier = modifier,
         verticalArrangement = Arrangement.SpaceEvenly
     ) {
-        CompositionLocalProvider(LocalRippleTheme provides WhiteRippleTheme) {
-            IconButton(onClick = onSwitchCamera) {
-                Icon(
-                    painter = painterResource(id = R.drawable.baseline_cameraswitch_24),
-                    stringResource(id = R.string.label_go_back),
-                    tint = iconTint
-                )
-            }
+        CompositionLocalProvider(LocalContentColor provides iconTint) {
+            CompositionLocalProvider(LocalRippleTheme provides WhiteRippleTheme) {
+                IconButton(onClick = onSwitchCamera, enabled = !audioOnly && cameraChangeable) {
+                    Icon(
+                        painter = painterResource(id = R.drawable.baseline_cameraswitch_24),
+                        stringResource(id = R.string.switch_camera),
+                    )
+                }
 
-            val (descriptionCam, iconCam) = if (videoMuted) {
-                Pair(R.string.mute_camera, R.drawable.baseline_videocam_24)
-            } else {
-                Pair(R.string.unmute_camera, R.drawable.baseline_videocam_off_24)
-            }
+                val (descriptionCam, iconCam) = if (audioOnly || !videoMuted) {
+                    Pair(R.string.unmute_camera, R.drawable.baseline_videocam_off_24)
+                } else {
+                    Pair(R.string.mute_camera, R.drawable.baseline_videocam_24)
+                }
 
-            IconButton(onClick = onMuteVideo) {
-                Icon(
-                    painter = painterResource(id = iconCam),
-                    stringResource(id = descriptionCam),
-                    tint = iconTint
-                )
-            }
+                IconButton(onClick = onMuteVideo, enabled = !audioOnly && cameraChangeable) {
+                    Icon(
+                        painter = painterResource(id = iconCam),
+                        stringResource(id = descriptionCam),
+                    )
+                }
 
-            val (descriptionMic, iconMic) = if (microphoneMuted) {
-                Pair(R.string.unmute_microphone, R.drawable.baseline_mic_off_24)
-            } else {
-                Pair(R.string.mute_microphone, R.drawable.baseline_mic_24)
-            }
+                val (descriptionMic, iconMic) = if (microphoneMuted) {
+                    Pair(R.string.unmute_microphone, R.drawable.baseline_mic_off_24)
+                } else {
+                    Pair(R.string.mute_microphone, R.drawable.baseline_mic_24)
+                }
 
-            IconButton(onClick = onMuteMicrophone) {
-                Icon(
-                    painter = painterResource(id = iconMic),
-                    stringResource(id = descriptionMic),
-                    tint = iconTint
-                )
+                IconButton(onClick = onMuteMicrophone) {
+                    Icon(
+                        painter = painterResource(id = iconMic),
+                        stringResource(id = descriptionMic),
+                    )
+                }
             }
         }
     }
@@ -159,6 +161,8 @@ fun HorizontalMeetingControlsPreview() {
 
     EyesonDemoTheme {
         HorizontalMeetingControls(
+            audioOnly = false,
+            cameraChangeable = true,
             onSwitchCamera = { /*NOOP*/ },
             videoMuted = videoMuted,
             onMuteVideo = { videoMuted = !videoMuted },
@@ -178,10 +182,15 @@ fun VerticalMeetingControlsPreview() {
 
     EyesonDemoTheme {
 
-        Box(modifier = Modifier
-            .background(color = DarkGray800)
-            .padding(16.dp)) {
-            VerticalMeetingControls(onSwitchCamera = { /*NOOP*/ },
+        Box(
+            modifier = Modifier
+                .background(color = DarkGray800)
+                .padding(16.dp)
+        ) {
+            VerticalMeetingControls(
+                audioOnly = false,
+                cameraChangeable = true,
+                onSwitchCamera = { /*NOOP*/ },
                 videoMuted = videoMuted,
                 onMuteVideo = { videoMuted = !videoMuted },
                 microphoneMuted = microphoneMuted,

@@ -96,6 +96,7 @@ dependencies {
     implementation(Libraries.androidxLifecycleViewModelCompose)
     implementation(Libraries.androidxNavigationCompose)
     implementation(Libraries.accompanistSystemUiController)
+    implementation(Libraries.accompanistPermissions)
     implementation(Libraries.constraintLayoutCompose)
 
     implementation(Libraries.legacySupportV4)

@@ -21,6 +21,8 @@ import com.eyeson.android.ui.scanner.ScannerScreen
 import com.eyeson.android.ui.settings.SettingsScreen
 import com.eyeson.android.ui.start.StartScreen
 import com.eyeson.android.ui.theme.EyesonDemoTheme
+import com.google.accompanist.permissions.ExperimentalPermissionsApi
+import com.google.accompanist.permissions.MultiplePermissionsState
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import timber.log.Timber
@@ -38,8 +40,10 @@ object EyesonNavigationParameter {
     const val GUEST_NAME = "guest_name"
 }
 
+@OptIn(ExperimentalPermissionsApi::class)
 @Composable
 fun EyesonDemoNavHost(
+    multiplePermissionsState: MultiplePermissionsState,
     modifier: Modifier = Modifier,
     navController: NavHostController = rememberNavController()
 ) {
@@ -49,16 +53,16 @@ fun EyesonDemoNavHost(
         NavHost(
             navController = navController,
             startDestination = START_ROUTE,
-//            startDestination = MEETING_ROUT,
             modifier = modifier
         ) {
 
             composable(route = START_ROUTE) {
                 StartScreen(
+                    multiplePermissionsState = multiplePermissionsState,
                     savedStateHandle = navController.currentBackStackEntry?.savedStateHandle,
                     onScanClicked = { navController.navigateSingleTopTo(GUEST_QR_SCANNER_ROUTE) },
                     onSettingsClicked = { navController.navigateSingleTopTo(START_SETTINGS_ROUTE) },
-                    connect = { navController.navigateToMeeting(it) },
+                    connect = { accessKey -> navController.navigateToMeeting(accessKey) },
                     connectAsGuest = { guestToken, guestName ->
                         navController.navigateToMeeting(
                             guestToken,

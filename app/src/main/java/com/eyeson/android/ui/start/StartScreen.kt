@@ -1,5 +1,8 @@
 package com.eyeson.android.ui.start
 
+import android.content.Intent
+import android.net.Uri
+import android.provider.Settings
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
@@ -10,6 +13,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.AlertDialog
 import androidx.compose.material.Button
 import androidx.compose.material.Divider
 import androidx.compose.material.Icon
@@ -23,6 +27,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.saveable.Saver
@@ -32,6 +37,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.Preview
@@ -41,21 +47,28 @@ import com.eyeson.android.EyesonNavigationParameter
 import com.eyeson.android.R
 import com.eyeson.android.ui.components.EyesonDemoTextField
 import com.eyeson.android.ui.theme.EyesonDemoTheme
+import com.google.accompanist.permissions.ExperimentalPermissionsApi
+import com.google.accompanist.permissions.MultiplePermissionsState
+import com.google.accompanist.permissions.rememberMultiplePermissionsState
 import timber.log.Timber
 
+@OptIn(ExperimentalPermissionsApi::class)
 @Composable
 fun StartScreen(
+    multiplePermissionsState: MultiplePermissionsState,
     modifier: Modifier = Modifier,
     savedStateHandle: SavedStateHandle? = null,
     onScanClicked: () -> Unit = {},
     onSettingsClicked: () -> Unit = {},
-    connect: (String) -> Unit = {},
-    connectAsGuest: (guestToken: String, guestName: String) -> Unit = { _, _ -> },
+    connect: (accessKey: String) -> Unit = { _ -> },
+    connectAsGuest: (guestToken: String, guestName: String) -> Unit = { _, _ -> }
 ) {
     val screenState by rememberSaveable(stateSaver = StartScreenState.Saver) {
         mutableStateOf(StartScreenState())
-
     }
+
+    var showPermissionDialog = !multiplePermissionsState.allPermissionsGranted
+
     if (savedStateHandle != null) {
         val guestToken = savedStateHandle.get<String>(EyesonNavigationParameter.GUEST_TOKEN)
         LaunchedEffect(guestToken) {
@@ -94,11 +107,16 @@ fun StartScreen(
                 Divider()
                 Button(
                     onClick = {
-                        if (screenState.accessKey.isNotBlank()) {
-                            connect(screenState.accessKey)
-                        } else {
-                            connectAsGuest(screenState.guestToken, screenState.guestName)
-
+                        when {
+                            !multiplePermissionsState.allPermissionsGranted -> {
+                                showPermissionDialog = true
+                            }
+                            screenState.accessKey.isNotBlank() -> {
+                                connect(screenState.accessKey)
+                            }
+                            else -> {
+                                connectAsGuest(screenState.guestToken, screenState.guestName)
+                            }
                         }
                     },
                     contentPadding = PaddingValues(top = 12.dp, bottom = 12.dp),
@@ -180,6 +198,47 @@ fun StartScreen(
             }
         }
     }
+
+    SideEffect {
+        multiplePermissionsState.launchMultiplePermissionRequest()
+    }
+
+    if (showPermissionDialog) {
+        PermissionsDialog()
+    }
+}
+
+@Composable
+fun PermissionsDialog(modifier: Modifier = Modifier) {
+    val context = LocalContext.current
+    AlertDialog(
+        modifier = modifier,
+        onDismissRequest = { /** intentionally empty **/ },
+        title = {
+            Text(
+                text = stringResource(id = R.string.permissions),
+                style = MaterialTheme.typography.h1
+            )
+        },
+        text = {
+            Text(text = stringResource(id = R.string.permissions_description))
+        },
+        confirmButton = {
+            Button(
+                onClick = {
+                    Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS).apply {
+                        data = Uri.parse("package:" + context.packageName)
+                        context.startActivity(this)
+                    }
+                },
+                modifier = Modifier.padding(bottom = 8.dp, end = 8.dp)
+            ) {
+                Text(
+                    text = stringResource(id = R.string.go_to_settings).uppercase()
+                )
+            }
+        }
+    )
 }
 
 private class StartScreenState(testToke: String = "") {
@@ -205,10 +264,12 @@ private class StartScreenState(testToke: String = "") {
 }
 
 
+@OptIn(ExperimentalPermissionsApi::class)
 @Preview(name = "StartScreen")
 @Composable
 fun StartScreenPreview() {
     EyesonDemoTheme {
-        StartScreen()
+        val multiplePermissionsState = rememberMultiplePermissionsState(emptyList())
+        StartScreen(multiplePermissionsState)
     }
 }

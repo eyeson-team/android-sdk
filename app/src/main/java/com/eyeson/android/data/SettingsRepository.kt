@@ -4,8 +4,14 @@ import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.datastore.preferences.core.edit
+import androidx.lifecycle.viewModelScope
+import com.eyeson.android.ui.settings.SettingsUiState
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.SharingStarted
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.stateIn
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -31,28 +37,53 @@ class SettingsRepository @Inject constructor(private val dataStore: DataStore<Pr
         }
     }
 
-    val micOnStart = readSetting(micOnStartKey, true)
+    private val micOnStart = readSetting(micOnStartKey, true)
     suspend fun setMicOnStart(on: Boolean) {
         writeSetting(micOnStartKey, on)
     }
 
-    val audioOnly = readSetting(audioOnlyKey, false)
+    private val audioOnly = readSetting(audioOnlyKey, false)
     suspend fun setAudioOnly(on: Boolean) {
         writeSetting(audioOnlyKey, on)
     }
 
-    val videoOnStart = readSetting(videoOnStartKey, true)
+    private val videoOnStart = readSetting(videoOnStartKey, true)
     suspend fun setVideoOnStart(on: Boolean) {
         writeSetting(videoOnStartKey, on)
     }
 
-    val rearCamOnStart = readSetting(rearCamOnStartKey, false)
+    private val rearCamOnStart = readSetting(rearCamOnStartKey, false)
     suspend fun setRearCamOnStart(on: Boolean) {
         writeSetting(rearCamOnStartKey, on)
     }
 
-    val screenShareOnStart = readSetting(screenShareOnStartKey, false)
+    private val screenShareOnStart = readSetting(screenShareOnStartKey, false)
     suspend fun setScreenShareOnStart(on: Boolean) {
         writeSetting(screenShareOnStartKey, on)
     }
+
+    val meetingSettings: Flow<MeetingSettings> =
+        combine(
+            micOnStart,
+            audioOnly,
+            videoOnStart,
+            rearCamOnStart,
+            screenShareOnStart
+        ) { micOnStart, audioOnly, videoOnStart, rearCamOnStart, screenShareOnStart ->
+                MeetingSettings(
+                    micOnStart,
+                    audioOnly,
+                    videoOnStart,
+                    rearCamOnStart,
+                    screenShareOnStart
+                )
+        }
+
+    data class MeetingSettings(
+        val micOnStar: Boolean,
+        val audioOnly: Boolean,
+        val videoOnStart: Boolean,
+        val rearCamOnStart: Boolean,
+        val screenShareOnStart: Boolean
+    )
 }

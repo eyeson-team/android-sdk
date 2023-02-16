@@ -8,7 +8,7 @@ import com.eyeson.android.ui.settings.SettingsUiState.Success
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import javax.inject.Inject
@@ -18,22 +18,8 @@ class SettingsViewModel @Inject constructor(
     private val settingsRepository: SettingsRepository
 ) : ViewModel() {
     val settingsUiState: StateFlow<SettingsUiState> =
-        combine(
-            settingsRepository.micOnStart,
-            settingsRepository.audioOnly,
-            settingsRepository.videoOnStart,
-            settingsRepository.rearCamOnStart,
-            settingsRepository.screenShareOnStart
-        ) { micOnStart, audioOnly, videoOnStart, rearCamOnStart, screenShareOnStart ->
-            Success(
-                Settings(
-                    micOnStart,
-                    audioOnly,
-                    videoOnStart,
-                    rearCamOnStart,
-                    screenShareOnStart
-                )
-            )
+        settingsRepository.meetingSettings.map { settings ->
+            Success(settings)
 
         }.stateIn(
             scope = viewModelScope,
@@ -62,15 +48,8 @@ class SettingsViewModel @Inject constructor(
     }
 }
 
-data class Settings(
-    val micOnStar: Boolean,
-    val audioOnly: Boolean,
-    val videoOnStart: Boolean,
-    val rearCamOnStart: Boolean,
-    val screenShareOnStart: Boolean
-)
 
 sealed interface SettingsUiState {
     object Loading : SettingsUiState
-    data class Success(val settings: Settings) : SettingsUiState
+    data class Success(val settings: SettingsRepository.MeetingSettings) : SettingsUiState
 }

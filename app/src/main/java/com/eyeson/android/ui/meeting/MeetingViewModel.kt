@@ -1,13 +1,21 @@
 package com.eyeson.android.ui.meeting
 
 import android.app.Application
+import android.app.Notification
 import android.content.ClipData
+import android.content.Intent
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.eyeson.android.EyesonNavigationParameter.ACCESS_KEY
+import com.eyeson.android.EyesonNavigationParameter.GUEST_NAME
+import com.eyeson.android.EyesonNavigationParameter.GUEST_TOKEN
+import com.eyeson.android.R
+import com.eyeson.android.data.SettingsRepository
 import com.eyeson.android.ui.meeting.ChatMessage.IncomingMessage
 import com.eyeson.android.ui.meeting.ChatMessage.OutgoingMessage
+import com.eyeson.android.ui.settings.SettingsUiState
+import com.eyeson.sdk.EyesonAudioManager
 import com.eyeson.sdk.EyesonMeeting
 import com.eyeson.sdk.events.CallRejectionReason
 import com.eyeson.sdk.events.CallTerminationReason
@@ -20,10 +28,19 @@ import com.eyeson.sdk.model.local.meeting.PlaybackUpdate
 import com.eyeson.sdk.model.local.meeting.Recording
 import com.eyeson.sdk.model.local.meeting.SnapshotUpdate
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.collect
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.firstOrNull
+import kotlinx.coroutines.flow.flow
+import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.shareIn
 import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.runBlocking
 import org.webrtc.EglBase
 import org.webrtc.VideoSink
 import timber.log.Timber
@@ -34,26 +51,25 @@ import javax.inject.Inject
 @HiltViewModel
 class MeetingViewModel @Inject constructor(
     private val savedStateHandle: SavedStateHandle,
-    application: Application
+    private val application: Application,
+    private val settingsRepository: SettingsRepository
 ) : ViewModel() {
 
     private val _events = MutableStateFlow<List<EventEntry>>(emptyList())
-    val events: StateFlow<List<EventEntry>> = _events
-
-    private val _chatMessages = MutableStateFlow<List<ChatMessage>>(emptyList())
-    val chatMessages: StateFlow<List<ChatMessage>> = _chatMessages
+    val events: StateFlow<List<EventEntry>> = _events.asStateFlow()
 
     private val _inCall = AtomicBoolean(false)
     fun inCall(): Boolean = _inCall.get()
 
 
     private val _p2p = MutableStateFlow(false)
-    val p2p: StateFlow<Boolean> = _p2p.stateIn(
-        viewModelScope,
-        SharingStarted.WhileSubscribed(5000),
-        false
-    )
+    val p2p: StateFlow<Boolean> = _p2p.asStateFlow()
 
+    private val _callTerminated = MutableStateFlow(false)
+    val callTerminated: StateFlow<Boolean> = _callTerminated.asStateFlow()
+
+    private val _userInMeetingCount = MutableStateFlow(0)
+    val userInMeetingCount: StateFlow<Int> = _userInMeetingCount.asStateFlow()
 
     private val eventListener: EyesonEventListener = object : EyesonEventListener() {
         override fun onPermissionsNeeded(neededPermissions: List<NeededPermissions>) {
@@ -89,14 +105,15 @@ class MeetingViewModel @Inject constructor(
 
         override fun onMeetingJoinFailed(callRejectionReason: CallRejectionReason) {
             addEvent("onMeetingJoinFailed: callRejectionReason $callRejectionReason", true)
-//            _callTerminated.value = true
+            _callTerminated.value = true
+            audioManager.stop()
         }
 
         override fun onMeetingTerminated(callTerminationReason: CallTerminationReason) {
             addEvent("onMeetingTerminated: callTerminationReason $callTerminationReason")
             _inCall.set(false)
-//            Timber.d("KICK: _callTerminated.value = true")
-//            _callTerminated.value = true
+            audioManager.stop()
+            _callTerminated.value = true
         }
 
         override fun onMeetingLocked(locked: Boolean) {
@@ -113,25 +130,25 @@ class MeetingViewModel @Inject constructor(
             presenter: UserInfo?
         ) {
             addEvent("onVideoSourceUpdate: $visibleUsers; presenter $presenter")
-            Timber.d("onVideoSourceUpdate: $visibleUsers; presenter $presenter")
-            if (!presentationActive && presenter?.id != null && presenter.id != eyesonMeeting.getUserInfo()?.id) {
-                presentationActive = true
+            Timber.d("onVideoSourceUpdate: _presentationActive.value ${_presentationActive.value} $visibleUsers; presenter $presenter")
+            if (!_presentationActive.value && presenter?.id != null && presenter.id != eyesonMeeting.getUserInfo()?.id) {
                 lastCameraState = isVideoEnabled()
-                _cameraActive.value = isVideoEnabled()
+                _cameraActive.value = false
                 eyesonMeeting.setVideoEnabled(false)
 
             }
-            if (presentationActive && presenter == null) {
-                presentationActive = false
+            if (_presentationActive.value && presenter == null) {
                 eyesonMeeting.setVideoEnabled(lastCameraState)
-                lastCameraState = isVideoEnabled()
-                _cameraActive.value = isVideoEnabled()
+                _cameraActive.value = lastCameraState
             }
+
+            _presentationActive.value = presenter?.id != null
+            Timber.d("_presentationActive.value: ${_presentationActive.value};")
         }
 
         override fun onAudioMutedBy(user: UserInfo) {
             addEvent("onAudioMutedBy: user $user")
-            _microphoneActive.value = isMicrophoneEnabled()
+            _microphoneActive.value = !isMicrophoneEnabled()
         }
 
         override fun onMediaPlayback(playing: List<PlaybackUpdate.Playback>) {
@@ -165,6 +182,7 @@ class MeetingViewModel @Inject constructor(
 
         override fun onUserListUpdate(users: List<UserInfo>) {
             addEvent("onUserListUpdate: users $users")
+            _userInMeetingCount.value = users.size
         }
 
         override fun onVoiceActivity(user: UserInfo, active: Boolean) {
@@ -198,19 +216,35 @@ class MeetingViewModel @Inject constructor(
         EyesonMeeting(eventListener = eventListener, application = application)
     }
 
+    private val audioManager by lazy { EyesonAudioManager(application) }
+
     private var lastCameraState = isVideoEnabled()
-    private var presentationActive = false
+//    private var presentationActive = false
+
+    private val _presentationActive = MutableStateFlow(false)
+    val presentationActive: StateFlow<Boolean> = _presentationActive.asStateFlow()
+
+    private val _screenShareActive = MutableStateFlow(false)
+    val screenShareActive: StateFlow<Boolean> = _screenShareActive.asStateFlow()
 
     private val _cameraActive = MutableStateFlow(isVideoEnabled())
-    val cameraActive: StateFlow<Boolean> = _cameraActive
-
+    val cameraActive: StateFlow<Boolean> = _cameraActive.asStateFlow()
 
     private val _microphoneActive = MutableStateFlow(isMicrophoneEnabled())
-    val microphoneActive: StateFlow<Boolean> = _microphoneActive
+    val microphoneActive: StateFlow<Boolean> = _microphoneActive.asStateFlow()
+
+    private val _chatMessages = MutableStateFlow<List<ChatMessage>>(emptyList())
+    val chatMessages: StateFlow<List<ChatMessage>> = _chatMessages.asStateFlow()
+
+    private val _audioDevices = MutableStateFlow<List<AudioDevice>>(emptyList())
+    val audioDevices: StateFlow<List<AudioDevice>> = _audioDevices.asStateFlow()
 
     private fun addEvent(text: String, error: Boolean = false) {
         _events.value = emptyList<EventEntry>() + EventEntry(text, Date(), error) + _events.value
     }
+
+    val meetingSettings = runBlocking {  settingsRepository.meetingSettings.first()}
+    var screenCaptureAsPresentation = false
 
     fun getEglContext(): EglBase.Context? {
         return eyesonMeeting.getEglContext()
@@ -219,16 +253,66 @@ class MeetingViewModel @Inject constructor(
     fun connect(
         local: VideoSink?,
         remote: VideoSink?,
+        mediaProjectionPermissionResultData: Intent? = null,
+        notificationId: Int? = null,
+        notification: Notification? = null
     ) {
-        eyesonMeeting.join(
-            accessKey = checkNotNull(savedStateHandle.get<String>(ACCESS_KEY)),
-            frontCamera = true,
-            audiOnly = false,
-            local = local,
-            remote = remote,
-            microphoneEnabledOnStart = true,
-            videoEnabledOnStart = true
-        )
+
+        val screenShareInfo = if (mediaProjectionPermissionResultData != null &&
+            notificationId != null && notification != null
+        ) {
+            EyesonMeeting.ScreenShareInfo(
+                mediaProjectionPermissionResultData,
+                notificationId,
+                notification
+            )
+        } else {
+            null
+        }
+
+        when {
+            savedStateHandle.get<String>(ACCESS_KEY) != null -> {
+                eyesonMeeting.join(
+                    accessKey = checkNotNull(savedStateHandle.get<String>(ACCESS_KEY)),
+                    frontCamera = !meetingSettings.rearCamOnStart,
+                    audiOnly = meetingSettings.audioOnly,
+                    local = local,
+                    remote = remote,
+                    microphoneEnabledOnStart = meetingSettings.micOnStar,
+                    videoEnabledOnStart = meetingSettings.videoOnStart,
+                    screenShareInfo = screenShareInfo
+                )
+            }
+            savedStateHandle.get<String>(GUEST_TOKEN) != null -> {
+                eyesonMeeting.joinAsGuest(
+                    guestToken = checkNotNull(savedStateHandle.get<String>(GUEST_TOKEN)),
+                    name = checkNotNull(savedStateHandle.get<String>(GUEST_NAME)),
+                    id = null,
+                    avatar = null,
+                    frontCamera = !meetingSettings.rearCamOnStart,
+                    audiOnly = meetingSettings.audioOnly,
+                    local = local,
+                    remote = remote,
+                    microphoneEnabledOnStart = meetingSettings.micOnStar,
+                    videoEnabledOnStart = meetingSettings.videoOnStart,
+                    screenShareInfo = screenShareInfo
+                )
+            }
+            else -> {
+                return
+            }
+
+
+        }
+        startAudioManager()
+
+    }
+
+    fun disconnect() {
+        audioManager.stop()
+
+        eyesonMeeting.leave()
+        _inCall.set(false)
     }
 
     fun setLocalVideoTarget(target: VideoSink?) {
@@ -268,6 +352,10 @@ class MeetingViewModel @Inject constructor(
         _microphoneActive.value = isMicrophoneEnabled()
     }
 
+    fun muteAll() {
+        eyesonMeeting.sendMuteOthers()
+    }
+
     fun switchCamera() {
         eyesonMeeting.switchCamera()
     }
@@ -289,6 +377,65 @@ class MeetingViewModel @Inject constructor(
         _events.value = emptyList()
     }
 
+
+    private fun startAudioManager() {
+        audioManager.start(object : EyesonAudioManager.AudioManagerEvents {
+            override fun onAudioDeviceChanged(
+                selectedAudioDevice: EyesonAudioManager.AudioDevice,
+                availableAudioDevices: Set<EyesonAudioManager.AudioDevice>
+            ) {
+                Timber.d("onAudioManagerDevicesChanged: $availableAudioDevices, selected: $selectedAudioDevice")
+
+                _audioDevices.value = availableAudioDevices.map {
+                    val title = when (it) {
+                        EyesonAudioManager.AudioDevice.Bluetooth -> R.string.bluetooth_device
+                        EyesonAudioManager.AudioDevice.Earpiece -> R.string.ear_piece
+                        EyesonAudioManager.AudioDevice.None -> R.string.none
+                        EyesonAudioManager.AudioDevice.SpeakerPhone -> R.string.speaker_phone
+                        EyesonAudioManager.AudioDevice.WiredHeadset -> R.string.wired_headset
+                    }
+
+                    AudioDevice(
+                        application.getString(title),
+                        it == selectedAudioDevice,
+                        { audioManager.selectAudioDevice(it) })
+                }
+            }
+        })
+    }
+
+    fun startScreenShare(
+        mediaProjectionPermissionResultData: Intent,
+        notificationId: Int,
+        notification: Notification
+    ) {
+        val started = eyesonMeeting.startScreenShare(
+            EyesonMeeting.ScreenShareInfo(
+                mediaProjectionPermissionResultData,
+                notificationId,
+                notification
+            ),
+            screenCaptureAsPresentation
+        )
+
+        _screenShareActive.value = true
+        Timber.d("Screen share started: $started")
+
+
+    }
+
+    fun setVideoAsPresentation() {
+        if (eyesonMeeting.isScreenShareActive() && screenCaptureAsPresentation) {
+            eyesonMeeting.setVideoAsPresentation()
+        }
+    }
+
+    fun stopScreenShare() {
+        _screenShareActive.value = false
+        eyesonMeeting.stopScreenShare(true)
+        eyesonMeeting.stopPresentation()
+    }
+
 }
 
 sealed class ChatMessage {
@@ -302,3 +449,10 @@ sealed class ChatMessage {
 }
 
 data class EventEntry(val event: String, val time: Date, val error: Boolean = false)
+
+data class AudioDevice(
+    val title: String,
+    val selected: Boolean,
+    val onClick: () -> Unit,
+    val enabled: Boolean = true
+)
