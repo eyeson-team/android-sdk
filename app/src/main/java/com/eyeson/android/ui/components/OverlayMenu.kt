@@ -46,13 +46,12 @@ fun OverlayMenu(
     modifier: Modifier = Modifier,
     title: String = "",
     showDivider: Boolean = false,
-    scrimColor: Color = MaterialTheme.colors.onSurface.copy(alpha = 0.32f),
+    scrimColor: Color = MaterialTheme.colors.onSurface.copy(alpha = 0.40f),
     @FloatRange(from = 0.0, to = 1.0) horizontalContentRatio: Float = 1.0f,
     contentShape: Shape = MaterialTheme.shapes.large,
     contentBackgroundColor: Color = MaterialTheme.colors.surface,
     content: @Composable () -> Unit
 ) {
-
     BoxWithConstraints(modifier) {
         Scrim(scrimColor, visible, onClose)
 

@@ -76,9 +76,7 @@ fun SettingsScreen(
         ) {
             when (settingsUiState) {
                 Loading -> {
-                    Text(
-                        text = stringResource(R.string.loading)
-                    )
+                    Text(text = stringResource(R.string.loading))
                 }
                 is Success -> {
                     val settings = (settingsUiState as Success).settings
@@ -125,7 +123,6 @@ fun SettingsScreen(
                     )
                 }
             }
-
         }
     }
 }

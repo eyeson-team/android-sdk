@@ -61,12 +61,14 @@ class MeetingViewModel @Inject constructor(
     private val _inCall = AtomicBoolean(false)
     fun inCall(): Boolean = _inCall.get()
 
-
     private val _p2p = MutableStateFlow(false)
     val p2p: StateFlow<Boolean> = _p2p.asStateFlow()
 
-    private val _callTerminated = MutableStateFlow(false)
-    val callTerminated: StateFlow<Boolean> = _callTerminated.asStateFlow()
+    private val _callTerminated = MutableStateFlow(CallTerminationReason.UNSPECIFIED)
+    val callTerminated: StateFlow<CallTerminationReason> = _callTerminated.asStateFlow()
+
+    private val _meetingJoinFailed = MutableStateFlow(false)
+    val meetingJoinFailed: StateFlow<Boolean> = _meetingJoinFailed.asStateFlow()
 
     private val _userInMeetingCount = MutableStateFlow(0)
     val userInMeetingCount: StateFlow<Int> = _userInMeetingCount.asStateFlow()
@@ -105,15 +107,16 @@ class MeetingViewModel @Inject constructor(
 
         override fun onMeetingJoinFailed(callRejectionReason: CallRejectionReason) {
             addEvent("onMeetingJoinFailed: callRejectionReason $callRejectionReason", true)
-            _callTerminated.value = true
+            _meetingJoinFailed.value = true
             audioManager.stop()
         }
 
         override fun onMeetingTerminated(callTerminationReason: CallTerminationReason) {
             addEvent("onMeetingTerminated: callTerminationReason $callTerminationReason")
+            Timber.d("onMeetingTerminated: callTerminationReason $callTerminationReason")
             _inCall.set(false)
             audioManager.stop()
-            _callTerminated.value = true
+            _callTerminated.value = callTerminationReason
         }
 
         override fun onMeetingLocked(locked: Boolean) {
@@ -219,7 +222,6 @@ class MeetingViewModel @Inject constructor(
     private val audioManager by lazy { EyesonAudioManager(application) }
 
     private var lastCameraState = isVideoEnabled()
-//    private var presentationActive = false
 
     private val _presentationActive = MutableStateFlow(false)
     val presentationActive: StateFlow<Boolean> = _presentationActive.asStateFlow()
@@ -301,11 +303,8 @@ class MeetingViewModel @Inject constructor(
             else -> {
                 return
             }
-
-
         }
         startAudioManager()
-
     }
 
     fun disconnect() {
@@ -316,6 +315,7 @@ class MeetingViewModel @Inject constructor(
     }
 
     fun setLocalVideoTarget(target: VideoSink?) {
+        Timber.d("setLocalVideoTarget $target")
         eyesonMeeting.setLocalVideoTarget(target)
     }
 
@@ -339,6 +339,10 @@ class MeetingViewModel @Inject constructor(
 
     private fun isMicrophoneEnabled(): Boolean {
         return eyesonMeeting.isMicrophoneEnabled()
+    }
+
+    fun isWideScreen(): Boolean {
+        return eyesonMeeting.isWidescreen()
     }
 
     fun toggleLocalVideo() {
@@ -376,7 +380,6 @@ class MeetingViewModel @Inject constructor(
     fun clearLog() {
         _events.value = emptyList()
     }
-
 
     private fun startAudioManager() {
         audioManager.start(object : EyesonAudioManager.AudioManagerEvents {
@@ -420,8 +423,6 @@ class MeetingViewModel @Inject constructor(
 
         _screenShareActive.value = true
         Timber.d("Screen share started: $started")
-
-
     }
 
     fun setVideoAsPresentation() {
@@ -435,7 +436,6 @@ class MeetingViewModel @Inject constructor(
         eyesonMeeting.stopScreenShare(true)
         eyesonMeeting.stopPresentation()
     }
-
 }
 
 sealed class ChatMessage {

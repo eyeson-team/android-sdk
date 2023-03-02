@@ -3,8 +3,10 @@ package com.eyeson.android.ui.meeting
 import android.app.Notification
 import android.app.NotificationChannel
 import android.app.NotificationManager
+import android.app.PendingIntent
 import android.content.ClipboardManager
 import android.content.Context
+import android.content.Intent
 import android.content.res.Configuration
 import android.media.projection.MediaProjectionManager
 import android.os.Build
@@ -15,6 +17,7 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
 import androidx.compose.animation.Crossfade
 import androidx.compose.foundation.background
+import androidx.compose.foundation.gestures.detectDragGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -23,9 +26,11 @@ import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.CircularProgressIndicator
 import androidx.compose.material.Icon
 import androidx.compose.material.IconButton
 import androidx.compose.material.MaterialTheme
@@ -49,6 +54,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalLifecycleOwner
@@ -56,23 +62,30 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
+import androidx.compose.ui.zIndex
 import androidx.core.app.NotificationCompat
+import androidx.core.app.NotificationManagerCompat
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.eyeson.android.MainActivity
 import com.eyeson.android.R
 import com.eyeson.android.ui.components.Chat
 import com.eyeson.android.ui.components.KeepScreenOn
+import com.eyeson.android.ui.components.findActivity
 import com.eyeson.android.ui.theme.DarkGray800
 import com.eyeson.android.ui.theme.EyesonDemoTheme
 import com.eyeson.android.ui.theme.WhiteRippleTheme
+import com.eyeson.sdk.events.CallTerminationReason
 import org.webrtc.EglBase
 import org.webrtc.RendererCommon
 import org.webrtc.SurfaceViewRenderer
 import timber.log.Timber
+import kotlin.math.roundToInt
 
 @Composable
 fun MeetingScreen(
@@ -83,6 +96,7 @@ fun MeetingScreen(
     var open by rememberSaveable { mutableStateOf(false) }
     var chatOpen by rememberSaveable { mutableStateOf(false) }
     val callTerminated by viewModel.callTerminated.collectAsStateWithLifecycle()
+    val meetingJoinFailed by viewModel.meetingJoinFailed.collectAsStateWithLifecycle()
     val presentationActive by viewModel.presentationActive.collectAsStateWithLifecycle()
     val screenShareActive by viewModel.screenShareActive.collectAsStateWithLifecycle()
 
@@ -93,6 +107,9 @@ fun MeetingScreen(
     val context = LocalContext.current
     val configuration: Configuration = LocalConfiguration.current
 
+    val videoActive by viewModel.cameraActive.collectAsStateWithLifecycle()
+    val microphoneActive by viewModel.microphoneActive.collectAsStateWithLifecycle()
+
     val remoteView = rememberSurfaceViewRendererWithLifecycle(viewModel.getEglContext()) {
         viewModel.setRemoteVideoTarget(it)
     }
@@ -101,8 +118,6 @@ fun MeetingScreen(
         viewModel.setLocalVideoTarget(it)
     }
 
-    val videoActive by viewModel.cameraActive.collectAsStateWithLifecycle()
-    val microphoneActive by viewModel.microphoneActive.collectAsStateWithLifecycle()
 
     val events by viewModel.events.collectAsStateWithLifecycle()
     val chatMessages by viewModel.chatMessages.collectAsStateWithLifecycle()
@@ -130,7 +145,6 @@ fun MeetingScreen(
         }
     }
 
-
     val startScreenShareLauncher = rememberLauncherForActivityResult(
         ActivityResultContracts.StartActivityForResult()
     ) {
@@ -154,8 +168,6 @@ fun MeetingScreen(
         startScreenShareLauncher.launch(manager.createScreenCaptureIntent())
     }
 
-
-
     KeepScreenOn()
 
     val onOnBack = {
@@ -171,7 +183,8 @@ fun MeetingScreen(
             Column(
                 modifier = Modifier
                     .fillMaxHeight()
-                    .background(DarkGray800),
+                    .background(DarkGray800)
+                    .zIndex(1f),
                 verticalArrangement = Arrangement.SpaceBetween
             ) {
                 CompositionLocalProvider(LocalRippleTheme provides WhiteRippleTheme) {
@@ -201,25 +214,35 @@ fun MeetingScreen(
                 verticalArrangement = Arrangement.Center,
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
-                if (viewModel.meetingSettings.audioOnly) {
-                    AudioOnly(participants = userInMeetingCount)
-                } else {
-                    VideoViews(
-                        showLocal = sfu && videoActive,
-                        fullSizeRemote = true,
-                        remoteView = remoteView,
-                        localView = localView,
-                        modifierLocalView = Modifier
-                            .padding(end = 16.dp, bottom = 16.dp)
-                            .size(120.dp, 80.dp)
-                    )
+                when {
+                    !viewModel.inCall() -> {
+                        Connecting()
+                    }
+                    viewModel.meetingSettings.audioOnly -> {
+                        AudioOnly(participants = userInMeetingCount)
+                    }
+                    else -> {
+                        VideoViews(
+                            showLocal = sfu && videoActive,
+                            fullSizeRemote = false,
+                            remoteView = remoteView,
+                            localView = localView,
+                            modifierLocalView = Modifier
+                                .padding(end = 16.dp, bottom = 16.dp)
+                                .size(120.dp, 80.dp)
+                                .fillMaxSize()
+                                .zIndex(1f),
+                            wideScreen = viewModel.isWideScreen()
+                        )
+                    }
                 }
             }
             CompositionLocalProvider(LocalRippleTheme provides WhiteRippleTheme) {
                 Column(
                     modifier = Modifier
                         .fillMaxHeight()
-                        .background(DarkGray800),
+                        .background(DarkGray800)
+                        .zIndex(1f),
                     verticalArrangement = Arrangement.SpaceBetween
                 ) {
 
@@ -249,9 +272,7 @@ fun MeetingScreen(
             TopAppBar(
                 backgroundColor = MaterialTheme.colors.surface,
                 elevation = 0.dp,
-                title = {
-                    Text("")
-                },
+                title = { Text("") },
                 navigationIcon = {
                     IconButton(onClick = onOnBack) {
                         Icon(
@@ -272,7 +293,8 @@ fun MeetingScreen(
                             tint = MaterialTheme.colors.onSurface
                         )
                     }
-                }
+                },
+                modifier = Modifier.zIndex(1f)
             )
             Box(
                 modifier = Modifier
@@ -280,19 +302,27 @@ fun MeetingScreen(
                     .background(DarkGray800)
             ) {
 
-                if (viewModel.meetingSettings.audioOnly) {
-                    AudioOnly(participants = userInMeetingCount)
-                } else {
-                    VideoViews(
-                        showLocal = sfu && videoActive,
-                        fullSizeRemote = sfu,
-                        remoteView = remoteView,
-                        localView = localView,
-                        modifier = Modifier.align(Alignment.Center),
-                        modifierLocalView = Modifier
-                            .padding(end = 16.dp, bottom = 88.dp)
-                            .size(80.dp, 120.dp)
-                    )
+                when {
+                    !viewModel.inCall() -> {
+                        Connecting()
+                    }
+                    viewModel.meetingSettings.audioOnly -> {
+                        AudioOnly(participants = userInMeetingCount)
+                    }
+                    else -> {
+                        VideoViews(
+                            showLocal = sfu && videoActive,
+                            fullSizeRemote = sfu,
+                            remoteView = remoteView,
+                            localView = localView,
+                            modifier = Modifier
+                                .align(Alignment.Center),
+                            modifierLocalView = Modifier
+                                .padding(end = 16.dp, bottom = 88.dp)
+                                .size(80.dp, 120.dp),
+                            wideScreen = viewModel.isWideScreen()
+                        )
+                    }
                 }
 
                 HorizontalMeetingControls(
@@ -304,14 +334,15 @@ fun MeetingScreen(
                     microphoneMuted = microphoneActive,
                     onMuteMicrophone = { viewModel.toggleLocalMicrophone() },
                     onShowChat = { chatOpen = true },
-                    modifier = Modifier.align(Alignment.BottomEnd),
+                    modifier = Modifier
+                        .align(Alignment.BottomEnd)
+                        .zIndex(1f),
                 )
             }
         }
     }
 
     LaunchedEffect(key1 = Unit) {
-        Timber.d("LaunchedEffect to connect. In call: ${viewModel.inCall()}")
         when {
             viewModel.meetingSettings.screenShareOnStart && !viewModel.inCall() -> {
                 val manager = context.getSystemService(MediaProjectionManager::class.java)
@@ -323,14 +354,44 @@ fun MeetingScreen(
         }
     }
 
-    LaunchedEffect(key1 = callTerminated){
-        Timber.d("LaunchedEffect: callTerminated")
-        if (callTerminated) {
+    LaunchedEffect(key1 = callTerminated) {
+        when (callTerminated) {
+            CallTerminationReason.UNSPECIFIED -> {
+                null
+            }
+            CallTerminationReason.OK -> {
+                R.string.call_terminated_remotely
+            }
+            CallTerminationReason.FORBIDDEN -> {
+                R.string.call_terminated_forbidden
+            }
+            CallTerminationReason.UNWANTED -> {
+                R.string.call_terminated_unwanted
+            }
+            else -> {
+                R.string.call_terminated_error
+            }
+        }?.let {
+            Toast.makeText(
+                context,
+                context.getString(it),
+                Toast.LENGTH_SHORT
+            ).show()
             onOnBack()
         }
     }
 
-    Timber.d("configuration.orientation = ${configuration.orientation}")
+    LaunchedEffect(key1 = meetingJoinFailed) {
+        if (meetingJoinFailed) {
+            Toast.makeText(
+                context,
+                context.getString(R.string.connecting_to_meeting_failed),
+                Toast.LENGTH_SHORT
+            ).show()
+            onOnBack()
+        }
+    }
+
     val (vertical, horizontal) = if (configuration.isLandscape()) {
         Pair(1f, 0.7f)
     } else {
@@ -363,8 +424,6 @@ fun MeetingScreen(
                     onCopy = {
                         val clipboardManager =
                             context.getSystemService(Context.CLIPBOARD_SERVICE) as? ClipboardManager
-                        Timber.d("clipboardManager: $clipboardManager")
-                        Timber.d("clipboardManager events: ${viewModel.getEventsClip()}")
 
                         clipboardManager?.setPrimaryClip(viewModel.getEventsClip())
                     },
@@ -398,7 +457,15 @@ fun MeetingScreen(
                         }
                     },
                     stopFullScreenPresentation = { viewModel.stopScreenShare() },
-                    muteAll = {viewModel.muteAll()},
+                    muteAll = {
+                        viewModel.muteAll()
+                        Toast.makeText(
+                            context,
+                            context.getString(R.string.you_muted_all_other_participants),
+                            Toast.LENGTH_SHORT
+                        ).show()
+
+                    },
                     showAudioSettings = {
                         whatIsOpen = 1
                     },
@@ -408,7 +475,6 @@ fun MeetingScreen(
                 )
             }
         }
-
 
         val chatShape = if (configuration.isLandscape()) {
             MaterialTheme.shapes.large
@@ -428,6 +494,37 @@ fun MeetingScreen(
             horizontalContentRatio = horizontal
         )
     }
+
+    val lifecycle = LocalLifecycleOwner.current.lifecycle
+    DisposableEffect(key1 = lifecycle) {
+        val observer = LifecycleEventObserver { _, event ->
+            when {
+                event == Lifecycle.Event.ON_STOP
+                        && !context.findActivity().isChangingConfigurations
+                        && viewModel.inCall() -> {
+
+                    val notification = generateInCallNotification(context)
+
+                    with(NotificationManagerCompat.from(context)) {
+                        notify(IN_CALL_NOTIFICATION_ID, notification)
+                    }
+                }
+                event == Lifecycle.Event.ON_RESUME || event == Lifecycle.Event.ON_DESTROY -> {
+                    with(NotificationManagerCompat.from(context)) {
+                        cancel(IN_CALL_NOTIFICATION_ID)
+                    }
+
+                    Timber.d("LaunchedEffect viewModel.inCall() ${viewModel.inCall()}")
+                    viewModel.setRemoteVideoTarget(remoteView)
+                }
+            }
+        }
+
+        lifecycle.addObserver(observer)
+        onDispose {
+            lifecycle.removeObserver(observer)
+        }
+    }
 }
 
 @Composable
@@ -438,11 +535,22 @@ private fun VideoViews(
     localView: SurfaceViewRenderer,
     modifier: Modifier = Modifier,
     modifierLocalView: Modifier = Modifier,
+    wideScreen: Boolean = false
 ) {
-    val remoteModifier = if (fullSizeRemote) {
-        Modifier.fillMaxSize()
-    } else {
-        Modifier.aspectRatio(4f / 3f)
+    var offsetX by remember { mutableStateOf(0f) }
+    var offsetY: Float by remember { mutableStateOf(0f) }
+
+    val remoteModifier = when {
+        fullSizeRemote -> {
+            Modifier
+                .fillMaxSize()
+        }
+        wideScreen -> {
+            Modifier.aspectRatio(16f / 9f)
+        }
+        else -> {
+            Modifier.aspectRatio(4f / 3f)
+        }
     }
 
     Box(modifier) {
@@ -451,12 +559,20 @@ private fun VideoViews(
         })
 
         if (showLocal) {
-            AndroidView(modifier = modifierLocalView.align(Alignment.BottomEnd),
+            AndroidView(modifier = modifierLocalView
+                .align(Alignment.BottomEnd)
+                .offset { IntOffset(offsetX.roundToInt(), offsetY.roundToInt()) }
+                .pointerInput(Unit) {
+                    detectDragGestures { change, dragAmount ->
+                        change.consume()
+                        offsetX += dragAmount.x
+                        offsetY += dragAmount.y
+                    }
+                },
                 factory = { localView })
         }
     }
 }
-
 
 @Composable
 fun AudioOnly(
@@ -505,6 +621,29 @@ fun AudioOnly(
 }
 
 @Composable
+fun Connecting(
+    modifier: Modifier = Modifier
+) {
+    Column(
+        modifier = modifier.fillMaxSize(),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.Center
+    ) {
+
+        CircularProgressIndicator(
+            color = Color.White
+        )
+        Text(
+            stringResource(id = R.string.connecting), style = MaterialTheme.typography.body1.copy(
+                color = Color.White
+            ),
+            textAlign = TextAlign.Center,
+            modifier = Modifier.padding(top = 16.dp)
+        )
+    }
+}
+
+@Composable
 fun rememberSurfaceViewRendererWithLifecycle(
     eglContext: EglBase.Context?,
     setTarget: (SurfaceViewRenderer) -> Unit
@@ -525,15 +664,14 @@ fun rememberSurfaceViewRendererWithLifecycle(
     val lifecycle = LocalLifecycleOwner.current.lifecycle
     DisposableEffect(key1 = lifecycle, key2 = surfaceViewRenderer) {
         val observer = LifecycleEventObserver { _, event ->
-            if (event == Lifecycle.Event.ON_START) {
+            if (event == Lifecycle.Event.ON_CREATE) {
                 currentSetTarget(surfaceViewRenderer)
-            } else if (event == Lifecycle.Event.ON_STOP) {
-                surfaceViewRenderer.release()
             }
         }
 
         lifecycle.addObserver(observer)
         onDispose {
+            surfaceViewRenderer.release()
             lifecycle.removeObserver(observer)
         }
     }
@@ -549,7 +687,7 @@ private fun generateScreenShareNotification(context: Context): Notification {
                 NotificationChannel(
                     SCREEN_SHARE_CHANNEL_ID,
                     SCREEN_SHARE_CHANNEL_NAME,
-                    NotificationManager.IMPORTANCE_HIGH
+                    NotificationManager.IMPORTANCE_DEFAULT
                 )
             )
         }
@@ -557,11 +695,44 @@ private fun generateScreenShareNotification(context: Context): Notification {
 
     return NotificationCompat.Builder(context, SCREEN_SHARE_CHANNEL_ID)
         .setOngoing(true)
-        .setContentText("ScreenCapturerService is running in the foreground")
-        .setContentTitle("Attention")
-        .setPriority(NotificationCompat.PRIORITY_HIGH)
-        .setSmallIcon(R.drawable.menu)
+        .setSilent(true)
+        .setContentText(context.getText(R.string.your_screen_is_currently_being_recorded))
+        .setContentTitle(context.getText(R.string.screen_capture))
+        .setPriority(NotificationCompat.PRIORITY_DEFAULT)
+        .setSmallIcon(R.drawable.cast_24)
         .setCategory(Notification.CATEGORY_SERVICE)
+        .build()
+}
+
+private fun generateInCallNotification(context: Context): Notification {
+    val pendingIntent =
+        PendingIntent.getActivity(
+            context, 0,
+            Intent(context, MainActivity::class.java),
+            PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_ONE_SHOT
+        )
+
+    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+        context.getSystemService(NotificationManager::class.java).apply {
+            createNotificationChannel(
+                NotificationChannel(
+                    IN_CALL_CHANNEL_ID,
+                    IN_CALL_CHANNEL_NAME,
+                    NotificationManager.IMPORTANCE_DEFAULT
+                )
+            )
+        }
+    }
+
+    return NotificationCompat.Builder(context, IN_CALL_CHANNEL_ID)
+        .setOngoing(true)
+        .setSilent(true)
+        .setContentText(context.getText(R.string.click_to_resume))
+        .setContentTitle(context.getText(R.string.active_call))
+        .setPriority(NotificationCompat.PRIORITY_DEFAULT)
+        .setSmallIcon(R.drawable.video_call_24)
+        .setContentIntent(pendingIntent)
+        .setAutoCancel(true)
         .build()
 }
 
@@ -579,3 +750,6 @@ fun SettingsScreenPreview() {
 private const val SCREEN_SHARE_NOTIFICATION_ID = 42
 private const val SCREEN_SHARE_CHANNEL_ID = "7"
 private const val SCREEN_SHARE_CHANNEL_NAME = "Screen share active"
+private const val IN_CALL_NOTIFICATION_ID = 3
+private const val IN_CALL_CHANNEL_ID = "17"
+private const val IN_CALL_CHANNEL_NAME = "In call"

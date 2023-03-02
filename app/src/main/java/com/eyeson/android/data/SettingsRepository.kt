@@ -24,7 +24,6 @@ class SettingsRepository @Inject constructor(private val dataStore: DataStore<Pr
     private val rearCamOnStartKey = booleanPreferencesKey("rearCamOnStart")
     private val screenShareOnStartKey = booleanPreferencesKey("screenShareOnStart")
 
-
     private suspend fun <T> writeSetting(key: Preferences.Key<T>, value: T) {
         dataStore.edit { settings ->
             settings[key] = value

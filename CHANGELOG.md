@@ -7,6 +7,8 @@ The format is based on [Keep a Changelog] and this project adheres to
 ## [Unreleased]
 ### Added
 - Custom message support
+- New `CallRejectionReason` and `CallTerminationReason` 
+  - UNSPECIFIED
 
 ### Changed
 - Moved messaging from data channels to SEPP

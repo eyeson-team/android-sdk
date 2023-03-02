@@ -4,6 +4,7 @@ import android.content.Intent
 import android.net.Uri
 import android.provider.Settings
 import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Column
@@ -11,10 +12,14 @@ import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.relocation.BringIntoViewRequester
+import androidx.compose.foundation.relocation.bringIntoViewRequester
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.AlertDialog
+import androidx.compose.material.AppBarDefaults
 import androidx.compose.material.Button
+import androidx.compose.material.Card
 import androidx.compose.material.Divider
 import androidx.compose.material.Icon
 import androidx.compose.material.IconButton
@@ -28,14 +33,18 @@ import androidx.compose.material.icons.filled.Settings
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.SideEffect
+import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.Saver
 import androidx.compose.runtime.saveable.listSaver
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.focus.onFocusEvent
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
@@ -50,6 +59,7 @@ import com.eyeson.android.ui.theme.EyesonDemoTheme
 import com.google.accompanist.permissions.ExperimentalPermissionsApi
 import com.google.accompanist.permissions.MultiplePermissionsState
 import com.google.accompanist.permissions.rememberMultiplePermissionsState
+import kotlinx.coroutines.launch
 import timber.log.Timber
 
 @OptIn(ExperimentalPermissionsApi::class)
@@ -63,6 +73,7 @@ fun StartScreen(
     connect: (accessKey: String) -> Unit = { _ -> },
     connectAsGuest: (guestToken: String, guestName: String) -> Unit = { _, _ -> }
 ) {
+    val scrollState = rememberScrollState()
     val screenState by rememberSaveable(stateSaver = StartScreenState.Saver) {
         mutableStateOf(StartScreenState())
     }
@@ -74,17 +85,21 @@ fun StartScreen(
         LaunchedEffect(guestToken) {
             guestToken?.let {
                 screenState.guestToken = guestToken
-                Timber.d("guestToken $guestToken and remove it")
                 savedStateHandle.remove<String>(EyesonNavigationParameter.GUEST_TOKEN)
             }
         }
     }
 
+    val elevation = if (scrollState.value > 0) {
+        AppBarDefaults.TopAppBarElevation
+    } else {
+        0.dp
+    }
     Scaffold(
         modifier = modifier, topBar = {
             TopAppBar(
                 backgroundColor = MaterialTheme.colors.surface,
-                elevation = 0.dp,
+                elevation = elevation,
                 title = {
                     Text("")
                 },
@@ -132,17 +147,16 @@ fun StartScreen(
                 }
             }
         }
-
-
     ) { padding ->
         Column(
-            horizontalAlignment = Alignment.CenterHorizontally,
             modifier = Modifier
-                .fillMaxSize()
-                .verticalScroll(rememberScrollState())
                 .padding(padding)
                 .padding(start = 16.dp, end = 16.dp)
+                .fillMaxSize()
+                .verticalScroll(scrollState),
+            horizontalAlignment = Alignment.CenterHorizontally
         ) {
+
             Image(
                 painter = painterResource(id = R.drawable.eyeson_logo_dark),
                 contentDescription = stringResource(
@@ -163,7 +177,8 @@ fun StartScreen(
                 onValueChange = { screenState.accessKey = it },
                 label = stringResource(id = R.string.label_access_key).uppercase(),
                 value = screenState.accessKey,
-                modifier = Modifier.padding(top = 16.dp)
+                modifier = Modifier
+                    .padding(top = 16.dp)
             )
 
             Text(
@@ -174,13 +189,16 @@ fun StartScreen(
                 onValueChange = { screenState.guestName = it },
                 label = stringResource(id = R.string.label_guest_name).uppercase(),
                 value = screenState.guestName,
-                modifier = Modifier.padding(top = 16.dp)
+                modifier = Modifier
+                    .padding(top = 16.dp)
             )
+
             EyesonDemoTextField(
                 onValueChange = { screenState.guestToken = it },
                 label = stringResource(id = R.string.label_guest_token).uppercase(),
                 value = screenState.guestToken,
-                modifier = Modifier.padding(top = 8.dp)
+                modifier = Modifier
+                    .padding(top = 8.dp)
             )
             OutlinedButton(
                 onClick = {

@@ -16,6 +16,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.wrapContentWidth
@@ -80,7 +81,7 @@ fun Chat(
     modifier: Modifier = Modifier,
     sendMessage: (String) -> Unit,
     title: String = stringResource(id = R.string.chat).uppercase(),
-    scrimColor: Color = MaterialTheme.colors.onSurface.copy(alpha = 0.32f),
+    scrimColor: Color = MaterialTheme.colors.onSurface.copy(alpha = 0.40f),
     @FloatRange(from = 0.0, to = 1.0) horizontalContentRatio: Float = 1.0f,
     @FloatRange(from = 0.0, to = 1.0) verticalContentRatio: Float = 1.0f,
     contentShape: Shape = MaterialTheme.shapes.large,
@@ -282,6 +283,7 @@ private fun UserInputText(
                     .height(48.dp)
                     .align(Alignment.Bottom)
                     .weight(1f)
+                ,
             ) {
                 BasicTextField(
                     value = textFieldValue,

@@ -54,10 +54,19 @@
 
     <string name="event_log">Event log</string>
 
-
     <!-- Meeting -->
     <string name="no_video_is_sent_or_received">No video stream is sent or received to save bandwidth in poor connection environments</string>
     <string name="participants">Participants</string>
+
+    <string name="call_terminated_remotely">Call terminated remotely.</string>
+    <string name="call_terminated_error">An error occurred.</string>
+    <string name="call_terminated_forbidden">You are no longer allowed in the meeting.</string>
+    <string name="call_terminated_unwanted">You have been kicked from the meeting.</string>
+
+    <string name="connecting_to_meeting_failed">Connecting to meeting failed!</string>
+    <string name="you_muted_all_other_participants">You muted all other participants!</string>
+
+    <string name="connecting">Connecting…</string>
 
     <!-- Meeting controls -->
     <string name="switch_camera">Switch camera</string>
@@ -67,15 +76,20 @@
     <string name="unmute_microphone">Unmute microphone</string>
     <string name="show_chat">Show chat</string>
 
-
     <!-- Chat -->
     <string name="avatar">Avatar</string>
     <string name="you">You</string>
     <string name="chat">Chat</string>
     <string name="type_message">Type message…</string>
 
-
     <!-- Overlay Menu -->
     <string name="close_menu">Close menu</string>
+
+    <!--  Notifications -->
+    <string name="screen_capture">Screen capture</string>
+    <string name="your_screen_is_currently_being_recorded">Your screen is currently being recorded</string>
+
+    <string name="active_call">Active call</string>
+    <string name="click_to_resume">Click to resume</string>
 
 </resources>

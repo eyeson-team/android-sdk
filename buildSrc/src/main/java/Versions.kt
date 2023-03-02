@@ -6,7 +6,7 @@ object Versions {
     const val compileSdk = 33
     const val targetSdk = 33
     const val minSdk = 23
-    const val composeCompiler = "1.4.0"
+    const val composeCompiler = "1.4.3"
 
     // DI
     const val hilt = "2.44.2"
