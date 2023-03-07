@@ -18,7 +18,8 @@ internal data class CallStartDto(
     @JsonClass(generateAdapter = true)
     data class Data(
         @Json(name = "sdp") val sdp: Sdp,
-        @Json(name = "display_name") val displayName: String
+        @Json(name = "display_name") val displayName: String,
+        @Json(name = "mute_video") val muteVideo: Boolean,
     ) {
         @JsonClass(generateAdapter = true)
         data class Sdp(
@@ -33,7 +34,7 @@ internal data class CallStartDto(
 }
 
 
-internal fun CallStart.fromLocal(meeting: MeetingDto): CallStartDto {
+internal fun CallStart.fromLocal(meeting: MeetingDto, videoOnStart: Boolean): CallStartDto {
     return CallStartDto(
         type = SeppCommandsOutgoing.CALL_START.type,
         msgId = "",
@@ -41,7 +42,8 @@ internal fun CallStart.fromLocal(meeting: MeetingDto): CallStartDto {
         to = meeting.signaling.options.confId,
         data = CallStartDto.Data(
             CallStartDto.Data.Sdp(type = "offer", sdp = sdp),
-            displayName = displayName
+            displayName = displayName,
+            muteVideo = !videoOnStart
         )
     )
 }

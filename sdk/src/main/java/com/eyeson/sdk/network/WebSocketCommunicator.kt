@@ -63,8 +63,8 @@ internal class WebSocketCommunicator(
         }
     }
 
-    fun startCall(callStart: CallStart) {
-        val callStartDto = callStart.fromLocal(meeting)
+    fun startCall(callStart: CallStart, videoOnStart: Boolean) {
+        val callStartDto = callStart.fromLocal(meeting, videoOnStart)
         val adapter = moshi.adapter(CallStartDto::class.java)
         signalingConnection?.sendMessage(adapter.toJson(callStartDto))
     }

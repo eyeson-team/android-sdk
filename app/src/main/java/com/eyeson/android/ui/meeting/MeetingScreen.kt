@@ -81,9 +81,9 @@ import com.eyeson.android.ui.theme.DarkGray800
 import com.eyeson.android.ui.theme.EyesonDemoTheme
 import com.eyeson.android.ui.theme.WhiteRippleTheme
 import com.eyeson.sdk.events.CallTerminationReason
+import com.eyeson.sdk.webrtc.VideoRenderer
 import org.webrtc.EglBase
 import org.webrtc.RendererCommon
-import org.webrtc.SurfaceViewRenderer
 import timber.log.Timber
 import kotlin.math.roundToInt
 
@@ -95,6 +95,7 @@ fun MeetingScreen(
 ) {
     var open by rememberSaveable { mutableStateOf(false) }
     var chatOpen by rememberSaveable { mutableStateOf(false) }
+    val callConnected by viewModel.callConnected.collectAsStateWithLifecycle()
     val callTerminated by viewModel.callTerminated.collectAsStateWithLifecycle()
     val meetingJoinFailed by viewModel.meetingJoinFailed.collectAsStateWithLifecycle()
     val presentationActive by viewModel.presentationActive.collectAsStateWithLifecycle()
@@ -110,11 +111,11 @@ fun MeetingScreen(
     val videoActive by viewModel.cameraActive.collectAsStateWithLifecycle()
     val microphoneActive by viewModel.microphoneActive.collectAsStateWithLifecycle()
 
-    val remoteView = rememberSurfaceViewRendererWithLifecycle(viewModel.getEglContext()) {
+    val remoteView = rememberTextureViewRendererWithLifecycle(viewModel.getEglContext()) {
         viewModel.setRemoteVideoTarget(it)
     }
 
-    val localView = rememberSurfaceViewRendererWithLifecycle(viewModel.getEglContext()) {
+    val localView = rememberTextureViewRendererWithLifecycle(viewModel.getEglContext()) {
         viewModel.setLocalVideoTarget(it)
     }
 
@@ -215,7 +216,7 @@ fun MeetingScreen(
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
                 when {
-                    !viewModel.inCall() -> {
+                    !callConnected -> {
                         Connecting()
                     }
                     viewModel.meetingSettings.audioOnly -> {
@@ -227,6 +228,7 @@ fun MeetingScreen(
                             fullSizeRemote = false,
                             remoteView = remoteView,
                             localView = localView,
+                            setLocalTarget = { viewModel.setLocalVideoTarget(it) },
                             modifierLocalView = Modifier
                                 .padding(end = 16.dp, bottom = 16.dp)
                                 .size(120.dp, 80.dp)
@@ -303,7 +305,7 @@ fun MeetingScreen(
             ) {
 
                 when {
-                    !viewModel.inCall() -> {
+                    !callConnected -> {
                         Connecting()
                     }
                     viewModel.meetingSettings.audioOnly -> {
@@ -315,12 +317,13 @@ fun MeetingScreen(
                             fullSizeRemote = sfu,
                             remoteView = remoteView,
                             localView = localView,
+                            setLocalTarget = { viewModel.setLocalVideoTarget(it) },
                             modifier = Modifier
                                 .align(Alignment.Center),
                             modifierLocalView = Modifier
                                 .padding(end = 16.dp, bottom = 88.dp)
                                 .size(80.dp, 120.dp),
-                            wideScreen = viewModel.isWideScreen()
+                            wideScreen = viewModel.isWideScreen(),
                         )
                     }
                 }
@@ -531,8 +534,9 @@ fun MeetingScreen(
 private fun VideoViews(
     showLocal: Boolean,
     fullSizeRemote: Boolean,
-    remoteView: SurfaceViewRenderer,
-    localView: SurfaceViewRenderer,
+    remoteView: VideoRenderer,
+    localView: VideoRenderer,
+    setLocalTarget: (VideoRenderer?) -> Unit,
     modifier: Modifier = Modifier,
     modifierLocalView: Modifier = Modifier,
     wideScreen: Boolean = false
@@ -558,7 +562,7 @@ private fun VideoViews(
             remoteView
         })
 
-        if (showLocal) {
+        val localTarget = if (showLocal) {
             AndroidView(modifier = modifierLocalView
                 .align(Alignment.BottomEnd)
                 .offset { IntOffset(offsetX.roundToInt(), offsetY.roundToInt()) }
@@ -570,7 +574,13 @@ private fun VideoViews(
                     }
                 },
                 factory = { localView })
+
+            localView
+        } else {
+            null
         }
+
+        setLocalTarget(localTarget)
     }
 }
 
@@ -644,15 +654,15 @@ fun Connecting(
 }
 
 @Composable
-fun rememberSurfaceViewRendererWithLifecycle(
+fun rememberTextureViewRendererWithLifecycle(
     eglContext: EglBase.Context?,
-    setTarget: (SurfaceViewRenderer) -> Unit
-): SurfaceViewRenderer {
+    setTarget: (VideoRenderer?) -> Unit,
+): VideoRenderer {
     val currentSetTarget by rememberUpdatedState(setTarget)
 
     val context = LocalContext.current
     val surfaceViewRenderer = remember {
-        SurfaceViewRenderer(context).apply {
+        VideoRenderer(context).apply {
             init(eglContext, null)
             setScalingType(RendererCommon.ScalingType.SCALE_ASPECT_FIT)
             setEnableHardwareScaler(true)
@@ -671,6 +681,7 @@ fun rememberSurfaceViewRendererWithLifecycle(
 
         lifecycle.addObserver(observer)
         onDispose {
+            currentSetTarget(null)
             surfaceViewRenderer.release()
             lifecycle.removeObserver(observer)
         }

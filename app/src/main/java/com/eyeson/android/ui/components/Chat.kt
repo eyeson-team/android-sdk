@@ -177,6 +177,7 @@ fun Chat(
 private val IncomingBubbleShape = RoundedCornerShape(0.dp, 16.dp, 16.dp, 16.dp)
 private val OutgoingBubbleShape = RoundedCornerShape(16.dp, 0.dp, 16.dp, 16.dp)
 
+@Suppress("DEPRECATION")
 @Composable
 fun ChatMessageIncoming(
     text: String,
@@ -227,6 +228,7 @@ fun ChatMessageIncoming(
     }
 }
 
+@Suppress("DEPRECATION")
 @Composable
 fun ChatMessageOutgoing(
     text: String,

@@ -64,6 +64,9 @@ class MeetingViewModel @Inject constructor(
     private val _p2p = MutableStateFlow(false)
     val p2p: StateFlow<Boolean> = _p2p.asStateFlow()
 
+    private val _callConnected = MutableStateFlow(false)
+    val callConnected: StateFlow<Boolean> = _callConnected.asStateFlow()
+
     private val _callTerminated = MutableStateFlow(CallTerminationReason.UNSPECIFIED)
     val callTerminated: StateFlow<CallTerminationReason> = _callTerminated.asStateFlow()
 
@@ -101,6 +104,7 @@ class MeetingViewModel @Inject constructor(
         override fun onMeetingJoined() {
             addEvent("onMeetingJoined")
             _inCall.set(true)
+            _callConnected.value = true
             lastCameraState = isVideoEnabled()
             _cameraActive.value = isVideoEnabled()
         }

@@ -12,29 +12,26 @@ internal class Logger {
         private const val MAX_TAG_LENGTH = 23
 
         private fun log(priority: Int, message: String, force: Boolean) {
-            if (!enabled || !force) {
-                return
-            }
+            if (enabled || force) {
+                val tag = Throwable().stackTrace
+                    .first { it.className != this::class.java.name }
+                    .let {
+                        var tag = it.className.substringAfterLast('.')
+                        Pattern.compile("(\\$\\d+)+$").apply {
+                            val matcher = matcher(tag)
+                            if (matcher.find()) {
+                                tag = matcher.replaceAll("")
+                            }
+                        }
 
-            val tag = Throwable().stackTrace
-                .first { it.className != this::class.java.name }
-                .let {
-                    var tag = it.className.substringAfterLast('.')
-                    Pattern.compile("(\\$\\d+)+$").apply {
-                        val matcher = matcher(tag)
-                        if (matcher.find()) {
-                            tag = matcher.replaceAll("")
+                        if (Build.VERSION.SDK_INT < 26) {
+                            tag.take(MAX_TAG_LENGTH)
+                        } else {
+                            tag
                         }
                     }
-
-                    if (Build.VERSION.SDK_INT < 26) {
-                        tag.take(MAX_TAG_LENGTH)
-                    } else {
-                        tag
-                    }
-                }
-
-            Log.println(priority, tag, message)
+                Log.println(priority, tag, message)
+            }
         }
 
         @JvmStatic
