@@ -67,8 +67,10 @@ if (project.file("flavor-configurations.gradle").exists()) {
 }
 
 dependencies {
-    releaseEmbed(project(":webrtc", configuration = "default"))
-    debugApi(project(":webrtc", configuration = "default"))
+//    releaseEmbed(project(":webrtc", configuration = "default"))
+//    debugApi(project(":webrtc", configuration = "default"))
+
+    api(project(":webrtc", configuration = "default"))
 
     implementation(Libraries.coreKtx)
     implementation(Libraries.appcompat)
