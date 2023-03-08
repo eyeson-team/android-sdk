@@ -55,6 +55,8 @@ class MeetingViewModel @Inject constructor(
     private val settingsRepository: SettingsRepository
 ) : ViewModel() {
 
+    val meetingSettings = runBlocking {  settingsRepository.meetingSettings.first()}
+
     private val _events = MutableStateFlow<List<EventEntry>>(emptyList())
     val events: StateFlow<List<EventEntry>> = _events.asStateFlow()
 
@@ -236,7 +238,7 @@ class MeetingViewModel @Inject constructor(
     private val _cameraActive = MutableStateFlow(isVideoEnabled())
     val cameraActive: StateFlow<Boolean> = _cameraActive.asStateFlow()
 
-    private val _microphoneActive = MutableStateFlow(isMicrophoneEnabled())
+    private val _microphoneActive = MutableStateFlow(meetingSettings.micOnStar)
     val microphoneActive: StateFlow<Boolean> = _microphoneActive.asStateFlow()
 
     private val _chatMessages = MutableStateFlow<List<ChatMessage>>(emptyList())
@@ -249,7 +251,6 @@ class MeetingViewModel @Inject constructor(
         _events.value = emptyList<EventEntry>() + EventEntry(text, Date(), error) + _events.value
     }
 
-    val meetingSettings = runBlocking {  settingsRepository.meetingSettings.first()}
     var screenCaptureAsPresentation = false
 
     fun getEglContext(): EglBase.Context? {
@@ -356,8 +357,8 @@ class MeetingViewModel @Inject constructor(
     }
 
     fun toggleLocalMicrophone() {
+        _microphoneActive.value = !isMicrophoneEnabled()
         eyesonMeeting.setMicrophoneEnabled(!isMicrophoneEnabled())
-        _microphoneActive.value = isMicrophoneEnabled()
     }
 
     fun muteAll() {

@@ -48,32 +48,33 @@ Create a meeting instance. For `eventListener` see [Events](#events)
 val eyesonMeeting = EyesonMeeting(eventListener, application)
 ```
 
-## Video views
+## Video 
 Create and bind video views. The binding of the views can be done before or after joining the meeting. \
 Note that video will still be sent, event if the views are not initialized.
 
+`eglBaseContext` can be obtained through the `eyesonMeeting` instance
+
+### View
 ```xml
-<org.webrtc.SurfaceViewRenderer
+<com.eyeson.sdk.webrtc.VideoRenderer
     android:id="@+id/remoteVideo"
     android:layout_width="match_parent"
     android:layout_height="wrap_content" />
 
-<org.webrtc.SurfaceViewRenderer
+<com.eyeson.sdk.webrtc.VideoRenderer
     android:id="@+id/localVideo"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"/>
 ```
 
-`eglBaseContext` can be obtained through the eyesonMeeting instance
+
 
 ```kotlin
-binding.localVideo.init(eglBaseContext, null)
-binding.localVideo.setScalingType(RendererCommon.ScalingType.SCALE_ASPECT_BALANCED)
-binding.localVideo.setEnableHardwareScaler(true)
+binding.localVideo.init(viewModel.getEglContext())
+binding.localVideo.setScalingType(RendererCommon.ScalingType.SCALE_ASPECT_FIT)
 
-binding.remoteVideo.init(eglBaseContext, null)
-binding.remoteVideo.setScalingType(RendererCommon.ScalingType.SCALE_ASPECT_BALANCED)
-binding.remoteVideo.setEnableHardwareScaler(true)
+binding.remoteVideo.init(viewModel.getEglContext())
+binding.remoteVideo.setScalingType(RendererCommon.ScalingType.SCALE_ASPECT_FIT)
 ```
 
 Views must be released after the meeting has ended or terminated.
@@ -81,6 +82,97 @@ Views must be released after the meeting has ended or terminated.
 binding.localVideo.release()
 binding.remoteVideo.release()
 ```
+
+### Jetpack Compose
+```kotlin
+val remoteView = rememberVideoRendererWithLifecycle(viewModel.getEglContext()) {
+    viewModel.setRemoteVideoTarget(it)
+}
+
+val localView = rememberVideoRendererWithLifecycle(viewModel.getEglContext()) {
+    viewModel.setLocalVideoTarget(it)
+}
+```
+
+```kotlin
+@Composable
+fun rememberVideoRendererWithLifecycle(
+    eglContext: EglBase.Context?,
+    setTarget: (VideoRenderer?) -> Unit,
+): VideoRenderer {
+    val currentSetTarget by rememberUpdatedState(setTarget)
+
+    val context = LocalContext.current
+    val videoRenderer = remember {
+        VideoRenderer(context).apply {
+            init(eglContext)
+            setScalingType(RendererCommon.ScalingType.SCALE_ASPECT_FIT)
+        }
+    }
+    val lifecycle = LocalLifecycleOwner.current.lifecycle
+    DisposableEffect(key1 = lifecycle, key2 = videoRenderer) {
+        val observer = LifecycleEventObserver { _, event ->
+            if (event == Lifecycle.Event.ON_CREATE) {
+                currentSetTarget(videoRenderer)
+            }
+        }
+
+        lifecycle.addObserver(observer)
+        onDispose {
+            currentSetTarget(null)
+            videoRenderer.release()
+            lifecycle.removeObserver(observer)
+        }
+    }
+    return videoRenderer
+}
+```
+
+```kotlin
+@Composable
+private fun VideoViews(
+    showLocal: Boolean,
+    fullSizeRemote: Boolean,
+    remoteView: VideoRenderer,
+    localView: VideoRenderer,
+    setLocalTarget: (VideoRenderer?) -> Unit,
+    modifier: Modifier = Modifier,
+    modifierLocalView: Modifier = Modifier,
+    wideScreen: Boolean = false
+) {
+    val remoteModifier = when {
+        fullSizeRemote -> {
+            Modifier
+                .fillMaxSize()
+        }
+        wideScreen -> {
+            Modifier.aspectRatio(16f / 9f)
+        }
+        else -> {
+            Modifier.aspectRatio(4f / 3f)
+        }
+    }
+
+    Box(modifier) {
+        AndroidView(modifier = remoteModifier.align(Alignment.Center), factory = {
+            remoteView
+        })
+
+        val localTarget = if (showLocal) {
+            AndroidView(modifier = modifierLocalView
+                .align(Alignment.BottomEnd),
+                factory = { localView })
+
+            localView
+        } else {
+            null
+        }
+
+        setLocalTarget(localTarget)
+    }
+}
+```
+
 
 ## Join meeting
 Can either be done via `accessKey` or `guestToken`

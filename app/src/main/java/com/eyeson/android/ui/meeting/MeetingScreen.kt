@@ -111,11 +111,11 @@ fun MeetingScreen(
     val videoActive by viewModel.cameraActive.collectAsStateWithLifecycle()
     val microphoneActive by viewModel.microphoneActive.collectAsStateWithLifecycle()
 
-    val remoteView = rememberTextureViewRendererWithLifecycle(viewModel.getEglContext()) {
+    val remoteView = rememberVideoRendererWithLifecycle(viewModel.getEglContext()) {
         viewModel.setRemoteVideoTarget(it)
     }
 
-    val localView = rememberTextureViewRendererWithLifecycle(viewModel.getEglContext()) {
+    val localView = rememberVideoRendererWithLifecycle(viewModel.getEglContext()) {
         viewModel.setLocalVideoTarget(it)
     }
 
@@ -204,7 +204,7 @@ fun MeetingScreen(
                     onSwitchCamera = { viewModel.switchCamera() },
                     videoMuted = videoActive,
                     onMuteVideo = { viewModel.toggleLocalVideo() },
-                    microphoneMuted = microphoneActive,
+                    microphoneMuted = !microphoneActive,
                     onMuteMicrophone = { viewModel.toggleLocalMicrophone() }
                 )
             }
@@ -334,7 +334,7 @@ fun MeetingScreen(
                     onSwitchCamera = { viewModel.switchCamera() },
                     videoMuted = videoActive,
                     onMuteVideo = { viewModel.toggleLocalVideo() },
-                    microphoneMuted = microphoneActive,
+                    microphoneMuted = !microphoneActive,
                     onMuteMicrophone = { viewModel.toggleLocalMicrophone() },
                     onShowChat = { chatOpen = true },
                     modifier = Modifier
@@ -516,8 +516,6 @@ fun MeetingScreen(
                     with(NotificationManagerCompat.from(context)) {
                         cancel(IN_CALL_NOTIFICATION_ID)
                     }
-
-                    Timber.d("LaunchedEffect viewModel.inCall() ${viewModel.inCall()}")
                     viewModel.setRemoteVideoTarget(remoteView)
                 }
             }
@@ -654,39 +652,35 @@ fun Connecting(
 }
 
 @Composable
-fun rememberTextureViewRendererWithLifecycle(
+fun rememberVideoRendererWithLifecycle(
     eglContext: EglBase.Context?,
     setTarget: (VideoRenderer?) -> Unit,
 ): VideoRenderer {
     val currentSetTarget by rememberUpdatedState(setTarget)
 
     val context = LocalContext.current
-    val surfaceViewRenderer = remember {
+    val videoRenderer = remember {
         VideoRenderer(context).apply {
-            init(eglContext, null)
+            init(eglContext)
             setScalingType(RendererCommon.ScalingType.SCALE_ASPECT_FIT)
-            setEnableHardwareScaler(true)
-
-            // IMPORTANT! otherwise the SurfaceView might ignore size constraints
-            clipToOutline = true
         }
     }
     val lifecycle = LocalLifecycleOwner.current.lifecycle
-    DisposableEffect(key1 = lifecycle, key2 = surfaceViewRenderer) {
+    DisposableEffect(key1 = lifecycle, key2 = videoRenderer) {
         val observer = LifecycleEventObserver { _, event ->
             if (event == Lifecycle.Event.ON_CREATE) {
-                currentSetTarget(surfaceViewRenderer)
+                currentSetTarget(videoRenderer)
             }
         }
 
         lifecycle.addObserver(observer)
         onDispose {
             currentSetTarget(null)
-            surfaceViewRenderer.release()
+            videoRenderer.release()
             lifecycle.removeObserver(observer)
         }
     }
-    return surfaceViewRenderer
+    return videoRenderer
 }
 
 fun Configuration.isLandscape() = orientation == Configuration.ORIENTATION_LANDSCAPE

@@ -793,6 +793,7 @@ internal class PeerConnectionClient(
     private fun createAudioTrack(microphoneEnabledOnStart: Boolean): AudioTrack? {
         audioSource = factory?.createAudioSource(audioConstraints)
         localAudioTrack = factory?.createAudioTrack(AUDIO_TRACK_ID, audioSource)
+        enableAudio = microphoneEnabledOnStart
         localAudioTrack?.setEnabled(microphoneEnabledOnStart)
         return localAudioTrack
     }

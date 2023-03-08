@@ -40,7 +40,6 @@ class VideoRenderer(context: Context, attrs: AttributeSet? = null) :
     // Accessed only on the main thread.
     private var rotatedFrameWidth = 0
     private var rotatedFrameHeight = 0
-    private var enableFixedSize = false
 
     init {
         resourceName = getResourceName()
@@ -114,19 +113,17 @@ class VideoRenderer(context: Context, attrs: AttributeSet? = null) :
     }
 
     /**
-     * Enables fixed size for the surface. This provides better performance but might be buggy on some
-     * devices. By default this is turned off.
-     */
-    fun setEnableHardwareScaler(enabled: Boolean) {
-        ThreadUtils.checkIsOnMainThread()
-        enableFixedSize = enabled
-    }
-
-    /**
-     * Set if the video stream should be mirrored or not.
+     * Set if the video stream should be mirrored horizontally or not.
      */
     fun setMirror(mirror: Boolean) {
         eglRenderer.setMirror(mirror)
+    }
+
+    /**
+     * Set if the video stream should be mirrored vertically or not.
+     */
+    fun setMirrorVertically(mirror: Boolean) {
+        eglRenderer.setMirrorVertically(mirror)
     }
 
     /**

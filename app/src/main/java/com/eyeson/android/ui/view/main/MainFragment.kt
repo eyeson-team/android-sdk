@@ -116,10 +116,10 @@ class MainFragment : Fragment() {
 
     private fun bindVideoViews() {
         binding.localVideo.init(viewModel.getEglContext())
-        binding.localVideo.setScalingType(RendererCommon.ScalingType.SCALE_ASPECT_BALANCED)
+        binding.localVideo.setScalingType(RendererCommon.ScalingType.SCALE_ASPECT_FIT)
 
         binding.remoteVideo.init(viewModel.getEglContext())
-        binding.remoteVideo.setScalingType(RendererCommon.ScalingType.SCALE_ASPECT_BALANCED)
+        binding.remoteVideo.setScalingType(RendererCommon.ScalingType.SCALE_ASPECT_FIT)
     }
 
     override fun onDestroyView() {

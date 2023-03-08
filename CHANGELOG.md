@@ -9,10 +9,17 @@ The format is based on [Keep a Changelog] and this project adheres to
 - Custom message support
 - New `CallRejectionReason` and `CallTerminationReason` 
   - UNSPECIFIED
+- New UI for demo app (compose)
+  - View example reduced to basic setup and connection 
+- VideoRenderer
+  - Replacement for `SurfaceViewRenderer`
 
 ### Changed
 - Moved messaging from data channels to SEPP
   - except for voice activity
+
+### Fixed
+- Audio state was not properly set when initial microphone state was `muted` 
 
 ## [Released]
 ## [1.0.3] - 2022-10-14
