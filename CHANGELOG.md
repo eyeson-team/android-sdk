@@ -5,12 +5,15 @@ The format is based on [Keep a Changelog] and this project adheres to
 [Semantic Versioning].  
 
 ## [Unreleased]
+
+## [Released]
+## [1.1.0] - 2023-03-08
 ### Added
 - Custom message support
-- New `CallRejectionReason` and `CallTerminationReason` 
+- New `CallRejectionReason` and `CallTerminationReason`
   - UNSPECIFIED
 - New UI for demo app (compose)
-  - View example reduced to basic setup and connection 
+  - View example reduced to basic setup and connection
 - VideoRenderer
   - Replacement for `SurfaceViewRenderer`
 
@@ -19,9 +22,8 @@ The format is based on [Keep a Changelog] and this project adheres to
   - except for voice activity
 
 ### Fixed
-- Audio state was not properly set when initial microphone state was `muted` 
+- Audio state was not properly set when initial microphone state was `muted`
 
-## [Released]
 ## [1.0.3] - 2022-10-14
 ### Added
 - Screen share
