@@ -562,7 +562,7 @@ class EyesonMeeting(
     ) {
         when (command) {
             is CallStart -> {
-                webSocketCommunicator?.startCall(command)
+                webSocketCommunicator?.startCall(command, videoOnStart)
             }
             is VoiceActivity -> {
                 withContext(nameLookupScope.coroutineContext) {

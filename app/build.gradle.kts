@@ -1,7 +1,8 @@
 plugins {
     id("com.android.application")
     id("kotlin-android")
-    id("kotlin-kapt")
+    kotlin("kapt")
+    id(Plugins.hilt)
 }
 
 android {
@@ -47,7 +48,18 @@ android {
     buildFeatures {
         viewBinding = true
         dataBinding = true
+        compose = true
     }
+
+    composeOptions {
+        kotlinCompilerExtensionVersion = Versions.composeCompiler
+    }
+
+    kapt {
+        correctErrorTypes = true
+        generateStubs = true
+    }
+
     namespace = "com.eyeson.android"
 }
 
@@ -58,20 +70,43 @@ if (project.file("flavor-configurations.gradle").exists()) {
 dependencies {
     implementation(project(":sdk"))
 
+    implementation(Libraries.hiltAndroid)
+    kapt(LibrariesKapt.hiltAndroidCompiler)
+    implementation(Libraries.hiltNavigationCompose)
+
     implementation(Libraries.timber)
     implementation(Libraries.coreKtx)
     implementation(Libraries.appcompat)
     implementation(Libraries.material)
     implementation(Libraries.constraintLayout)
     implementation(Libraries.lifecycleViewModelKtx)
+    implementation(Libraries.lifecycleViewModelCompose)
+    implementation(Libraries.lifecycleRuntimeCompose)
     implementation(Libraries.lifecycleRuntimeKtx)
     implementation(Libraries.fragmentKtx)
+
+    val composeBom = platform(Libraries.androidxComposeBom)
+    implementation(composeBom)
+    androidTestImplementation(composeBom)
+
+    implementation(Libraries.androidxComposeMaterial)
+    implementation(Libraries.androidxComposeUiToolingPreview)
+    debugImplementation(Libraries.androidxComposeDebugUiTooling)
+    implementation(Libraries.androidxActivityCompose)
+    implementation(Libraries.androidxLifecycleViewModelCompose)
+    implementation(Libraries.androidxNavigationCompose)
+    implementation(Libraries.accompanistSystemUiController)
+    implementation(Libraries.accompanistPermissions)
+    implementation(Libraries.constraintLayoutCompose)
 
     implementation(Libraries.legacySupportV4)
     implementation(Libraries.recyclerview)
     implementation(Libraries.annotation)
+    implementation(Libraries.datastorePreference)
 
     implementation(Libraries.qrScanner)
+    implementation(Libraries.coil)
+    implementation(Libraries.coilCompose)
 
     testImplementation(Libraries.jUnit)
     androidTestImplementation(Libraries.jUnitTest)

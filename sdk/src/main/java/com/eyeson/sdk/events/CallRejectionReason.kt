@@ -1,6 +1,7 @@
 package com.eyeson.sdk.events
 
 enum class CallRejectionReason(val rejectCode: Int) {
+    UNSPECIFIED(-7),
     BAD_REQUEST(400),
     NOT_FOUND(404),
     FORBIDDEN(403),

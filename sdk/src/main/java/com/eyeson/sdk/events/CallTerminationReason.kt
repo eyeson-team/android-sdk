@@ -1,6 +1,7 @@
 package com.eyeson.sdk.events
 
 enum class CallTerminationReason(val terminationCode:Int) {
+    UNSPECIFIED(-7),
     OK(200),
     FORBIDDEN(403),
     ERROR(500),

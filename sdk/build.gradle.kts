@@ -1,7 +1,7 @@
 plugins {
     id("com.android.library")
     id("kotlin-android")
-    id("kotlin-kapt")
+    kotlin("kapt")
     id("maven-publish")
     id("com.kezong.fat-aar")
 }

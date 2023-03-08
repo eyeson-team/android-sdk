@@ -9,26 +9,49 @@
 
         <import type="android.text.TextUtils" />
 
-        <variable
-            name="viewModel"
-            type="com.eyeson.android.ui.connection.ConnectionViewModel" />
     </data>
 
     <androidx.constraintlayout.widget.ConstraintLayout
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        tools:context=".ui.connection.ConnectionFragment">
+        tools:context=".ui.view.connection.ConnectionFragment">
+
+        <ImageView
+            android:id="@+id/logo"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="88dp"
+            android:scaleX="1.5"
+            android:scaleY="1.5"
+            android:contentDescription="@string/label_logo"
+            android:src="@drawable/eyeson_logo_dark"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toTopOf="parent" />
+
+        <TextView
+            android:id="@+id/headline"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="20dp"
+            android:text="@string/app_name"
+            android:textColor="@color/black_D1"
+            android:textSize="18sp"
+            android:textStyle="bold"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@id/logo" />
 
         <EditText
             android:id="@+id/accessKey"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginTop="40dp"
-            android:hint="Access key"
+            android:layout_marginHorizontal="16dp"
+            android:layout_marginTop="80dp"
+            android:hint="@string/label_access_key"
             android:importantForAutofill="no"
             android:inputType="text"
-            app:layout_constraintTop_toTopOf="parent"
-            tools:ignore="HardcodedText" />
+            app:layout_constraintTop_toBottomOf="@id/headline" />
 
         <Button
             android:id="@+id/connect"
@@ -36,56 +59,10 @@
             android:layout_height="60dp"
             android:layout_marginTop="16dp"
             android:enabled="@{!TextUtils.isEmpty(accessKey.text)}"
-            android:text="Connect"
+            android:text="@string/connect"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toBottomOf="@id/accessKey"
-            tools:ignore="HardcodedText" />
-
-
-        <EditText
-            android:id="@+id/guestToken"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="120dp"
-            android:hint="Guest token OR link"
-            android:importantForAutofill="no"
-            android:inputType="text"
-            app:layout_constraintTop_toBottomOf="@id/connect"
-            tools:ignore="HardcodedText" />
-
-        <Button
-            android:id="@+id/startScanner"
-            android:layout_width="wrap_content"
-            android:layout_height="60dp"
-            android:text="Scan guest link"
-            app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toBottomOf="@id/guestToken"
-            tools:ignore="HardcodedText" />
-
-        <EditText
-            android:id="@+id/guestName"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:hint="Guest name"
-            android:importantForAutofill="no"
-            android:inputType="text"
-            android:text="I'm a suuuper fancy guest name"
-            app:layout_constraintTop_toBottomOf="@id/startScanner"
-            tools:ignore="HardcodedText" />
-
-        <Button
-            android:id="@+id/guestConnect"
-            android:layout_width="wrap_content"
-            android:layout_height="60dp"
-            android:layout_marginTop="16dp"
-            android:enabled="@{!TextUtils.isEmpty(guestToken.text) &amp;&amp; !TextUtils.isEmpty(guestName.text)}"
-            android:text="Connect as guest"
-            app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toBottomOf="@id/guestName"
-            tools:ignore="HardcodedText" />
+            app:layout_constraintTop_toBottomOf="@id/accessKey" />
 
 
     </androidx.constraintlayout.widget.ConstraintLayout>
