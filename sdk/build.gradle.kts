@@ -3,7 +3,7 @@ plugins {
     id("kotlin-android")
     kotlin("kapt")
     id("maven-publish")
-    id("com.kezong.fat-aar")
+//    id("com.kezong.fat-aar")
 }
 
 group = Versions.groupId
@@ -88,9 +88,9 @@ dependencies {
     androidTestImplementation(Libraries.espressoCore)
 }
 
-fataar {
-    transitive = true
-}
+//fataar {
+//    transitive = true
+//}
 
 afterEvaluate {
     publishing {
