@@ -7,7 +7,7 @@ The format is based on [Keep a Changelog] and this project adheres to
 ## [Unreleased]
 
 ## [Released]
-## [1.1.0] - 2023-03-08
+## [1.1.0] - 2023-03-10
 ### Added
 - Custom message support
 - New `CallRejectionReason` and `CallTerminationReason`
@@ -20,6 +20,8 @@ The format is based on [Keep a Changelog] and this project adheres to
 ### Changed
 - Moved messaging from data channels to SEPP
   - except for voice activity
+- Removed local `libwebrtc.aar`
+  - moved to own [repo](https://github.com/eyeson-team/webrtc-android)
 
 ### Fixed
 - Audio state was not properly set when initial microphone state was `muted`

@@ -8,6 +8,9 @@ object Versions {
     const val minSdk = 23
     const val composeCompiler = "1.4.3"
 
+    // WebRTC
+    const val webrtcAndroid = "1.0.0"
+
     // DI
     const val hilt = "2.44.2"
     const val hiltNavigationCompose = "1.0.0"

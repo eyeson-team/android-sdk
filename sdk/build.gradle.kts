@@ -3,7 +3,6 @@ plugins {
     id("kotlin-android")
     kotlin("kapt")
     id("maven-publish")
-    id("com.kezong.fat-aar")
 }
 
 group = Versions.groupId
@@ -67,8 +66,7 @@ if (project.file("flavor-configurations.gradle").exists()) {
 }
 
 dependencies {
-    releaseEmbed(project(":webrtc", configuration = "default"))
-    debugApi(project(":webrtc", configuration = "default"))
+    api(Libraries.webrtcAndroid)
 
     implementation(Libraries.coreKtx)
     implementation(Libraries.appcompat)
@@ -84,10 +82,6 @@ dependencies {
     testImplementation(Libraries.jUnit)
     androidTestImplementation(Libraries.jUnitTest)
     androidTestImplementation(Libraries.espressoCore)
-}
-
-fataar {
-    transitive = true
 }
 
 afterEvaluate {
