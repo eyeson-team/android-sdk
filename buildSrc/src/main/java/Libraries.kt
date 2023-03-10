@@ -1,5 +1,8 @@
 object Libraries {
 
+    // WebRTC
+    const val webrtcAndroid = "com.github.eyeson-team:webrtc-android:${Versions.webrtcAndroid}"
+
     // DI
     const val hiltAndroid = "com.google.dagger:hilt-android:${Versions.hilt}"
     const val hiltNavigationCompose =
