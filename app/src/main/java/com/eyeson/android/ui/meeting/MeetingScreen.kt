@@ -84,7 +84,6 @@ import com.eyeson.sdk.events.CallTerminationReason
 import com.eyeson.sdk.webrtc.VideoRenderer
 import org.webrtc.EglBase
 import org.webrtc.RendererCommon
-import timber.log.Timber
 import kotlin.math.roundToInt
 
 @Composable
@@ -517,6 +516,10 @@ fun MeetingScreen(
                         cancel(IN_CALL_NOTIFICATION_ID)
                     }
                     viewModel.setRemoteVideoTarget(remoteView)
+
+                    if (event == Lifecycle.Event.ON_DESTROY && context.findActivity().isFinishing) {
+                        viewModel.disconnect()
+                    }
                 }
             }
         }
