@@ -7,6 +7,10 @@ The format is based on [Keep a Changelog] and this project adheres to
 ## [Unreleased]
 
 ## [Released]
+## [1.1.1] - 2023-03-30
+### Added
+- Support for custom API url (internal use)
+
 ## [1.1.0] - 2023-03-10
 ### Added
 - Custom message support
