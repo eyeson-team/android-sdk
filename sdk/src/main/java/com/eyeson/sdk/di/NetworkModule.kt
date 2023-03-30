@@ -1,6 +1,7 @@
 package com.eyeson.sdk.di
 
 import com.eyeson.sdk.BuildConfig
+import com.eyeson.sdk.EyesonMeeting
 import com.eyeson.sdk.model.meeting.base.MeetingBaseMessageDto
 import com.eyeson.sdk.moshi.adapter.AsStringAdapter
 import com.eyeson.sdk.moshi.adapter.DataChannelIncomingMessagesAdapter
@@ -60,7 +61,7 @@ internal object NetworkModule {
     private fun provideRetrofit(okHttpClient: OkHttpClient, moshi: Moshi): Retrofit {
         return Retrofit.Builder()
             .addConverterFactory(MoshiConverterFactory.create(moshi))
-            .baseUrl(BuildConfig.API_URL)
+            .baseUrl(EyesonMeeting.API_URL)
             .client(okHttpClient)
             .build()
     }

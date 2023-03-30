@@ -70,7 +70,8 @@ import java.util.concurrent.atomic.AtomicBoolean
 class EyesonMeeting(
     private val eventListener: EyesonEventListener,
     private val application: Application,
-    private val experimentalFeatureStereo: Boolean = false
+    private val experimentalFeatureStereo: Boolean = false,
+    customApiUrl: String? = null
 ) {
     private val eyesonMeetingScope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
 
@@ -94,6 +95,11 @@ class EyesonMeeting(
 
     private val rootEglBase: EglBase = EglBase.create()
 
+    init {
+        if (customApiUrl != null) {
+            API_URL = customApiUrl
+        }
+    }
     data class ScreenShareInfo(
         val mediaProjectionPermissionResultData: Intent,
         val notificationId: Int,
@@ -665,5 +671,9 @@ class EyesonMeeting(
             neededPermissions.add(NeededPermissions.CAMERA)
         }
         return neededPermissions
+    }
+
+    companion object {
+        internal var API_URL = BuildConfig.API_URL
     }
 }
