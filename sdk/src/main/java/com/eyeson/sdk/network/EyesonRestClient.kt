@@ -38,4 +38,23 @@ internal class EyesonRestClient(
             eyesonApi.sendCustomMessage(accessKey, "custom", content)
         }
 
+    suspend fun videoPlayback(
+        accessKey: String,
+        url: String,
+        name: String?,
+        playId: String?,
+        replacementId: String?,
+        audio: Boolean
+    ): Response<Unit> =
+        withContext(ioDispatcher) {
+            eyesonApi.videoPlayback(accessKey, url, playId, replacementId, name, audio)
+        }
+
+    suspend fun stopVideoPlayback(
+        accessKey: String,
+        playId: String,
+    ): Response<Unit> =
+        withContext(ioDispatcher) {
+            eyesonApi.stopVideoPlayback(accessKey, playId)
+        }
 }

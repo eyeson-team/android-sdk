@@ -69,6 +69,10 @@ object Libraries {
     const val coil = "io.coil-kt:coil:${Versions.coil}"
     const val coilCompose = "io.coil-kt:coil-compose:${Versions.coil}"
 
+    // Media
+    const val media3Exoplayer = "androidx.media3:media3-exoplayer:${Versions.media3}"
+    const val media3Ui = "androidx.media3:media3-ui:${Versions.media3}"
+
     // Logging
     const val timber = "com.jakewharton.timber:timber:${Versions.timber}"
 

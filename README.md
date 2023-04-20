@@ -181,7 +181,7 @@ Can either be done via `accessKey` or `guestToken`
 eyesonMeeting.join(
     accessKey = accessKey,
     frontCamera = true,
-    audiOnly = false,
+    audioOnly = false,
     local = local,
     remote = remote,
     microphoneEnabledOnStart = true,
@@ -197,7 +197,7 @@ eyesonMeeting.joinAsGuest(
     id = null, // optional 
     avatar = null, // optional URL
     frontCamera = true,
-    audiOnly = false,
+    audioOnly = false,
     local = local,
     remote = remote,
     microphoneEnabledOnStart = true,
@@ -265,7 +265,7 @@ EyesonMeeting(
     join(
         accessKey = accessKey,
         frontCamera = true,
-        audiOnly = false,
+        audioOnly = false,
         local = local,
         remote = remote,
         microphoneEnabledOnStart = true,

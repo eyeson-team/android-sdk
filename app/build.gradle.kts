@@ -108,6 +108,9 @@ dependencies {
     implementation(Libraries.coil)
     implementation(Libraries.coilCompose)
 
+    implementation(Libraries.media3Exoplayer)
+    implementation(Libraries.media3Ui)
+
     testImplementation(Libraries.jUnit)
     androidTestImplementation(Libraries.jUnitTest)
     androidTestImplementation(Libraries.espressoCore)
