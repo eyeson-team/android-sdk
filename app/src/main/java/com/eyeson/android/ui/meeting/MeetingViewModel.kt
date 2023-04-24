@@ -7,6 +7,14 @@ import android.content.Intent
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import androidx.media3.common.C
+import androidx.media3.common.MediaItem
+import androidx.media3.common.Player
+import androidx.media3.common.Player.STATE_BUFFERING
+import androidx.media3.common.Player.STATE_ENDED
+import androidx.media3.common.Player.STATE_IDLE
+import androidx.media3.common.Player.STATE_READY
+import androidx.media3.exoplayer.ExoPlayer
 import com.eyeson.android.EyesonNavigationParameter.ACCESS_KEY
 import com.eyeson.android.EyesonNavigationParameter.GUEST_NAME
 import com.eyeson.android.EyesonNavigationParameter.GUEST_TOKEN
@@ -14,32 +22,26 @@ import com.eyeson.android.R
 import com.eyeson.android.data.SettingsRepository
 import com.eyeson.android.ui.meeting.ChatMessage.IncomingMessage
 import com.eyeson.android.ui.meeting.ChatMessage.OutgoingMessage
-import com.eyeson.android.ui.settings.SettingsUiState
 import com.eyeson.sdk.EyesonAudioManager
 import com.eyeson.sdk.EyesonMeeting
 import com.eyeson.sdk.events.CallRejectionReason
 import com.eyeson.sdk.events.CallTerminationReason
 import com.eyeson.sdk.events.EyesonEventListener
+import com.eyeson.sdk.events.MediaPlaybackResponse
 import com.eyeson.sdk.events.NeededPermissions
 import com.eyeson.sdk.model.local.api.UserInfo
 import com.eyeson.sdk.model.local.call.ConnectionStatistic
 import com.eyeson.sdk.model.local.meeting.BroadcastUpdate
-import com.eyeson.sdk.model.local.meeting.PlaybackUpdate
+import com.eyeson.sdk.model.local.meeting.Playback
 import com.eyeson.sdk.model.local.meeting.Recording
 import com.eyeson.sdk.model.local.meeting.SnapshotUpdate
 import dagger.hilt.android.lifecycle.HiltViewModel
-import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.flow.first
-import kotlinx.coroutines.flow.firstOrNull
-import kotlinx.coroutines.flow.flow
-import kotlinx.coroutines.flow.map
-import kotlinx.coroutines.flow.shareIn
-import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 import org.webrtc.EglBase
 import org.webrtc.VideoSink
@@ -55,7 +57,7 @@ class MeetingViewModel @Inject constructor(
     private val settingsRepository: SettingsRepository
 ) : ViewModel() {
 
-    val meetingSettings = runBlocking {  settingsRepository.meetingSettings.first()}
+    val meetingSettings = runBlocking { settingsRepository.meetingSettings.first() }
 
     private val _events = MutableStateFlow<List<EventEntry>>(emptyList())
     val events: StateFlow<List<EventEntry>> = _events.asStateFlow()
@@ -75,8 +77,8 @@ class MeetingViewModel @Inject constructor(
     private val _meetingJoinFailed = MutableStateFlow(false)
     val meetingJoinFailed: StateFlow<Boolean> = _meetingJoinFailed.asStateFlow()
 
-    private val _userInMeetingCount = MutableStateFlow(0)
-    val userInMeetingCount: StateFlow<Int> = _userInMeetingCount.asStateFlow()
+    private val _userInMeeting = MutableStateFlow(emptyList<UserInfo>())
+    val userInMeeting: StateFlow<List<UserInfo>> = _userInMeeting.asStateFlow()
 
     private val eventListener: EyesonEventListener = object : EyesonEventListener() {
         override fun onPermissionsNeeded(neededPermissions: List<NeededPermissions>) {
@@ -132,6 +134,9 @@ class MeetingViewModel @Inject constructor(
         override fun onStreamingModeChanged(p2p: Boolean) {
             addEvent("onStreamingModeChanged: p2p $p2p")
             _p2p.value = p2p
+            if (p2p) {
+                pauseExoPlayers()
+            }
         }
 
         override fun onVideoSourceUpdate(
@@ -139,7 +144,6 @@ class MeetingViewModel @Inject constructor(
             presenter: UserInfo?
         ) {
             addEvent("onVideoSourceUpdate: $visibleUsers; presenter $presenter")
-            Timber.d("onVideoSourceUpdate: _presentationActive.value ${_presentationActive.value} $visibleUsers; presenter $presenter")
             if (!_presentationActive.value && presenter?.id != null && presenter.id != eyesonMeeting.getUserInfo()?.id) {
                 lastCameraState = isVideoEnabled()
                 _cameraActive.value = false
@@ -152,7 +156,6 @@ class MeetingViewModel @Inject constructor(
             }
 
             _presentationActive.value = presenter?.id != null
-            Timber.d("_presentationActive.value: ${_presentationActive.value};")
         }
 
         override fun onAudioMutedBy(user: UserInfo) {
@@ -160,8 +163,66 @@ class MeetingViewModel @Inject constructor(
             _microphoneActive.value = !isMicrophoneEnabled()
         }
 
-        override fun onMediaPlayback(playing: List<PlaybackUpdate.Playback>) {
+        override fun onMediaPlayback(playing: List<Playback>) {
             addEvent("onMediaPlayback: playing $playing")
+
+            val playMedia = { exoPlayer: ExoPlayer, playback: Playback ->
+                viewModelScope.launch(Dispatchers.Main) {
+                    exoPlayer.volume = if (playback.audio) 1F else 0F
+                    exoPlayer.setMediaItem(MediaItem.fromUri(playback.url))
+                }
+            }
+            if (_p2p.value) {
+                for (playback in playing) {
+                    if (!_localVideoPlaybackActive.value &&
+                        playback.replacedUser?.id == (eyesonMeeting.getUserInfo()?.id ?: continue)
+                    ) {
+                        _localVideoPlaybackActive.value = true
+                        playMedia(localExoPlayer, playback)
+                    }
+
+                    if (!_remoteVideoPlaybackActive.value &&
+                        _userInMeeting.value.find {
+                            it.id == playback.replacedUser?.id &&
+                                    it.id != eyesonMeeting.getUserInfo()?.id
+                        } != null
+                    ) {
+                        _remoteVideoPlaybackActive.value = true
+                        playMedia(remoteExoPlayer, playback)
+                    }
+                }
+            }
+        }
+
+        override fun onMediaPlaybackEnded(playIds: List<String>) {
+            addEvent("onMediaPlaybackEnded: ended $playIds")
+
+            _localVideoPlaybackActive.value = false
+            _localVideoPlaybackPlayId.value = null
+        }
+
+        override fun onMediaPlaybackStartResponse(
+            playId: String?,
+            mediaPlaybackResponse: MediaPlaybackResponse
+        ) {
+            addEvent(
+                "onMediaPlaybackStartResponse: mediaPlaybackResponse $mediaPlaybackResponse",
+                error = !mediaPlaybackResponse.isSuccessful()
+            )
+
+            _localVideoPlaybackPlayId.value = playId
+        }
+
+        override fun onMediaPlaybackStopResponse(
+            playId: String,
+            mediaPlaybackResponse: MediaPlaybackResponse
+        ) {
+            addEvent(
+                "onMediaPlaybackStopResponse: playId: $playId mediaPlaybackResponse $mediaPlaybackResponse",
+                error = mediaPlaybackResponse != MediaPlaybackResponse.OK
+            )
+            _localVideoPlaybackActive.value = false
+            _localVideoPlaybackPlayId.value = null
         }
 
         override fun onBroadcastUpdate(activeBroadcasts: BroadcastUpdate) {
@@ -191,7 +252,7 @@ class MeetingViewModel @Inject constructor(
 
         override fun onUserListUpdate(users: List<UserInfo>) {
             addEvent("onUserListUpdate: users $users")
-            _userInMeetingCount.value = users.size
+            _userInMeeting.value = users
         }
 
         override fun onVoiceActivity(user: UserInfo, active: Boolean) {
@@ -247,6 +308,16 @@ class MeetingViewModel @Inject constructor(
     private val _audioDevices = MutableStateFlow<List<AudioDevice>>(emptyList())
     val audioDevices: StateFlow<List<AudioDevice>> = _audioDevices.asStateFlow()
 
+    private val _remoteVideoPlaybackActive = MutableStateFlow(false)
+    val remoteVideoPlaybackActive: StateFlow<Boolean> = _remoteVideoPlaybackActive.asStateFlow()
+
+    private val _localVideoPlaybackActive = MutableStateFlow(false)
+    val localVideoPlaybackActive: StateFlow<Boolean> = _localVideoPlaybackActive.asStateFlow()
+
+    private val _localVideoPlaybackPlayId = MutableStateFlow<String?>(null)
+    val localVideoPlaybackPlayId: StateFlow<String?> = _localVideoPlaybackPlayId.asStateFlow()
+
+
     private fun addEvent(text: String, error: Boolean = false) {
         _events.value = emptyList<EventEntry>() + EventEntry(text, Date(), error) + _events.value
     }
@@ -255,6 +326,35 @@ class MeetingViewModel @Inject constructor(
 
     fun getEglContext(): EglBase.Context? {
         return eyesonMeeting.getEglContext()
+    }
+
+
+    val remoteExoPlayer = getExoPlayer { _remoteVideoPlaybackActive.value = false }
+    val localExoPlayer = getExoPlayer { _localVideoPlaybackActive.value = false }
+
+
+    private fun getExoPlayer(onPlaybackEnd: () -> Unit): ExoPlayer {
+        return ExoPlayer.Builder(application).build().apply {
+            playWhenReady = true
+            repeatMode = Player.REPEAT_MODE_OFF
+            videoScalingMode = C.VIDEO_SCALING_MODE_SCALE_TO_FIT
+            addListener(
+                object : Player.Listener {
+                    override fun onIsPlayingChanged(isPlaying: Boolean) {
+                        if (!isPlaying && (playbackState == STATE_IDLE || playbackState == STATE_ENDED)) {
+                            onPlaybackEnd()
+                        }
+                    }
+                }
+            )
+            prepare()
+        }
+    }
+
+    override fun onCleared() {
+        super.onCleared()
+        remoteExoPlayer.release()
+        localExoPlayer.release()
     }
 
     fun connect(
@@ -282,7 +382,7 @@ class MeetingViewModel @Inject constructor(
                 eyesonMeeting.join(
                     accessKey = checkNotNull(savedStateHandle.get<String>(ACCESS_KEY)),
                     frontCamera = !meetingSettings.rearCamOnStart,
-                    audiOnly = meetingSettings.audioOnly,
+                    audioOnly = meetingSettings.audioOnly,
                     local = local,
                     remote = remote,
                     microphoneEnabledOnStart = meetingSettings.micOnStar,
@@ -297,7 +397,7 @@ class MeetingViewModel @Inject constructor(
                     id = null,
                     avatar = null,
                     frontCamera = !meetingSettings.rearCamOnStart,
-                    audiOnly = meetingSettings.audioOnly,
+                    audioOnly = meetingSettings.audioOnly,
                     local = local,
                     remote = remote,
                     microphoneEnabledOnStart = meetingSettings.micOnStar,
@@ -314,6 +414,9 @@ class MeetingViewModel @Inject constructor(
 
     fun disconnect() {
         audioManager.stop()
+
+        remoteExoPlayer.release()
+        localExoPlayer.release()
 
         eyesonMeeting.leave()
         _inCall.set(false)
@@ -440,6 +543,56 @@ class MeetingViewModel @Inject constructor(
         _screenShareActive.value = false
         eyesonMeeting.stopScreenShare(true)
         eyesonMeeting.stopPresentation()
+    }
+
+    fun startVideoPlayback(
+        url: String,
+        replaceOwnVideo: Boolean,
+        playAudio: Boolean,
+        name: String? = null,
+        playerId: String = UUID.randomUUID().toString()
+    ): String {
+        eyesonMeeting.startVideoPlayback(
+            url = url,
+            name = name,
+            playId = playerId,
+            replacedUser = if (replaceOwnVideo) {
+                eyesonMeeting.getUserInfo()
+            } else {
+                null
+            },
+            audio = playAudio
+        )
+
+        return playerId
+    }
+
+    fun stopVideoPlayback() {
+        viewModelScope.launch(Dispatchers.Main) {
+            localExoPlayer.pause()
+            localExoPlayer.clearMediaItems()
+        }
+        eyesonMeeting.stopVideoPlayback(_localVideoPlaybackPlayId.value ?: return)
+    }
+
+    fun pauseExoPlayers() {
+        val pausePayer = { exoPlayer: ExoPlayer ->
+            viewModelScope.launch(Dispatchers.Main) {
+                when (exoPlayer.playbackState) {
+                    STATE_BUFFERING, STATE_READY -> {
+                        exoPlayer.pause()
+                        exoPlayer.clearMediaItems()
+                    }
+                    else -> Unit
+                }
+            }
+        }
+
+        pausePayer(localExoPlayer)
+        _localVideoPlaybackActive.value = false
+
+        pausePayer(remoteExoPlayer)
+        _remoteVideoPlaybackActive.value = false
     }
 }
 

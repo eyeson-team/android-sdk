@@ -72,6 +72,8 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.media3.exoplayer.ExoPlayer
+import androidx.media3.ui.PlayerView
 import com.eyeson.android.MainActivity
 import com.eyeson.android.R
 import com.eyeson.android.ui.components.Chat
@@ -99,10 +101,23 @@ fun MeetingScreen(
     val meetingJoinFailed by viewModel.meetingJoinFailed.collectAsStateWithLifecycle()
     val presentationActive by viewModel.presentationActive.collectAsStateWithLifecycle()
     val screenShareActive by viewModel.screenShareActive.collectAsStateWithLifecycle()
+    val remoteVideoPlaybackActive by viewModel.remoteVideoPlaybackActive.collectAsStateWithLifecycle()
+    val localVideoPlaybackActive by viewModel.localVideoPlaybackActive.collectAsStateWithLifecycle()
+    val videoPlaybackSelectable by viewModel.localVideoPlaybackPlayId.collectAsStateWithLifecycle()
 
     val sfu by viewModel.p2p.collectAsStateWithLifecycle()
 
     var whatIsOpen by rememberSaveable { mutableStateOf(0) }
+    var videoUrl by rememberSaveable {
+        mutableStateOf(DEMO_VIDEO_URL)
+    }
+
+    var playAudio by rememberSaveable {
+        mutableStateOf(false)
+    }
+    var replaceOwnVideo by rememberSaveable {
+        mutableStateOf(true)
+    }
 
     val context = LocalContext.current
     val configuration: Configuration = LocalConfiguration.current
@@ -118,12 +133,11 @@ fun MeetingScreen(
         viewModel.setLocalVideoTarget(it)
     }
 
-
     val events by viewModel.events.collectAsStateWithLifecycle()
     val chatMessages by viewModel.chatMessages.collectAsStateWithLifecycle()
     val audioDevices by viewModel.audioDevices.collectAsStateWithLifecycle()
 
-    val userInMeetingCount by viewModel.userInMeetingCount.collectAsStateWithLifecycle()
+    val userInMeeting by viewModel.userInMeeting.collectAsStateWithLifecycle()
 
     val connectWithScreenShareLauncher = rememberLauncherForActivityResult(
         ActivityResultContracts.StartActivityForResult()
@@ -219,7 +233,7 @@ fun MeetingScreen(
                         Connecting()
                     }
                     viewModel.meetingSettings.audioOnly -> {
-                        AudioOnly(participants = userInMeetingCount)
+                        AudioOnly(participants = userInMeeting.count())
                     }
                     else -> {
                         VideoViews(
@@ -233,7 +247,17 @@ fun MeetingScreen(
                                 .size(120.dp, 80.dp)
                                 .fillMaxSize()
                                 .zIndex(1f),
-                            wideScreen = viewModel.isWideScreen()
+                            wideScreen = viewModel.isWideScreen(),
+                            remoteExoPlayer = if (remoteVideoPlaybackActive) {
+                                viewModel.remoteExoPlayer
+                            } else {
+                                null
+                            },
+                            localExoPlayer = if (localVideoPlaybackActive && sfu) {
+                                viewModel.localExoPlayer
+                            } else {
+                                null
+                            }
                         )
                     }
                 }
@@ -248,7 +272,7 @@ fun MeetingScreen(
                 ) {
 
                     IconButton(onClick = {
-                        whatIsOpen = 0
+                        whatIsOpen = SETTINGS_DEFAULT
                         open = true
                     }) {
                         Icon(
@@ -285,7 +309,7 @@ fun MeetingScreen(
                 },
                 actions = {
                     IconButton(onClick = {
-                        whatIsOpen = 0
+                        whatIsOpen = SETTINGS_DEFAULT
                         open = true
                     }) {
                         Icon(
@@ -308,7 +332,7 @@ fun MeetingScreen(
                         Connecting()
                     }
                     viewModel.meetingSettings.audioOnly -> {
-                        AudioOnly(participants = userInMeetingCount)
+                        AudioOnly(participants = userInMeeting.count())
                     }
                     else -> {
                         VideoViews(
@@ -323,6 +347,16 @@ fun MeetingScreen(
                                 .padding(end = 16.dp, bottom = 88.dp)
                                 .size(80.dp, 120.dp),
                             wideScreen = viewModel.isWideScreen(),
+                            remoteExoPlayer = if (remoteVideoPlaybackActive) {
+                                viewModel.remoteExoPlayer
+                            } else {
+                                null
+                            },
+                            localExoPlayer = if (localVideoPlaybackActive && sfu) {
+                                viewModel.localExoPlayer
+                            } else {
+                                null
+                            }
                         )
                     }
                 }
@@ -402,11 +436,11 @@ fun MeetingScreen(
 
     Crossfade(targetState = whatIsOpen) { screen ->
         when (screen) {
-            1 -> {
+            SETTINGS_AUDIO -> {
                 AudioSettings(
                     visible = open,
                     onClose = {
-                        whatIsOpen = 0
+                        whatIsOpen = SETTINGS_DEFAULT
                         open = false
                     },
                     audioDevices,
@@ -414,11 +448,11 @@ fun MeetingScreen(
                     verticalContentRatio = vertical
                 )
             }
-            2 -> {
+            SETTINGS_EVENT_LOG -> {
                 EventLog(
                     visible = open,
                     onClose = {
-                        whatIsOpen = 0
+                        whatIsOpen = SETTINGS_DEFAULT
                         open = false
                     },
                     events = events,
@@ -433,12 +467,34 @@ fun MeetingScreen(
                     verticalContentRatio = vertical
                 )
             }
+            SETTINGS_VIDEO_PLAYBACK -> {
+                VideoPlayback(
+                    visible = open,
+                    onClose = {
+                        whatIsOpen = SETTINGS_DEFAULT
+                        open = false
+                    },
+                    videoUrl = videoUrl,
+                    onVideoUrlChange = { videoUrl = it },
+                    audio = playAudio,
+                    onAudioToggle = { playAudio = it },
+                    replaceOwnVideo = replaceOwnVideo,
+                    onReplaceOwnVideoChange = { replaceOwnVideo = it },
+                    onPlay = {
+                        viewModel.startVideoPlayback(videoUrl, replaceOwnVideo, playAudio)
+                        whatIsOpen = SETTINGS_DEFAULT
+                        open = false
+                    },
+                    horizontalContentRatio = horizontal,
+                    verticalContentRatio = vertical
+                )
+            }
             else -> {
                 MeetingSettings(
                     visible = open,
                     onClose = {
                         open = false
-                        whatIsOpen = 0
+                        whatIsOpen = SETTINGS_DEFAULT
                     },
                     screenShareActive = screenShareActive,
                     presentationActive = presentationActive,
@@ -459,6 +515,11 @@ fun MeetingScreen(
                         }
                     },
                     stopFullScreenPresentation = { viewModel.stopScreenShare() },
+                    showVideoPlayback = {
+                        whatIsOpen = SETTINGS_VIDEO_PLAYBACK
+                    },
+                    isVideoPlaying = videoPlaybackSelectable != null,
+                    stopVideoPlayback = { viewModel.stopVideoPlayback() },
                     muteAll = {
                         viewModel.muteAll()
                         Toast.makeText(
@@ -469,9 +530,9 @@ fun MeetingScreen(
 
                     },
                     showAudioSettings = {
-                        whatIsOpen = 1
+                        whatIsOpen = SETTINGS_AUDIO
                     },
-                    showEventLog = { whatIsOpen = 2 },
+                    showEventLog = { whatIsOpen = SETTINGS_EVENT_LOG },
                     horizontalContentRatio = horizontal,
                     verticalContentRatio = vertical
                 )
@@ -539,6 +600,8 @@ private fun VideoViews(
     localView: VideoRenderer,
     setLocalTarget: (VideoRenderer?) -> Unit,
     modifier: Modifier = Modifier,
+    remoteExoPlayer: ExoPlayer? = null,
+    localExoPlayer: ExoPlayer? = null,
     modifierLocalView: Modifier = Modifier,
     wideScreen: Boolean = false
 ) {
@@ -559,29 +622,57 @@ private fun VideoViews(
     }
 
     Box(modifier) {
-        AndroidView(modifier = remoteModifier.align(Alignment.Center), factory = {
-            remoteView
-        })
-
-        val localTarget = if (showLocal) {
-            AndroidView(modifier = modifierLocalView
-                .align(Alignment.BottomEnd)
-                .offset { IntOffset(offsetX.roundToInt(), offsetY.roundToInt()) }
-                .pointerInput(Unit) {
-                    detectDragGestures { change, dragAmount ->
-                        change.consume()
-                        offsetX += dragAmount.x
-                        offsetY += dragAmount.y
+        if (remoteExoPlayer == null) {
+            AndroidView(modifier = remoteModifier.align(Alignment.Center), factory = {
+                remoteView
+            })
+        } else {
+            AndroidView(
+                factory = { context ->
+                    PlayerView(context).apply {
+                        hideController()
+                        useController = false
+                        player = remoteExoPlayer
                     }
                 },
-                factory = { localView })
-
-            localView
-        } else {
-            null
+                modifier = remoteModifier.align(Alignment.Center)
+            )
         }
 
-        setLocalTarget(localTarget)
+        Box(modifier = modifierLocalView
+            .align(Alignment.BottomEnd)
+            .offset { IntOffset(offsetX.roundToInt(), offsetY.roundToInt()) }
+            .pointerInput(Unit) {
+                detectDragGestures { change, dragAmount ->
+                    change.consume()
+                    offsetX += dragAmount.x
+                    offsetY += dragAmount.y
+                }
+            }) {
+
+            if (localExoPlayer == null) {
+                val localTarget = if (showLocal) {
+                    AndroidView(modifier = Modifier.fillMaxSize(),
+                        factory = { localView })
+
+                    localView
+                } else {
+                    null
+                }
+                setLocalTarget(localTarget)
+            } else {
+                AndroidView(
+                    factory = { context ->
+                        PlayerView(context).apply {
+                            player = localExoPlayer
+                            hideController()
+                            useController = false
+                        }
+                    },
+                    modifier = Modifier.fillMaxSize()
+                )
+            }
+        }
     }
 }
 
@@ -754,6 +845,10 @@ fun SettingsScreenPreview() {
     }
 }
 
+private const val SETTINGS_DEFAULT = 0
+private const val SETTINGS_AUDIO = 1
+private const val SETTINGS_EVENT_LOG = 2
+private const val SETTINGS_VIDEO_PLAYBACK = 3
 
 private const val SCREEN_SHARE_NOTIFICATION_ID = 42
 private const val SCREEN_SHARE_CHANNEL_ID = "7"
@@ -761,3 +856,6 @@ private const val SCREEN_SHARE_CHANNEL_NAME = "Screen share active"
 private const val IN_CALL_NOTIFICATION_ID = 3
 private const val IN_CALL_CHANNEL_ID = "17"
 private const val IN_CALL_CHANNEL_NAME = "In call"
+
+private const val DEMO_VIDEO_URL =
+    "https://s3.eu-west-1.amazonaws.com/eyeson.team.mediainject/eyeson-1950.webm"

@@ -3,7 +3,7 @@ package com.eyeson.sdk.events
 import com.eyeson.sdk.model.local.api.UserInfo
 import com.eyeson.sdk.model.local.call.ConnectionStatistic
 import com.eyeson.sdk.model.local.meeting.BroadcastUpdate
-import com.eyeson.sdk.model.local.meeting.PlaybackUpdate.Playback
+import com.eyeson.sdk.model.local.meeting.Playback
 import com.eyeson.sdk.model.local.meeting.Recording
 import com.eyeson.sdk.model.local.meeting.SnapshotUpdate
 import java.util.*
@@ -21,8 +21,7 @@ abstract class EyesonEventListener {
         activeBroadcasts: BroadcastUpdate?,
         snapshots: SnapshotUpdate?,
         isWidescreen: Boolean
-    ) {
-    }
+    ) {}
 
     open fun onMeetingJoined() {}
     open fun onMeetingJoinFailed(callRejectionReason: CallRejectionReason) {}
@@ -33,6 +32,16 @@ abstract class EyesonEventListener {
     open fun onVideoSourceUpdate(visibleUsers: List<UserInfo>, presenter: UserInfo?) {}
     open fun onAudioMutedBy(user: UserInfo) {}
     open fun onMediaPlayback(playing: List<Playback>) {}
+    open fun onMediaPlaybackEnded(playIds: List<String>) {}
+    open fun onMediaPlaybackStartResponse(
+        playId: String?,
+        mediaPlaybackResponse: MediaPlaybackResponse
+    ) {}
+    open fun onMediaPlaybackStopResponse(
+        playId: String,
+        mediaPlaybackResponse: MediaPlaybackResponse
+    ) {}
+
     open fun onBroadcastUpdate(activeBroadcasts: BroadcastUpdate) {}
     open fun onRecordingUpdate(recording: Recording) {}
     open fun onSnapshotUpdate(snapshots: SnapshotUpdate) {}

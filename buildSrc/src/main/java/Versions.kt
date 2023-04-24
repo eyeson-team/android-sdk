@@ -54,6 +54,9 @@ object Versions {
     const val moshi = "1.14.0"
     const val coil = "2.2.2"
 
+    // Media
+    const val media3 = "1.0.0"
+
     // Logging
     const val timber = "5.0.1"
 

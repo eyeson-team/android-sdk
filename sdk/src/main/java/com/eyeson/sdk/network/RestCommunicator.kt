@@ -8,6 +8,7 @@ import com.eyeson.sdk.model.local.api.UserWithSignaling
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.coroutineScope
+import retrofit2.Response
 
 internal class RestCommunicator {
     private val restClient by lazy { NetworkModule.restClient }
@@ -48,5 +49,26 @@ internal class RestCommunicator {
         coroutineScope {
             restClient.sendCustomMessage(accessKey, content).code()
         }
+
+    suspend fun videoPlayback(
+        accessKey: String,
+        url: String,
+        name: String?,
+        playId: String?,
+        replacementId: String?,
+        audio: Boolean
+    ): Int = coroutineScope {
+        restClient.videoPlayback(accessKey, url, name, playId, replacementId, audio).code()
+    }
+
+
+    suspend fun stopVideoPlayback(
+        accessKey: String,
+        playId: String,
+    ): Int = coroutineScope {
+        restClient.stopVideoPlayback(accessKey, playId).code()
+    }
+
+
 }
 

@@ -23,7 +23,7 @@ internal data class PlaybackUpdateDto(
     override fun toLocal(): PlaybackUpdate {
         return PlaybackUpdate(
             playing.map {
-                PlaybackUpdate.Playback(
+                PlaybackUpdate.PlaybackInternal(
                     url = it.url,
                     name = it.name,
                     playId = it.playId,

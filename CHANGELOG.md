@@ -5,6 +5,11 @@ The format is based on [Keep a Changelog] and this project adheres to
 [Semantic Versioning].  
 
 ## [Unreleased]
+### Changed
+- Typo in `join` and `joinAsGuest` arguments
+  - Might lead to breaking changes if named arguments are used
+- onMediaPlayback's `Playback` object to include UserInfo
+  - Might lead to breaking changes
 
 ## [Released]
 ## [1.1.1] - 2023-03-30

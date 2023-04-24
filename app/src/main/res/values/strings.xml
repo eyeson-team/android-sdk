@@ -10,6 +10,8 @@
     <string name="show">Show</string>
     <string name="copy">Copy</string>
     <string name="clear">Clear</string>
+    <string name="play">Play</string>
+    <string name="select">Select</string>
 
 
     <!-- Start screen -->
@@ -51,6 +53,12 @@
     <string name="ear_piece">Ear piece</string>
     <string name="speaker_phone">Speaker phone</string>
     <string name="none">None</string>
+
+    <string name="video_playback">Video playback</string>
+    <string name="video_url_hint">Video URL (.MP4 or .WEBM)</string>
+    <string name="play_audio">Play audio</string>
+    <string name="instead_of_own_video">Instead of own video</string>
+    <string name="as_additional_user">As additional user</string>
 
     <string name="event_log">Event log</string>
 
