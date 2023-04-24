@@ -641,6 +641,7 @@ class EyesonMeeting(
             )
 
             eventListener.onMediaPlaybackStopResponse(
+                playId,
                 MediaPlaybackResponse.fromResponseCode(response)
             )
         }

@@ -10,8 +10,10 @@ import androidx.lifecycle.viewModelScope
 import androidx.media3.common.C
 import androidx.media3.common.MediaItem
 import androidx.media3.common.Player
+import androidx.media3.common.Player.STATE_BUFFERING
 import androidx.media3.common.Player.STATE_ENDED
 import androidx.media3.common.Player.STATE_IDLE
+import androidx.media3.common.Player.STATE_READY
 import androidx.media3.exoplayer.ExoPlayer
 import com.eyeson.android.EyesonNavigationParameter.ACCESS_KEY
 import com.eyeson.android.EyesonNavigationParameter.GUEST_NAME
@@ -133,7 +135,7 @@ class MeetingViewModel @Inject constructor(
             addEvent("onStreamingModeChanged: p2p $p2p")
             _p2p.value = p2p
             if (p2p) {
-                stopExoPlayers()
+                pauseExoPlayers()
             }
         }
 
@@ -166,7 +168,6 @@ class MeetingViewModel @Inject constructor(
 
             val playMedia = { exoPlayer: ExoPlayer, playback: Playback ->
                 viewModelScope.launch(Dispatchers.Main) {
-                    _remoteVideoPlaybackActive.value = true
                     exoPlayer.volume = if (playback.audio) 1F else 0F
                     exoPlayer.setMediaItem(MediaItem.fromUri(playback.url))
                 }
@@ -176,16 +177,20 @@ class MeetingViewModel @Inject constructor(
                     if (!_localVideoPlaybackActive.value &&
                         playback.replacedUser?.id == (eyesonMeeting.getUserInfo()?.id ?: continue)
                     ) {
+                        _localVideoPlaybackActive.value = true
                         playMedia(localExoPlayer, playback)
                     }
 
                     if (!_remoteVideoPlaybackActive.value &&
-                        _userInMeeting.value.find { it.id == playback.replacedUser?.id } != null
+                        _userInMeeting.value.find {
+                            it.id == playback.replacedUser?.id &&
+                                    it.id != eyesonMeeting.getUserInfo()?.id
+                        } != null
                     ) {
+                        _remoteVideoPlaybackActive.value = true
                         playMedia(remoteExoPlayer, playback)
                     }
                 }
-
             }
         }
 
@@ -193,6 +198,7 @@ class MeetingViewModel @Inject constructor(
             addEvent("onMediaPlaybackEnded: ended $playIds")
 
             _localVideoPlaybackActive.value = false
+            _localVideoPlaybackPlayId.value = null
         }
 
         override fun onMediaPlaybackStartResponse(
@@ -204,16 +210,19 @@ class MeetingViewModel @Inject constructor(
                 error = !mediaPlaybackResponse.isSuccessful()
             )
 
-            localVideoPlaybackPlayId = playId
-            _localVideoPlaybackActive.value = mediaPlaybackResponse.isSuccessful()
+            _localVideoPlaybackPlayId.value = playId
         }
 
-        override fun onMediaPlaybackStopResponse(mediaPlaybackResponse: MediaPlaybackResponse) {
+        override fun onMediaPlaybackStopResponse(
+            playId: String,
+            mediaPlaybackResponse: MediaPlaybackResponse
+        ) {
             addEvent(
-                "onMediaPlaybackStopResponse: mediaPlaybackResponse $mediaPlaybackResponse",
+                "onMediaPlaybackStopResponse: playId: $playId mediaPlaybackResponse $mediaPlaybackResponse",
                 error = mediaPlaybackResponse != MediaPlaybackResponse.OK
             )
             _localVideoPlaybackActive.value = false
+            _localVideoPlaybackPlayId.value = null
         }
 
         override fun onBroadcastUpdate(activeBroadcasts: BroadcastUpdate) {
@@ -305,7 +314,9 @@ class MeetingViewModel @Inject constructor(
     private val _localVideoPlaybackActive = MutableStateFlow(false)
     val localVideoPlaybackActive: StateFlow<Boolean> = _localVideoPlaybackActive.asStateFlow()
 
-    private var localVideoPlaybackPlayId: String? = null
+    private val _localVideoPlaybackPlayId = MutableStateFlow<String?>(null)
+    val localVideoPlaybackPlayId: StateFlow<String?> = _localVideoPlaybackPlayId.asStateFlow()
+
 
     private fun addEvent(text: String, error: Boolean = false) {
         _events.value = emptyList<EventEntry>() + EventEntry(text, Date(), error) + _events.value
@@ -557,17 +568,31 @@ class MeetingViewModel @Inject constructor(
     }
 
     fun stopVideoPlayback() {
-        localExoPlayer.stop()
-        localExoPlayer.clearMediaItems()
-        eyesonMeeting.stopVideoPlayback(localVideoPlaybackPlayId ?: return)
+        viewModelScope.launch(Dispatchers.Main) {
+            localExoPlayer.pause()
+            localExoPlayer.clearMediaItems()
+        }
+        eyesonMeeting.stopVideoPlayback(_localVideoPlaybackPlayId.value ?: return)
     }
 
-    fun stopExoPlayers() {
-        localExoPlayer.stop()
-        localExoPlayer.clearMediaItems()
+    fun pauseExoPlayers() {
+        val pausePayer = { exoPlayer: ExoPlayer ->
+            viewModelScope.launch(Dispatchers.Main) {
+                when (exoPlayer.playbackState) {
+                    STATE_BUFFERING, STATE_READY -> {
+                        exoPlayer.pause()
+                        exoPlayer.clearMediaItems()
+                    }
+                    else -> Unit
+                }
+            }
+        }
 
-        remoteExoPlayer.stop()
-        remoteExoPlayer.clearMediaItems()
+        pausePayer(localExoPlayer)
+        _localVideoPlaybackActive.value = false
+
+        pausePayer(remoteExoPlayer)
+        _remoteVideoPlaybackActive.value = false
     }
 }
 

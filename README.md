@@ -339,6 +339,17 @@ fun setVideoAsPresentation()
 
 // Stop the current presentation, regardless who stated it 
 fun stopPresentation()
+
+// Video palyback 
+fun startVideoPlayback(
+    url: String, // webm (preferred) or mp4
+    name: String?,
+    playId: String?,
+    replacedUser: UserInfo?, // null = as additional user
+    audio: Boolean
+)
+
+fun stopVideoPlayback(playId: String)
 ```
 
 ## Events
@@ -356,8 +367,7 @@ abstract class EyesonEventListener {
         activeBroadcasts: BroadcastUpdate?,
         snapshots: SnapshotUpdate?,
         isWidescreen: Boolean
-    ) {
-    }
+    ) {}
 
     open fun onMeetingJoined() {}
     open fun onMeetingJoinFailed(callRejectionReason: CallRejectionReason) {}
@@ -368,15 +378,25 @@ abstract class EyesonEventListener {
     open fun onVideoSourceUpdate(visibleUsers: List<UserInfo>, presenter: UserInfo?) {}
     open fun onAudioMutedBy(user: UserInfo) {}
     open fun onMediaPlayback(playing: List<Playback>) {}
+    open fun onMediaPlaybackEnded(playIds: List<String>) {}
+    open fun onMediaPlaybackStartResponse(
+        playId: String?,
+        mediaPlaybackResponse: MediaPlaybackResponse
+    ) {}
+    open fun onMediaPlaybackStopResponse(
+        playId: String,
+        mediaPlaybackResponse: MediaPlaybackResponse
+    ) {}
+
     open fun onBroadcastUpdate(activeBroadcasts: BroadcastUpdate) {}
     open fun onRecordingUpdate(recording: Recording) {}
     open fun onSnapshotUpdate(snapshots: SnapshotUpdate) {}
-
+    open fun onConnectionStatisticUpdate(statistic: ConnectionStatistic) {}
 
     open fun onUserJoinedMeeting(users: List<UserInfo>) {}
     open fun onUserLeftMeeting(users: List<UserInfo>) {}
     open fun onUserListUpdate(users: List<UserInfo>) {}
-    open fun onVoiceActivity(user: UserInfo, active: Boolean){}
+    open fun onVoiceActivity(user: UserInfo, active: Boolean) {}
 
     open fun onChatMessageReceived(user: UserInfo, message: String, timestamp: Date) {}
     open fun onCustomMessageReceived(user: UserInfo, message: String, timestamp: Date) {}

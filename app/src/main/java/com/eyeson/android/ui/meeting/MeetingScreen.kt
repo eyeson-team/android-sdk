@@ -73,7 +73,6 @@ import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.media3.exoplayer.ExoPlayer
-import androidx.media3.ui.AspectRatioFrameLayout.RESIZE_MODE_FILL
 import androidx.media3.ui.PlayerView
 import com.eyeson.android.MainActivity
 import com.eyeson.android.R
@@ -87,7 +86,6 @@ import com.eyeson.sdk.events.CallTerminationReason
 import com.eyeson.sdk.webrtc.VideoRenderer
 import org.webrtc.EglBase
 import org.webrtc.RendererCommon
-import timber.log.Timber
 import kotlin.math.roundToInt
 
 @Composable
@@ -105,6 +103,8 @@ fun MeetingScreen(
     val screenShareActive by viewModel.screenShareActive.collectAsStateWithLifecycle()
     val remoteVideoPlaybackActive by viewModel.remoteVideoPlaybackActive.collectAsStateWithLifecycle()
     val localVideoPlaybackActive by viewModel.localVideoPlaybackActive.collectAsStateWithLifecycle()
+    val videoPlaybackSelectable by viewModel.localVideoPlaybackPlayId.collectAsStateWithLifecycle()
+
     val sfu by viewModel.p2p.collectAsStateWithLifecycle()
 
     var whatIsOpen by rememberSaveable { mutableStateOf(0) }
@@ -518,7 +518,7 @@ fun MeetingScreen(
                     showVideoPlayback = {
                         whatIsOpen = SETTINGS_VIDEO_PLAYBACK
                     },
-                    isVideoPlaying = localVideoPlaybackActive,
+                    isVideoPlaying = videoPlaybackSelectable != null,
                     stopVideoPlayback = { viewModel.stopVideoPlayback() },
                     muteAll = {
                         viewModel.muteAll()
@@ -630,9 +630,9 @@ private fun VideoViews(
             AndroidView(
                 factory = { context ->
                     PlayerView(context).apply {
-                        player = remoteExoPlayer
                         hideController()
                         useController = false
+                        player = remoteExoPlayer
                     }
                 },
                 modifier = remoteModifier.align(Alignment.Center)
