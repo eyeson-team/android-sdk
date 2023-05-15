@@ -40,7 +40,8 @@ internal data class MemberListUpdateDto(
         return MemberListUpdate(
             added = data.added.map { it.userId },
             deleted = data.deleted,
-            memberCountAfterUpdate = data.count
+            memberCountAfterUpdate = data.count,
+            mediaPlayIds = data.media.map { it.playId }
         )
     }
 }

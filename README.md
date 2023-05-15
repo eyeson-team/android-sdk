@@ -357,6 +357,7 @@ fun stopVideoPlayback(playId: String)
 abstract class EyesonEventListener {
     open fun onPermissionsNeeded(neededPermissions: List<NeededPermissions>) {}
     open fun onMeetingJoining(
+        accessKey: String,
         name: String,
         startedAt: Date,
         user: UserInfo,
@@ -395,7 +396,7 @@ abstract class EyesonEventListener {
 
     open fun onUserJoinedMeeting(users: List<UserInfo>) {}
     open fun onUserLeftMeeting(users: List<UserInfo>) {}
-    open fun onUserListUpdate(users: List<UserInfo>) {}
+    open fun onUserListUpdate(users: List<UserInfo>, playbackPlayIds:List<String>) {}
     open fun onVoiceActivity(user: UserInfo, active: Boolean) {}
 
     open fun onChatMessageReceived(user: UserInfo, message: String, timestamp: Date) {}

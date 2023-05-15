@@ -86,6 +86,7 @@ class MeetingViewModel @Inject constructor(
         }
 
         override fun onMeetingJoining(
+            accessKey: String,
             name: String,
             startedAt: Date,
             user: UserInfo,
@@ -98,7 +99,7 @@ class MeetingViewModel @Inject constructor(
             isWidescreen: Boolean
         ) {
             addEvent(
-                "onMeetingJoining: name $name; startedAt $startedAt; user $user; " +
+                "onMeetingJoining: accessKey: $accessKey;  name $name; startedAt $startedAt; user $user; " +
                         "locked $locked; guestToke $guestToken; guestLink $guestLink; activeRecording " +
                         "$activeRecording; activeBroadcasts $activeBroadcasts; snapshots $snapshots;" +
                         " isWidescreen $isWidescreen"
@@ -250,8 +251,8 @@ class MeetingViewModel @Inject constructor(
             addEvent("onUserLeftMeeting: users $users")
         }
 
-        override fun onUserListUpdate(users: List<UserInfo>) {
-            addEvent("onUserListUpdate: users $users")
+        override fun onUserListUpdate(users: List<UserInfo>, playbackPlayIds: List<String>) {
+            addEvent("onUserListUpdate: users $users; playbackPlayIds $playbackPlayIds")
             _userInMeeting.value = users
         }
 

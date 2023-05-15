@@ -5,7 +5,14 @@ The format is based on [Keep a Changelog] and this project adheres to
 [Semantic Versioning].  
 
 ## [Unreleased]
+   
 ## [Released]
+## [1.1.3] - 2023-05-15
+### Changed
+- EyesonEventListener Signature changes
+  - `onUserListUpdate` to include additional media elements
+  - `onMeetingJoining`
+  - 
 ## [1.1.2] - 2023-04-24
 ### Added
 - Media playback

@@ -216,6 +216,7 @@ class EyesonMeeting(
             meeting = meetingInfo
 
             eventListener.onMeetingJoining(
+                meetingInfo.accessKey,
                 meetingInfo.room.name,
                 meetingInfo.room.startedAt,
                 meetingInfo.user.toLocal(Date()),
@@ -430,7 +431,10 @@ class EyesonMeeting(
                             userInMeeting.remove(it)
                         }
                     }
-                    eventListener.onUserListUpdate(userInMeeting.values.toSet().toList())
+                    eventListener.onUserListUpdate(
+                        userInMeeting.values.toSet().toList(),
+                        command.mediaPlayIds
+                    )
                 }
             }
             is SourceUpdate -> {
@@ -465,20 +469,20 @@ class EyesonMeeting(
                             staredVideoPlaybacks.forEach { playback ->
                                 when (playback) {
                                     is VideoElements.AdditionalUser -> {
-                                        val a = removed.find {
+                                        val additionalUser = removed.find {
                                             it is VideoElements.AdditionalUser && playback.playerId == it.playerId
                                         }
-                                        if (a != null) {
+                                        if (additionalUser != null) {
                                             finishedPlaybacks.add(playback.playerId)
                                         } else {
                                             runningPlaybacks.add(playback)
                                         }
                                     }
                                     is VideoElements.Replacement -> {
-                                        val a = removed.find {
+                                        val replacement = removed.find {
                                             it is VideoElements.Replacement && playback.replacementId == it.playerId
                                         }
-                                        if (a != null) {
+                                        if (replacement != null) {
                                             finishedPlaybacks.add(playback.playerId)
                                         } else {
                                             runningPlaybacks.add(playback)
