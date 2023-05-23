@@ -15,6 +15,7 @@ import com.eyeson.sdk.events.MediaPlaybackResponse
 import com.eyeson.sdk.events.NeededPermissions
 import com.eyeson.sdk.exceptions.internal.FaultyInfoException
 import com.eyeson.sdk.model.api.MeetingDto
+import com.eyeson.sdk.model.local.api.MeetingInfo
 import com.eyeson.sdk.model.local.api.UserInfo
 import com.eyeson.sdk.model.local.base.LocalBaseCommand
 import com.eyeson.sdk.model.local.call.CameraSwitchDone
@@ -215,19 +216,17 @@ class EyesonMeeting(
             }
             meeting = meetingInfo
 
-            eventListener.onMeetingJoining(
-                meetingInfo.accessKey,
-                meetingInfo.room.name,
-                meetingInfo.room.startedAt,
-                meetingInfo.user.toLocal(Date()),
-                meetingInfo.locked,
-                meetingInfo.room.guestToken,
-                meetingInfo.links.guestJoin,
-                meetingInfo.recording?.toLocal(),
-                BroadcastUpdateDto("", meetingInfo.broadcasts).toLocal(),
-                SnapshotUpdateDto("", meetingInfo.snapshots).toLocal(),
-                meetingInfo.options.widescreen
-            )
+            when (val meetingInfoParsed = getMeetingInfo()) {
+                null -> {
+                    terminateCallWithError()
+                    return@launch
+                }
+                else -> {
+                    eventListener.onMeetingJoining(
+                        meetingInfoParsed
+                    )
+                }
+            }
 
             webSocketCommunicator = WebSocketCommunicator(meetingInfo).apply {
                 connect()
@@ -549,6 +548,24 @@ class EyesonMeeting(
         meeting = null
     }
 
+    fun getMeetingInfo(): MeetingInfo? {
+        return meeting?.let { meetingInfo ->
+            MeetingInfo(
+                meetingInfo.accessKey,
+                meetingInfo.room.name,
+                meetingInfo.room.startedAt,
+                meetingInfo.user.toLocal(Date()),
+                meetingInfo.locked,
+                meetingInfo.room.guestToken,
+                meetingInfo.links.guestJoin,
+                meetingInfo.recording?.toLocal(),
+                BroadcastUpdateDto("", meetingInfo.broadcasts).toLocal(),
+                SnapshotUpdateDto("", meetingInfo.snapshots).toLocal(),
+                meetingInfo.options.widescreen
+            )
+        }
+    }
+
     fun setLocalVideoTarget(target: VideoSink?) {
         callLogic?.setLocalVideoTarget(target)
     }
@@ -740,7 +757,7 @@ class EyesonMeeting(
             }
             is MeetingJoined -> {
                 webSocketCommunicator?.setLocalVideoEnabled(videoOnStart)
-                eventListener.onMeetingJoined()
+                eventListener.onMeetingJoined(getMeetingInfo() ?: return)
             }
             is CameraSwitchDone -> {
                 eventListener.onCameraSwitchDone(command.isFrontCamera)

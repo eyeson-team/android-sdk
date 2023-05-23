@@ -1,5 +1,6 @@
 package com.eyeson.sdk.events
 
+import com.eyeson.sdk.model.local.api.MeetingInfo
 import com.eyeson.sdk.model.local.api.UserInfo
 import com.eyeson.sdk.model.local.call.ConnectionStatistic
 import com.eyeson.sdk.model.local.meeting.BroadcastUpdate
@@ -10,21 +11,8 @@ import java.util.*
 
 abstract class EyesonEventListener {
     open fun onPermissionsNeeded(neededPermissions: List<NeededPermissions>) {}
-    open fun onMeetingJoining(
-        accessKey: String,
-        name: String,
-        startedAt: Date,
-        user: UserInfo,
-        locked: Boolean,
-        guestToken: String,
-        guestLink: String,
-        activeRecording: Recording?,
-        activeBroadcasts: BroadcastUpdate?,
-        snapshots: SnapshotUpdate?,
-        isWidescreen: Boolean
-    ) {}
-
-    open fun onMeetingJoined() {}
+    open fun onMeetingJoining(meetingInfo: MeetingInfo) {}
+    open fun onMeetingJoined(meetingInfo: MeetingInfo) {}
     open fun onMeetingJoinFailed(callRejectionReason: CallRejectionReason) {}
     open fun onMeetingTerminated(callTerminationReason: CallTerminationReason) {}
     open fun onMeetingLocked(locked: Boolean) {}
@@ -38,6 +26,7 @@ abstract class EyesonEventListener {
         playId: String?,
         mediaPlaybackResponse: MediaPlaybackResponse
     ) {}
+
     open fun onMediaPlaybackStopResponse(
         playId: String,
         mediaPlaybackResponse: MediaPlaybackResponse
@@ -50,7 +39,7 @@ abstract class EyesonEventListener {
 
     open fun onUserJoinedMeeting(users: List<UserInfo>) {}
     open fun onUserLeftMeeting(users: List<UserInfo>) {}
-    open fun onUserListUpdate(users: List<UserInfo>, playbackPlayIds:List<String>) {}
+    open fun onUserListUpdate(users: List<UserInfo>, playbackPlayIds: List<String>) {}
     open fun onVoiceActivity(user: UserInfo, active: Boolean) {}
 
     open fun onChatMessageReceived(user: UserInfo, message: String, timestamp: Date) {}

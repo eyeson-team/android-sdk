@@ -29,6 +29,7 @@ import com.eyeson.sdk.events.CallTerminationReason
 import com.eyeson.sdk.events.EyesonEventListener
 import com.eyeson.sdk.events.MediaPlaybackResponse
 import com.eyeson.sdk.events.NeededPermissions
+import com.eyeson.sdk.model.local.api.MeetingInfo
 import com.eyeson.sdk.model.local.api.UserInfo
 import com.eyeson.sdk.model.local.call.ConnectionStatistic
 import com.eyeson.sdk.model.local.meeting.BroadcastUpdate
@@ -85,28 +86,18 @@ class MeetingViewModel @Inject constructor(
             addEvent("onPermissionsNeeded: neededPermissions $neededPermissions")
         }
 
-        override fun onMeetingJoining(
-            accessKey: String,
-            name: String,
-            startedAt: Date,
-            user: UserInfo,
-            locked: Boolean,
-            guestToken: String,
-            guestLink: String,
-            activeRecording: Recording?,
-            activeBroadcasts: BroadcastUpdate?,
-            snapshots: SnapshotUpdate?,
-            isWidescreen: Boolean
-        ) {
-            addEvent(
-                "onMeetingJoining: accessKey: $accessKey;  name $name; startedAt $startedAt; user $user; " +
-                        "locked $locked; guestToke $guestToken; guestLink $guestLink; activeRecording " +
-                        "$activeRecording; activeBroadcasts $activeBroadcasts; snapshots $snapshots;" +
-                        " isWidescreen $isWidescreen"
-            )
+        override fun onMeetingJoining(meetingInfo: MeetingInfo) {
+            with(meetingInfo) {
+                addEvent(
+                    "onMeetingJoining: accessKey: $accessKey;  name $name; startedAt $startedAt; user $user; " +
+                            "locked $locked; guestToke $guestToken; guestLink $guestLink; activeRecording " +
+                            "$activeRecording; activeBroadcasts $activeBroadcasts; snapshots $snapshots;" +
+                            " isWidescreen $isWidescreen"
+                )
+            }
         }
 
-        override fun onMeetingJoined() {
+        override fun onMeetingJoined(meetingInfo: MeetingInfo) {
             addEvent("onMeetingJoined")
             _inCall.set(true)
             _callConnected.value = true

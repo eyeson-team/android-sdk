@@ -356,21 +356,8 @@ fun stopVideoPlayback(playId: String)
 ```kotlin
 abstract class EyesonEventListener {
     open fun onPermissionsNeeded(neededPermissions: List<NeededPermissions>) {}
-    open fun onMeetingJoining(
-        accessKey: String,
-        name: String,
-        startedAt: Date,
-        user: UserInfo,
-        locked: Boolean,
-        guestToken: String,
-        guestLink: String,
-        activeRecording: Recording?,
-        activeBroadcasts: BroadcastUpdate?,
-        snapshots: SnapshotUpdate?,
-        isWidescreen: Boolean
-    ) {}
-
-    open fun onMeetingJoined() {}
+    open fun onMeetingJoining(meetingInfo: MeetingInfo) {}
+    open fun onMeetingJoined(meetingInfo: MeetingInfo) {}
     open fun onMeetingJoinFailed(callRejectionReason: CallRejectionReason) {}
     open fun onMeetingTerminated(callTerminationReason: CallTerminationReason) {}
     open fun onMeetingLocked(locked: Boolean) {}

@@ -7,6 +7,12 @@ The format is based on [Keep a Changelog] and this project adheres to
 ## [Unreleased]
    
 ## [Released]
+## [1.1.4] - 2023-05-23
+### Changed
+- EyesonEventListener Signature changes
+  - `onMeetingJoining`
+  - `onMeetingJoined`
+  
 ## [1.1.3] - 2023-05-15
 ### Changed
 - EyesonEventListener Signature changes
