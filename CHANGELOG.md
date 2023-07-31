@@ -7,6 +7,11 @@ The format is based on [Keep a Changelog] and this project adheres to
 ## [Unreleased]
    
 ## [Released]
+## [1.1.5] - 2023-07-31
+### Changed
+- Add loopCount parameter for startVideoPlayback
+- Readme to only show basic usage and link to new [documentation](https://docs.eyeson.com/docs/android/intro)
+
 ## [1.1.4] - 2023-05-23
 ### Changed
 - EyesonEventListener Signature changes

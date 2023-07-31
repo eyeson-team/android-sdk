@@ -47,7 +47,8 @@ import kotlinx.coroutines.runBlocking
 import org.webrtc.EglBase
 import org.webrtc.VideoSink
 import timber.log.Timber
-import java.util.*
+import java.util.Date
+import java.util.UUID
 import java.util.concurrent.atomic.AtomicBoolean
 import javax.inject.Inject
 
@@ -382,6 +383,7 @@ class MeetingViewModel @Inject constructor(
                     screenShareInfo = screenShareInfo
                 )
             }
+
             savedStateHandle.get<String>(GUEST_TOKEN) != null -> {
                 eyesonMeeting.joinAsGuest(
                     guestToken = checkNotNull(savedStateHandle.get<String>(GUEST_TOKEN)),
@@ -397,6 +399,7 @@ class MeetingViewModel @Inject constructor(
                     screenShareInfo = screenShareInfo
                 )
             }
+
             else -> {
                 return
             }

@@ -56,9 +56,10 @@ internal class RestCommunicator {
         name: String?,
         playId: String?,
         replacementId: String?,
-        audio: Boolean
+        audio: Boolean,
+        loopCount: Int
     ): Int = coroutineScope {
-        restClient.videoPlayback(accessKey, url, name, playId, replacementId, audio).code()
+        restClient.videoPlayback(accessKey, url, name, playId, replacementId, audio, loopCount).code()
     }
 
 

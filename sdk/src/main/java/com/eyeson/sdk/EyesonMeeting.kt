@@ -618,7 +618,8 @@ class EyesonMeeting(
         name: String?,
         playId: String?,
         replacedUser: UserInfo?,
-        audio: Boolean
+        audio: Boolean,
+        loopCount: Int = 0
     ) {
         eyesonMeetingScope.launch {
             val replacementId =
@@ -634,7 +635,8 @@ class EyesonMeeting(
                 name,
                 playId,
                 replacementId,
-                audio
+                audio,
+                loopCount
             )
 
             if (MediaPlaybackResponse.isSuccessful(response) && !playId.isNullOrBlank()) {

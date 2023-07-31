@@ -48,6 +48,7 @@ internal interface EyesonApi {
         @Field("playback[replacement_id]") replacementId: String?,
         @Field("playback[name]") name: String?,
         @Field("playback[audio]") audio: Boolean,
+        @Field("playback[loop_count]") loopCount: Int,
     ): Response<Unit>
 
     @DELETE("/rooms/{accessKey}/playbacks/{playerId}")

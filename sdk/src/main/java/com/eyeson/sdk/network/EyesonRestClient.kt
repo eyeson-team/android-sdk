@@ -44,10 +44,11 @@ internal class EyesonRestClient(
         name: String?,
         playId: String?,
         replacementId: String?,
-        audio: Boolean
+        audio: Boolean,
+        loopCount: Int
     ): Response<Unit> =
         withContext(ioDispatcher) {
-            eyesonApi.videoPlayback(accessKey, url, playId, replacementId, name, audio)
+            eyesonApi.videoPlayback(accessKey, url, playId, replacementId, name, audio, loopCount)
         }
 
     suspend fun stopVideoPlayback(
