@@ -1,8 +1,8 @@
 plugins {
     id("com.android.library")
     id("kotlin-android")
-    kotlin("kapt")
     id("maven-publish")
+    id(Plugins.ksp)
 }
 
 group = Versions.groupId
@@ -13,7 +13,6 @@ android {
 
     defaultConfig {
         minSdk = Versions.minSdk
-        targetSdk = Versions.targetSdk
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         consumerProguardFiles("consumer-rules.pro")
@@ -56,6 +55,7 @@ android {
     buildFeatures {
         viewBinding = true
         dataBinding = true
+        buildConfig = true
     }
 
     namespace = "com.eyeson.sdk"
@@ -77,7 +77,7 @@ dependencies {
     implementation(Libraries.retrofitMoshiConverter)
     implementation(Libraries.moshi)
     implementation(Libraries.moshiAdapters)
-    kapt(LibrariesKapt.moshiKotlinCodegen)
+    ksp(LibrariesKapt.moshiKotlinCodegen)
 
     testImplementation(Libraries.jUnit)
     androidTestImplementation(Libraries.jUnitTest)

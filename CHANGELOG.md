@@ -7,6 +7,14 @@ The format is based on [Keep a Changelog] and this project adheres to
 ## [Unreleased]
    
 ## [Released]
+## [1.1.6] - 2023-09-05
+### Changed
+- API level to 34
+  - SDK: compileSdk
+  - Demo apk: targetSdk and compileSdk
+- Kapt to KSP for SDK
+- Kotlin to 1.9.0
+
 ## [1.1.5] - 2023-07-31
 ### Changed
 - Add loopCount parameter for startVideoPlayback

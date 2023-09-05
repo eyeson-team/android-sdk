@@ -1,18 +1,19 @@
 object Versions {
     // Config
-    const val versionCode = 9
+    const val versionCode = 10
     const val groupId = "com.eyeson"
-    const val versionName = "1.1.5" // X.Y.Z; X = Major, Y = minor, Z = Patch level
-    const val compileSdk = 33
-    const val targetSdk = 33
+    const val versionName = "1.1.6" // X.Y.Z; X = Major, Y = minor, Z = Patch level
+    const val compileSdk = 34
+    const val targetSdk = 34
     const val minSdk = 23
-    const val composeCompiler = "1.4.3"
+    const val composeCompiler = "1.5.2"
+    const val ksp = "1.9.0-1.0.13"
 
     // WebRTC
     const val webrtcAndroid = "1.0.0"
 
     // DI
-    const val hilt = "2.44.2"
+    const val hilt = "2.48"
     const val hiltNavigationCompose = "1.0.0"
 
     // UI and appcompat
