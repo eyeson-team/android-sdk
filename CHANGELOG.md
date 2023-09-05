@@ -14,6 +14,7 @@ The format is based on [Keep a Changelog] and this project adheres to
   - Demo apk: targetSdk and compileSdk
 - Kapt to KSP for SDK
 - Kotlin to 1.9.0
+- Java version to 17
 
 ## [1.1.5] - 2023-07-31
 ### Changed
