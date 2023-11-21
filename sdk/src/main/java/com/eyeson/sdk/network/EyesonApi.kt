@@ -33,7 +33,7 @@ internal interface EyesonApi {
 
     @POST("/rooms/{accessKey}/messages")
     @FormUrlEncoded
-    suspend fun sendCustomMessage(
+    suspend fun sendMessage(
         @Path("accessKey") accessKey: String,
         @Field("type") type: String,
         @Field("content") content: String

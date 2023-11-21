@@ -45,6 +45,11 @@ internal class RestCommunicator {
             }.awaitAll().filterNotNull()
         }
 
+    suspend fun sendChatMessage(accessKey: String, message: String): Int =
+        coroutineScope {
+            restClient.sendChatMessage(accessKey, message).code()
+        }
+
     suspend fun sendCustomMessage(accessKey: String, content: String): Int =
         coroutineScope {
             restClient.sendCustomMessage(accessKey, content).code()

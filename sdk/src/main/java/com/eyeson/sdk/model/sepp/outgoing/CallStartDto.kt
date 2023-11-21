@@ -1,6 +1,7 @@
 package com.eyeson.sdk.model.sepp.outgoing
 
 
+import com.eyeson.sdk.BuildConfig
 import com.eyeson.sdk.model.api.MeetingDto
 import com.eyeson.sdk.model.local.sepp.CallStart
 import com.eyeson.sdk.model.sepp.base.SeppBaseCommandDto
@@ -17,6 +18,7 @@ internal data class CallStartDto(
 ) : SeppBaseCommandDto {
     @JsonClass(generateAdapter = true)
     data class Data(
+        @Json(name = "platform") val platform: String,
         @Json(name = "sdp") val sdp: Sdp,
         @Json(name = "display_name") val displayName: String,
         @Json(name = "mute_video") val muteVideo: Boolean,
@@ -34,14 +36,15 @@ internal data class CallStartDto(
 }
 
 
-internal fun CallStart.fromLocal(meeting: MeetingDto, videoOnStart: Boolean): CallStartDto {
+internal fun CallStart.fromLocal(meeting: MeetingDto, videoOnStart: Boolean, platform: String): CallStartDto {
     return CallStartDto(
         type = SeppCommandsOutgoing.CALL_START.type,
         msgId = "",
         from = meeting.signaling.options.clientId,
         to = meeting.signaling.options.confId,
         data = CallStartDto.Data(
-            CallStartDto.Data.Sdp(type = "offer", sdp = sdp),
+            platform = platform,
+            sdp = CallStartDto.Data.Sdp(type = "offer", sdp = sdp),
             displayName = displayName,
             muteVideo = !videoOnStart
         )

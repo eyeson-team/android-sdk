@@ -7,6 +7,13 @@ The format is based on [Keep a Changelog] and this project adheres to
 ## [Unreleased]
    
 ## [Released]
+## [1.1.7] - 2023-11-21
+### Added
+- Added SDK version info to `call_start`
+### Changed
+- Outgoing chat 
+  - from WS to REST
+
 ## [1.1.6] - 2023-09-05
 ### Changed
 - API level to 34

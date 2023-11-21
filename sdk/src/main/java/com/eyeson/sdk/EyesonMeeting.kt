@@ -604,7 +604,9 @@ class EyesonMeeting(
     }
 
     fun sendChatMessage(message: String) {
-        webSocketCommunicator?.sendChatMessage(message)
+        eyesonMeetingScope.launch {
+            restCommunicator.sendChatMessage(meeting?.accessKey ?: return@launch, message)
+        }
     }
 
     fun sendCustomMessage(content: String) {
@@ -740,7 +742,7 @@ class EyesonMeeting(
     ) {
         when (command) {
             is CallStart -> {
-                webSocketCommunicator?.startCall(command, videoOnStart)
+                webSocketCommunicator?.startCall(command, videoOnStart, BuildConfig.SDK_VERSION)
             }
             is VoiceActivity -> {
                 withContext(nameLookupScope.coroutineContext) {

@@ -11,7 +11,6 @@ import com.eyeson.sdk.model.local.sepp.CallAccepted
 import com.eyeson.sdk.model.local.sepp.CallResume
 import com.eyeson.sdk.model.local.sepp.CallStart
 import com.eyeson.sdk.model.local.sepp.CallTerminate
-import com.eyeson.sdk.model.local.sepp.ChatOutgoing
 import com.eyeson.sdk.model.local.sepp.DesktopStreaming
 import com.eyeson.sdk.model.local.sepp.MuteVideo
 import com.eyeson.sdk.model.local.sepp.SetPresenter
@@ -22,7 +21,6 @@ import com.eyeson.sdk.model.meeting.outgoing.MuteAllDto
 import com.eyeson.sdk.model.sepp.outgoing.CallResumeDto
 import com.eyeson.sdk.model.sepp.outgoing.CallStartDto
 import com.eyeson.sdk.model.sepp.outgoing.CallTerminateDto
-import com.eyeson.sdk.model.sepp.outgoing.ChatOutgoingDto
 import com.eyeson.sdk.model.sepp.outgoing.DesktopStreamingDto
 import com.eyeson.sdk.model.sepp.outgoing.MuteVideoDto
 import com.eyeson.sdk.model.sepp.outgoing.SetPresenterDto
@@ -63,8 +61,9 @@ internal class WebSocketCommunicator(
         }
     }
 
-    fun startCall(callStart: CallStart, videoOnStart: Boolean) {
-        val callStartDto = callStart.fromLocal(meeting, videoOnStart)
+    fun startCall(callStart: CallStart, videoOnStart: Boolean, version: String) {
+        val callStartDto =
+            callStart.fromLocal(meeting, videoOnStart, "$CALL_START_VERSION_PREFIX$version")
         val adapter = moshi.adapter(CallStartDto::class.java)
         signalingConnection?.sendMessage(adapter.toJson(callStartDto))
     }
@@ -91,13 +90,6 @@ internal class WebSocketCommunicator(
         }
         meetingCommunicator?.disconnect()
         signalingConnection?.disconnect()
-    }
-
-    fun sendChatMessage(message: String) {
-        val chatOutgoing = ChatOutgoing(message, meeting.signaling.options.clientId)
-        val adapter = moshi.adapter(ChatOutgoingDto::class.java)
-
-        signalingConnection?.sendMessage(adapter.toJson(chatOutgoing.fromLocal(callId, meeting)))
     }
 
     fun enablePresentation(enable: Boolean) {
@@ -158,11 +150,13 @@ internal class WebSocketCommunicator(
                     }
                 }
             }
+
             is MuteLocalAudio -> {
                 if (command.byUser.id != meeting.user.id) {
                     emitEvent(command)
                 }
             }
+
             is WsFailure -> {
                 if (meetingTryToReconnect.getAndSet(false)) {
                     meetingCommunicator?.disconnect()
@@ -172,10 +166,12 @@ internal class WebSocketCommunicator(
                     emitEvent(command)
                 }
             }
+
             is WsOpen -> {
                 meetingTryToReconnect.set(true)
                 emitEvent(command)
             }
+
             else -> {
                 emitEvent(command)
             }
@@ -193,10 +189,12 @@ internal class WebSocketCommunicator(
                     emitEvent(StartCallLocal(meeting))
                 }
             }
+
             is CallAccepted -> {
                 callId = command.callId
                 emitEvent(command)
             }
+
             is WsFailure -> {
                 if (signalingTryToReconnect.getAndSet(false)) {
                     signalingConnection?.disconnect()
@@ -206,6 +204,7 @@ internal class WebSocketCommunicator(
                     emitEvent(command)
                 }
             }
+
             else -> {
                 emitEvent(command)
             }
@@ -228,5 +227,6 @@ internal class WebSocketCommunicator(
 
     companion object {
         const val TERMINATE_CALL_CODE_OK = 200
+        const val CALL_START_VERSION_PREFIX = "android-"
     }
 }

@@ -22,20 +22,29 @@ internal class EyesonRestClient(
 
     suspend fun getMeetingInfo(accessKey: String): Response<MeetingDto> =
         withContext(ioDispatcher) {
-            eyesonApi.getRoomInfo(accessKey)
+            eyesonApi.getRoomInfo(accessKey = accessKey)
         }
 
     suspend fun getUserInfo(
         accessKey: String,
         userId: String
     ): Response<UserInMeetingDto> = withContext(ioDispatcher) {
-        eyesonApi.getUsernameInRoom(accessKey, userId)
+        eyesonApi.getUsernameInRoom(accessKey = accessKey, userId = userId)
     }
 
+    suspend fun sendChatMessage(accessKey: String, message: String): Response<Unit> =
+        sendMessage(accessKey = accessKey, content = message, type = TYPE_CHAT)
 
     suspend fun sendCustomMessage(accessKey: String, content: String): Response<Unit> =
+        sendMessage(accessKey = accessKey, content = content, type = TYPE_CUSTOM)
+
+    private suspend fun sendMessage(
+        accessKey: String,
+        content: String,
+        type: String
+    ): Response<Unit> =
         withContext(ioDispatcher) {
-            eyesonApi.sendCustomMessage(accessKey, "custom", content)
+            eyesonApi.sendMessage(accessKey = accessKey, type = type, content = content)
         }
 
     suspend fun videoPlayback(
@@ -48,7 +57,15 @@ internal class EyesonRestClient(
         loopCount: Int
     ): Response<Unit> =
         withContext(ioDispatcher) {
-            eyesonApi.videoPlayback(accessKey, url, playId, replacementId, name, audio, loopCount)
+            eyesonApi.videoPlayback(
+                accessKey = accessKey,
+                url = url,
+                playerId = playId,
+                replacementId = replacementId,
+                name = name,
+                audio = audio,
+                loopCount = loopCount
+            )
         }
 
     suspend fun stopVideoPlayback(
@@ -56,6 +73,11 @@ internal class EyesonRestClient(
         playId: String,
     ): Response<Unit> =
         withContext(ioDispatcher) {
-            eyesonApi.stopVideoPlayback(accessKey, playId)
+            eyesonApi.stopVideoPlayback(accessKey = accessKey, playerId = playId)
         }
+
+    companion object {
+        const val TYPE_CHAT = "chat"
+        const val TYPE_CUSTOM = "custom"
+    }
 }

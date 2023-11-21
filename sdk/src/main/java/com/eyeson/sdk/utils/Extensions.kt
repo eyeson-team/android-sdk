@@ -3,7 +3,6 @@ package com.eyeson.sdk.utils
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.buffer
-import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.launch
 
 internal fun <T> SharedFlow<T>.collectIn(
