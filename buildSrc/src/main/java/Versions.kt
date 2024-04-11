@@ -2,7 +2,7 @@ object Versions {
     // Config
     const val versionCode = 10
     const val groupId = "com.eyeson"
-    const val versionName = "1.1.7" // X.Y.Z; X = Major, Y = minor, Z = Patch level
+    const val versionName = "1.1.8" // X.Y.Z; X = Major, Y = minor, Z = Patch level
     const val compileSdk = 34
     const val targetSdk = 34
     const val minSdk = 23
@@ -50,10 +50,10 @@ object Versions {
     const val datastorePreference = "1.0.0"
 
     // Networking
-    const val okhttp = "4.9.0"
+    const val okhttp = "4.12.0"
     const val retrofit = "2.9.0"
     const val moshi = "1.14.0"
-    const val coil = "2.2.2"
+    const val coil = "2.6.0"
 
     // Media
     const val media3 = "1.0.0"

@@ -106,6 +106,9 @@ dependencies {
     implementation(Libraries.datastorePreference)
 
     implementation(Libraries.qrScanner)
+    implementation(Libraries.okhttp)
+    implementation(Libraries.okhttpTls)
+    implementation(Libraries.okhttpLoggingInterceptor)
     implementation(Libraries.coil)
     implementation(Libraries.coilCompose)
 

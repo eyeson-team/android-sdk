@@ -60,6 +60,7 @@ object Libraries {
 
     // Networking
     const val okhttp = "com.squareup.okhttp3:okhttp:${Versions.okhttp}"
+    const val okhttpTls = "com.squareup.okhttp3:okhttp-tls:${Versions.okhttp}"
     const val okhttpLoggingInterceptor =
         "com.squareup.okhttp3:logging-interceptor:${Versions.okhttp}"
     const val retrofit = "com.squareup.retrofit2:retrofit:${Versions.retrofit}"

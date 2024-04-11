@@ -24,6 +24,7 @@ import com.eyeson.sdk.BuildConfig.DEBUG
 import com.eyeson.sdk.di.NetworkModule
 import com.eyeson.sdk.model.api.TurnServerDto
 import com.eyeson.sdk.utils.Logger
+import com.eyeson.sdk.utils.WebRTCUtils.logSdp
 import org.webrtc.AudioSource
 import org.webrtc.AudioTrack
 import org.webrtc.CameraVideoCapturer
@@ -1288,6 +1289,7 @@ internal class PeerConnectionClient(
             executor.execute {
                 if (peerConnection != null && !isError) {
                     Logger.d("Set local SDP from ${sdp.type}")
+                    logSdp(sdp)
                     peerConnection?.setLocalDescription(sdpObserver, sdp)
                 }
             }

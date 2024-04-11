@@ -16,7 +16,6 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.wrapContentWidth
@@ -71,7 +70,7 @@ import com.eyeson.android.ui.theme.DarkGray900
 import com.eyeson.android.ui.theme.EyesonDemoTheme
 import timber.log.Timber
 import java.text.DecimalFormat
-import java.util.*
+import java.util.Date
 
 @Composable
 fun Chat(
@@ -144,6 +143,7 @@ fun Chat(
                                     is OutgoingMessage -> {
                                         ChatMessageOutgoing(message.text, message.time)
                                     }
+
                                     is IncomingMessage -> {
                                         ChatMessageIncoming(
                                             text = message.text,
@@ -284,8 +284,7 @@ private fun UserInputText(
                 modifier = Modifier
                     .height(48.dp)
                     .align(Alignment.Bottom)
-                    .weight(1f)
-                ,
+                    .weight(1f),
             ) {
                 BasicTextField(
                     value = textFieldValue,

@@ -30,6 +30,7 @@ import java.util.concurrent.TimeUnit
 internal class MeetingConnection(private val meeting: MeetingDto) {
     private val meetingScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
     private val moshi = NetworkModule.moshi
+    private val okHttpClient = NetworkModule.okHttpClient
 
     private var webSocketListener: WebSocketListener = object : WebSocketListener() {
         override fun onOpen(webSocket: WebSocket, response: Response) {
@@ -69,7 +70,7 @@ internal class MeetingConnection(private val meeting: MeetingDto) {
     }
 
     private val socket: WebSocket by lazy {
-        val client = OkHttpClient.Builder()
+        val client = okHttpClient.newBuilder()
             .pingInterval(PING_INTERVAL, TimeUnit.SECONDS)
             .build()
 

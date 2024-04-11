@@ -7,6 +7,10 @@ The format is based on [Keep a Changelog] and this project adheres to
 ## [Unreleased]
    
 ## [Released]
+## [1.1.8] - 2024-04-11
+### Added
+- Root certificate `ISRG Root X1` for Android SDK version <= 25
+
 ## [1.1.7] - 2023-11-21
 ### Added
 - Added SDK version info to `call_start`

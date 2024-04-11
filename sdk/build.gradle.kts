@@ -74,8 +74,9 @@ dependencies {
     implementation(Libraries.appcompat)
 
     implementation(Libraries.okhttp)
-    implementation(Libraries.okhttpLoggingInterceptor)
+    implementation(Libraries.okhttpTls)
     implementation(Libraries.retrofit)
+    implementation(Libraries.okhttpLoggingInterceptor)
     implementation(Libraries.retrofitMoshiConverter)
     implementation(Libraries.moshi)
     implementation(Libraries.moshiAdapters)

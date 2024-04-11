@@ -1,46 +1,24 @@
-package com.eyeson.sdk.di
+package com.eyeson.android.di
 
+import android.content.Context
 import android.os.Build
+import coil.ImageLoader
+import coil.util.DebugLogger
 import com.eyeson.sdk.BuildConfig
-import com.eyeson.sdk.EyesonMeeting
-import com.eyeson.sdk.model.meeting.base.MeetingBaseMessageDto
-import com.eyeson.sdk.moshi.adapter.AsStringAdapter
-import com.eyeson.sdk.moshi.adapter.DataChannelIncomingMessagesAdapter
-import com.eyeson.sdk.moshi.adapter.DefaultOnDataMismatchAdapter
-import com.eyeson.sdk.moshi.adapter.MeetingIncomingMessagesAdapter
-import com.eyeson.sdk.moshi.adapter.SeppIncomingCommandsAdapter
-import com.eyeson.sdk.network.EyesonApi
-import com.eyeson.sdk.network.EyesonRestClient
-import com.squareup.moshi.Moshi
-import com.squareup.moshi.adapters.Rfc3339DateJsonAdapter
+import dagger.Module
+import dagger.Provides
+import dagger.hilt.InstallIn
+import dagger.hilt.android.qualifiers.ApplicationContext
+import dagger.hilt.components.SingletonComponent
 import okhttp3.OkHttpClient
 import okhttp3.logging.HttpLoggingInterceptor
 import okhttp3.tls.HandshakeCertificates
 import okhttp3.tls.decodeCertificatePem
-import retrofit2.Retrofit
-import retrofit2.converter.moshi.MoshiConverterFactory
-import java.util.Date
+import javax.inject.Singleton
 
-internal object NetworkModule {
-
-    private val retrofit: Retrofit by lazy { provideRetrofit(okHttpClient, moshi) }
-
-    val moshi: Moshi by lazy { provideMoshi() }
-    val okHttpClient: OkHttpClient by lazy { provideOkHttpClient() }
-    val restClient: EyesonRestClient by lazy { provideEyesonRestClient(retrofit) }
-
-
-    private fun provideMoshi(): Moshi {
-        return Moshi.Builder()
-            .add(Date::class.java, Rfc3339DateJsonAdapter().nullSafe())
-            .add(SeppIncomingCommandsAdapter.provideSeppCommandsIncomingAdapterFactory())
-            .add(DefaultOnDataMismatchAdapter.newFactory(MeetingBaseMessageDto::class.java, null))
-            .add(MeetingIncomingMessagesAdapter.provideMeetingIncomingMessagesAdapterFactory())
-            .add(DataChannelIncomingMessagesAdapter.provideDataChannelIncomingMessagesAdapterFactory())
-            .add(AsStringAdapter.FACTORY)
-            .build()
-    }
-
+@Module
+@InstallIn(SingletonComponent::class)
+object NetworkModule {
 
     /**
      * PEM file for 'ISRG Root X1' Root certificate (https://letsencrypt.org/certificates/#root-certificates)
@@ -82,7 +60,9 @@ internal object NetworkModule {
         -----END CERTIFICATE-----
     """.trimIndent().decodeCertificatePem()
 
-    private fun provideOkHttpClient(): OkHttpClient {
+    @Singleton
+    @Provides
+    fun provideOkHttpClient(): OkHttpClient {
         val logging = HttpLoggingInterceptor()
         logging.level =
             if (BuildConfig.DEBUG) {
@@ -112,17 +92,17 @@ internal object NetworkModule {
         return builder.build()
     }
 
-    private fun provideRetrofit(okHttpClient: OkHttpClient, moshi: Moshi): Retrofit {
-        return Retrofit.Builder()
-            .addConverterFactory(MoshiConverterFactory.create(moshi))
-            .baseUrl(EyesonMeeting.API_URL)
-            .client(okHttpClient)
-            .build()
-    }
-
-    private fun provideEyesonRestClient(retrofit: Retrofit): EyesonRestClient {
-        val restService = retrofit.create(EyesonApi::class.java)
-        return EyesonRestClient(restService)
-    }
-
+    @Provides
+    @Singleton
+    fun imageLoader(
+        @ApplicationContext application: Context,
+        okHttpClient: OkHttpClient
+    ): ImageLoader = ImageLoader.Builder(application)
+        .okHttpClient(okHttpClient)
+        .apply {
+            if (BuildConfig.DEBUG) {
+                logger(DebugLogger())
+            }
+        }
+        .build()
 }
