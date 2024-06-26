@@ -7,6 +7,10 @@ The format is based on [Keep a Changelog] and this project adheres to
 ## [Unreleased]
    
 ## [Released]
+## [1.1.9] - 2024-06-26
+### Added
+- `FOREGROUND_SERVICE_MEDIA_PROJECTION` permission for Android SDK version >= 34
+
 ## [1.1.8] - 2024-04-11
 ### Added
 - Root certificate `ISRG Root X1` for Android SDK version <= 25
