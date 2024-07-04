@@ -14,6 +14,7 @@ import android.widget.Toast
 import androidx.activity.compose.BackHandler
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.annotation.OptIn
 import androidx.appcompat.app.AppCompatActivity
 import androidx.compose.animation.Crossfade
 import androidx.compose.foundation.background
@@ -46,6 +47,7 @@ import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberUpdatedState
@@ -72,6 +74,7 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.media3.common.util.UnstableApi
 import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.ui.PlayerView
 import com.eyeson.android.MainActivity
@@ -107,7 +110,7 @@ fun MeetingScreen(
 
     val sfu by viewModel.p2p.collectAsStateWithLifecycle()
 
-    var whatIsOpen by rememberSaveable { mutableStateOf(0) }
+    var whatIsOpen by rememberSaveable { mutableIntStateOf(0) }
     var videoUrl by rememberSaveable {
         mutableStateOf(DEMO_VIDEO_URL)
     }
@@ -592,6 +595,7 @@ fun MeetingScreen(
     }
 }
 
+@OptIn(UnstableApi::class)
 @Composable
 private fun VideoViews(
     showLocal: Boolean,

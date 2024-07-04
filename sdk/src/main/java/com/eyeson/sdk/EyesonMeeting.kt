@@ -66,7 +66,7 @@ import kotlinx.coroutines.withContext
 import org.webrtc.EglBase
 import org.webrtc.SessionDescription
 import org.webrtc.VideoSink
-import java.util.*
+import java.util.Date
 import java.util.concurrent.Executors
 import java.util.concurrent.atomic.AtomicBoolean
 
@@ -204,10 +204,12 @@ class EyesonMeeting(
                     is CancellationException -> {
                         throw e
                     }
+
                     is FaultyInfoException -> {
                         eventListener.onMeetingJoinFailed(CallRejectionReason.fromRejectCode(e.code))
                         return@launch
                     }
+
                     else -> {
                         eventListener.onMeetingJoinFailed(CallRejectionReason.ERROR)
                         return@launch
@@ -221,6 +223,7 @@ class EyesonMeeting(
                     terminateCallWithError()
                     return@launch
                 }
+
                 else -> {
                     eventListener.onMeetingJoining(
                         meetingInfoParsed
@@ -288,9 +291,11 @@ class EyesonMeeting(
                 meeting = command.meeting
                 startCall(command.meeting, audiOnly, frontCamera, local, remote, screenShareInfo)
             }
+
             is ResumeCallLocal -> {
                 resumeCall(command.callId)
             }
+
             is CallAccepted -> {
                 callLogic?.setRemoteDescription(
                     command.sdp,
@@ -298,6 +303,7 @@ class EyesonMeeting(
                 )
                 eventListener.onStreamingModeChanged(callLogic?.isSfuMode() ?: return)
             }
+
             is CallResumed -> {
                 callLogic?.setRemoteDescription(
                     command.sdp,
@@ -305,14 +311,17 @@ class EyesonMeeting(
                 )
                 eventListener.onStreamingModeChanged(callLogic?.isSfuMode() ?: return)
             }
+
             is CallRejected -> {
                 leave()
                 eventListener.onMeetingJoinFailed(CallRejectionReason.fromRejectCode(command.rejectCode))
             }
+
             is CallTerminated -> {
                 leave()
                 eventListener.onMeetingTerminated(CallTerminationReason.fromTerminationCode(command.terminateCode))
             }
+
             is SdpUpdate -> {
                 callLogic?.setRemoteDescription(
                     command.sdp,
@@ -320,23 +329,28 @@ class EyesonMeeting(
                 )
                 eventListener.onStreamingModeChanged(callLogic?.isSfuMode() ?: return)
             }
+
             is ChatIncoming -> {
                 handleChatIncoming(meeting ?: return, command)
             }
+
             is CustomMessage -> {
                 handleCustomMessageIncoming(meeting ?: return, command)
             }
+
             is MuteLocalAudio -> {
                 setMicrophoneEnabled(false)
                 eventListener.onAudioMutedBy(command.byUser)
             }
+
             is MeetingLocked -> {
                 eventListener.onMeetingLocked(command.locked)
             }
+
             is PlaybackUpdate -> {
                 withContext(nameLookupScope.coroutineContext) {
                     val infoNeededFor = command.playing.filterNot {
-                        it.replacementId != null && userInMeeting.containsKey(it.replacementId)
+                        it.replacementId != null && userInMeeting.containsKey(it.replacementId) || userInMeeting.values.any { userInfo -> userInfo.id == it.replacementId }
                     }.mapNotNull {
                         it.replacementId
                     }
@@ -346,26 +360,32 @@ class EyesonMeeting(
                     }
 
                     val event = command.playing.map {
+                        val userInfo =
+                            userInMeeting.values.firstOrNull { userInfo -> userInfo.id == it.replacementId }
                         Playback(
                             url = it.url,
                             name = it.name,
                             playId = it.playId,
-                            replacedUser = userInMeeting[it.replacementId],
+                            replacedUser = userInfo,
                             audio = it.audio
                         )
                     }
                     eventListener.onMediaPlayback(event)
                 }
             }
+
             is BroadcastUpdate -> {
                 eventListener.onBroadcastUpdate(command)
             }
+
             is Recording -> {
                 eventListener.onRecordingUpdate(command)
             }
+
             is SnapshotUpdate -> {
                 eventListener.onSnapshotUpdate(command)
             }
+
             is WsFailure -> {
                 leave()
                 eventListener.onMeetingTerminated(
@@ -374,10 +394,12 @@ class EyesonMeeting(
                     )
                 )
             }
+
             is WsClosed -> {
                 leave()
                 eventListener.onMeetingTerminated(CallTerminationReason.OK)
             }
+
             is ReconnectSignaling -> {
                 val accessKey = meeting?.accessKey
                 if (accessKey == null) {
@@ -400,6 +422,7 @@ class EyesonMeeting(
                     webSocketCommunicator?.reconnectToSignaling(meetingInfo)
                 }
             }
+
             is MemberListUpdate -> {
                 withContext(nameLookupScope.coroutineContext) {
                     val infoNeededFor = command.added.filterNot {
@@ -436,6 +459,7 @@ class EyesonMeeting(
                     )
                 }
             }
+
             is SourceUpdate -> {
                 withContext(nameLookupScope.coroutineContext) {
                     if (staredVideoPlaybacks.isNotEmpty()) {
@@ -477,6 +501,7 @@ class EyesonMeeting(
                                             runningPlaybacks.add(playback)
                                         }
                                     }
+
                                     is VideoElements.Replacement -> {
                                         val replacement = removed.find {
                                             it is VideoElements.Replacement && playback.replacementId == it.playerId
@@ -519,6 +544,7 @@ class EyesonMeeting(
                     )
                 }
             }
+
             is RecordingStatusUpdate -> {
                 /**
                  * Not in use for now. Recording status is handled by
@@ -744,6 +770,7 @@ class EyesonMeeting(
             is CallStart -> {
                 webSocketCommunicator?.startCall(command, videoOnStart, BuildConfig.SDK_VERSION)
             }
+
             is VoiceActivity -> {
                 withContext(nameLookupScope.coroutineContext) {
                     if (!userInMeeting.containsKey(command.userId)) {
@@ -755,20 +782,25 @@ class EyesonMeeting(
                     )
                 }
             }
+
             is CallTerminated -> {
                 leave()
                 eventListener.onMeetingTerminated(CallTerminationReason.fromTerminationCode(command.terminateCode))
             }
+
             is MeetingJoined -> {
                 webSocketCommunicator?.setLocalVideoEnabled(videoOnStart)
                 eventListener.onMeetingJoined(getMeetingInfo() ?: return)
             }
+
             is CameraSwitchDone -> {
                 eventListener.onCameraSwitchDone(command.isFrontCamera)
             }
+
             is CameraSwitchError -> {
                 eventListener.onCameraSwitchError(command.error)
             }
+
             is ConnectionStatistic -> {
                 eventListener.onConnectionStatisticUpdate(command)
             }

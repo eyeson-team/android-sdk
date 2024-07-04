@@ -5,6 +5,12 @@ The format is based on [Keep a Changelog] and this project adheres to
 [Semantic Versioning].  
 
 ## [Unreleased]
+### Changed
+- Dependency updates
+  - AndroidGradlePlugin `8.5.0`
+  - Media3 `1.3.1`
+### Fixed 
+- onMediaPlayback user id lookup
    
 ## [Released]
 ## [1.1.9] - 2024-06-26

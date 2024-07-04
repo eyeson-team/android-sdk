@@ -4,6 +4,7 @@ import android.app.Application
 import android.app.Notification
 import android.content.ClipData
 import android.content.Intent
+import androidx.annotation.OptIn
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
@@ -14,6 +15,7 @@ import androidx.media3.common.Player.STATE_BUFFERING
 import androidx.media3.common.Player.STATE_ENDED
 import androidx.media3.common.Player.STATE_IDLE
 import androidx.media3.common.Player.STATE_READY
+import androidx.media3.common.util.UnstableApi
 import androidx.media3.exoplayer.ExoPlayer
 import com.eyeson.android.EyesonNavigationParameter.ACCESS_KEY
 import com.eyeson.android.EyesonNavigationParameter.GUEST_NAME
@@ -326,6 +328,7 @@ class MeetingViewModel @Inject constructor(
     val localExoPlayer = getExoPlayer { _localVideoPlaybackActive.value = false }
 
 
+    @OptIn(UnstableApi::class)
     private fun getExoPlayer(onPlaybackEnd: () -> Unit): ExoPlayer {
         return ExoPlayer.Builder(application).build().apply {
             playWhenReady = true
