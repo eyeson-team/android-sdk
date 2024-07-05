@@ -90,7 +90,6 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
 
         viewModelScope.launch {
             eyesonMeeting = EyesonMeeting(
-                eventListener = eventListener,
                 application = getApplication()
             ).apply {
                 join(
@@ -99,6 +98,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                     audioOnly = false,
                     local = local,
                     remote = remote,
+                    eventListener = eventListener,
                     microphoneEnabledOnStart = true,
                     videoEnabledOnStart = true,
                     screenShareInfo = screenShareInfo

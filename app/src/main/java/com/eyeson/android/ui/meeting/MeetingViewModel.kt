@@ -4,7 +4,6 @@ import android.app.Application
 import android.app.Notification
 import android.content.ClipData
 import android.content.Intent
-import androidx.annotation.OptIn
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
@@ -54,7 +53,7 @@ import java.util.UUID
 import java.util.concurrent.atomic.AtomicBoolean
 import javax.inject.Inject
 
-@HiltViewModel
+@UnstableApi @HiltViewModel
 class MeetingViewModel @Inject constructor(
     private val savedStateHandle: SavedStateHandle,
     private val application: Application,
@@ -278,7 +277,7 @@ class MeetingViewModel @Inject constructor(
     }
 
     private val eyesonMeeting: EyesonMeeting by lazy {
-        EyesonMeeting(eventListener = eventListener, application = application)
+        EyesonMeeting(application = application)
     }
 
     private val audioManager by lazy { EyesonAudioManager(application) }
@@ -328,7 +327,6 @@ class MeetingViewModel @Inject constructor(
     val localExoPlayer = getExoPlayer { _localVideoPlaybackActive.value = false }
 
 
-    @OptIn(UnstableApi::class)
     private fun getExoPlayer(onPlaybackEnd: () -> Unit): ExoPlayer {
         return ExoPlayer.Builder(application).build().apply {
             playWhenReady = true
@@ -381,6 +379,7 @@ class MeetingViewModel @Inject constructor(
                     audioOnly = meetingSettings.audioOnly,
                     local = local,
                     remote = remote,
+                    eventListener = eventListener,
                     microphoneEnabledOnStart = meetingSettings.micOnStar,
                     videoEnabledOnStart = meetingSettings.videoOnStart,
                     screenShareInfo = screenShareInfo
@@ -397,6 +396,7 @@ class MeetingViewModel @Inject constructor(
                     audioOnly = meetingSettings.audioOnly,
                     local = local,
                     remote = remote,
+                    eventListener = eventListener,
                     microphoneEnabledOnStart = meetingSettings.micOnStar,
                     videoEnabledOnStart = meetingSettings.videoOnStart,
                     screenShareInfo = screenShareInfo
