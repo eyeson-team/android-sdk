@@ -5,9 +5,10 @@ import com.eyeson.sdk.model.local.api.UserInfo
 import com.eyeson.sdk.model.local.call.ConnectionStatistic
 import com.eyeson.sdk.model.local.meeting.BroadcastUpdate
 import com.eyeson.sdk.model.local.meeting.Playback
+import com.eyeson.sdk.model.local.meeting.PresentationUpdate
 import com.eyeson.sdk.model.local.meeting.Recording
 import com.eyeson.sdk.model.local.meeting.SnapshotUpdate
-import java.util.*
+import java.util.Date
 
 abstract class EyesonEventListener {
     open fun onPermissionsNeeded(neededPermissions: List<NeededPermissions>) {}
@@ -21,16 +22,21 @@ abstract class EyesonEventListener {
     open fun onVideoSourceUpdate(visibleUsers: List<UserInfo>, presenter: UserInfo?) {}
     open fun onAudioMutedBy(user: UserInfo) {}
     open fun onMediaPlayback(playing: List<Playback>) {}
-    open fun onMediaPlaybackEnded(playIds: List<String>) {}
     open fun onMediaPlaybackStartResponse(
         playId: String?,
         mediaPlaybackResponse: MediaPlaybackResponse
-    ) {}
+    ) {
+    }
 
     open fun onMediaPlaybackStopResponse(
         playId: String,
         mediaPlaybackResponse: MediaPlaybackResponse
-    ) {}
+    ) {
+    }
+
+    open fun onPresentationUpdate(presentationUpdate: PresentationUpdate) {}
+    open fun onPresentationStartResponse(presentationResponse: PresentationResponse) {}
+    open fun onPresentationStopResponse(presentationResponse: PresentationResponse) {}
 
     open fun onBroadcastUpdate(activeBroadcasts: BroadcastUpdate) {}
     open fun onRecordingUpdate(recording: Recording) {}

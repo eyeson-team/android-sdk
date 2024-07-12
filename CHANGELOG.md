@@ -6,13 +6,24 @@ The format is based on [Keep a Changelog] and this project adheres to
 
 ## [Unreleased]
 ### Changed
+- Moved EyesonEventListener from EyesonMeeting construction to join/joinAsGuest
+
+## [Released]
+## [1.1.10] - 2024-07-12
+### Added
+- loopCount in `Playback`
+### Changed
 - Dependency updates
   - AndroidGradlePlugin `8.5.0`
   - Media3 `1.3.1`
-### Fixed 
+- EyesonEventListener
+  - `onMediaPlaybackEnded` removed
+  - `onPresentationUpdate` added
+  - `onPresentationStartResponse` added
+  - `onPresentationStopResponse` added
+### Fixed
 - onMediaPlayback user id lookup
-   
-## [Released]
+
 ## [1.1.9] - 2024-06-26
 ### Added
 - `FOREGROUND_SERVICE_MEDIA_PROJECTION` permission for Android SDK version >= 34

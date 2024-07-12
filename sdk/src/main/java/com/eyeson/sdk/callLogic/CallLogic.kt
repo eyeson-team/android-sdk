@@ -22,8 +22,6 @@ import com.eyeson.sdk.model.local.call.MeetingJoined
 import com.eyeson.sdk.model.local.datachannel.Pong
 import com.eyeson.sdk.model.local.sepp.CallStart
 import com.eyeson.sdk.model.local.sepp.CallTerminated
-import com.eyeson.sdk.model.local.sepp.DesktopStreaming
-import com.eyeson.sdk.model.local.sepp.SetPresenter
 import com.eyeson.sdk.service.ScreenCapturerService
 import com.eyeson.sdk.utils.Logger
 import com.eyeson.sdk.utils.WebRTCUtils

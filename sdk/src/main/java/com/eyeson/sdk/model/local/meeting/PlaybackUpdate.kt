@@ -11,7 +11,8 @@ internal data class PlaybackUpdate(
         val name: String?,
         val playId: String?,
         val replacementId: String?,
-        val audio: Boolean
+        val audio: Boolean,
+        val loopCount: Int
     )
 }
 

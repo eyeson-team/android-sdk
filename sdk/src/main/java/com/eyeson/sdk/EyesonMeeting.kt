@@ -13,6 +13,7 @@ import com.eyeson.sdk.events.CallTerminationReason
 import com.eyeson.sdk.events.EyesonEventListener
 import com.eyeson.sdk.events.MediaPlaybackResponse
 import com.eyeson.sdk.events.NeededPermissions
+import com.eyeson.sdk.events.PresentationResponse
 import com.eyeson.sdk.exceptions.internal.FaultyInfoException
 import com.eyeson.sdk.model.api.MeetingDto
 import com.eyeson.sdk.model.local.api.MeetingInfo
@@ -31,6 +32,7 @@ import com.eyeson.sdk.model.local.meeting.MeetingLocked
 import com.eyeson.sdk.model.local.meeting.MuteLocalAudio
 import com.eyeson.sdk.model.local.meeting.Playback
 import com.eyeson.sdk.model.local.meeting.PlaybackUpdate
+import com.eyeson.sdk.model.local.meeting.PresentationUpdate
 import com.eyeson.sdk.model.local.meeting.Recording
 import com.eyeson.sdk.model.local.meeting.SnapshotUpdate
 import com.eyeson.sdk.model.local.sepp.CallAccepted
@@ -96,17 +98,6 @@ class EyesonMeeting(
 
     private val userInMeeting = mutableMapOf<String, UserInfo>()
     private val userListMutex = Mutex()
-
-    internal sealed interface VideoElements {
-        data class Replacement(val playerId: String, val replacementId: String) : VideoElements
-        data class AdditionalUser(val playerId: String) : VideoElements
-    }
-
-    private var lastVideoElements = mutableListOf<VideoElements>()
-    private val lastVideoElementsMutex = Mutex()
-
-    private var staredVideoPlaybacks = mutableSetOf<VideoElements>()
-    private val staredVideoPlaybacksMutex = Mutex()
 
     private val rootEglBase: EglBase = EglBase.create()
 
@@ -263,7 +254,9 @@ class EyesonMeeting(
             screenShareInfo.notificationId,
             screenShareInfo.notification
         ) {
-            webSocketCommunicator?.enablePresentation(asPresentation)
+            if (asPresentation) {
+                setVideoAsPresentation()
+            }
         } ?: false
     }
 
@@ -276,11 +269,21 @@ class EyesonMeeting(
     }
 
     fun setVideoAsPresentation() {
-        webSocketCommunicator?.enablePresentation(true)
+        eyesonMeetingScope.launch {
+            val response = restCommunicator.startPresentation(meeting?.accessKey ?: return@launch)
+            eventListener?.onPresentationStartResponse(
+                PresentationResponse.fromResponseCode(response)
+            )
+        }
     }
 
     fun stopPresentation() {
-        webSocketCommunicator?.enablePresentation(false)
+        eyesonMeetingScope.launch {
+            val response = restCommunicator.stopPresentation(meeting?.accessKey ?: return@launch)
+            eventListener?.onPresentationStopResponse(
+                PresentationResponse.fromResponseCode(response)
+            )
+        }
     }
 
     private suspend fun handleWebSocketEvents(
@@ -372,7 +375,8 @@ class EyesonMeeting(
                             name = it.name,
                             playId = it.playId,
                             replacedUser = userInfo,
-                            audio = it.audio
+                            audio = it.audio,
+                            loopCount = it.loopCount
                         )
                     }
                     eventListener?.onMediaPlayback(event)
@@ -467,68 +471,8 @@ class EyesonMeeting(
 
             is SourceUpdate -> {
                 withContext(nameLookupScope.coroutineContext) {
-                    if (staredVideoPlaybacks.isNotEmpty()) {
-                        val duplicates =
-                            command.sources.groupBy { it }
-                                .filter { it.value.count() > 1 }.keys.map {
-                                    VideoElements.Replacement(it, it)
-                                }
-                        val mediaElements =
-                            command.sources.filter { it.startsWith(videoPlaybackPrefix) }
-                                .map {
-                                    VideoElements.AdditionalUser(
-                                        it.removePrefix(
-                                            videoPlaybackPrefix
-                                        )
-                                    )
-                                }
-
-                        val videoPlaybacks = (duplicates + mediaElements).toMutableList()
-
-                        val removed = lastVideoElementsMutex.withLock {
-                            val removed = lastVideoElements.subtract(videoPlaybacks.toSet())
-                            lastVideoElements = videoPlaybacks
-                            removed
-                        }
-
-                        staredVideoPlaybacksMutex.withLock {
-                            val finishedPlaybacks = mutableListOf<String>()
-                            val runningPlaybacks = mutableSetOf<VideoElements>()
-                            staredVideoPlaybacks.forEach { playback ->
-                                when (playback) {
-                                    is VideoElements.AdditionalUser -> {
-                                        val additionalUser = removed.find {
-                                            it is VideoElements.AdditionalUser && playback.playerId == it.playerId
-                                        }
-                                        if (additionalUser != null) {
-                                            finishedPlaybacks.add(playback.playerId)
-                                        } else {
-                                            runningPlaybacks.add(playback)
-                                        }
-                                    }
-
-                                    is VideoElements.Replacement -> {
-                                        val replacement = removed.find {
-                                            it is VideoElements.Replacement && playback.replacementId == it.playerId
-                                        }
-                                        if (replacement != null) {
-                                            finishedPlaybacks.add(playback.playerId)
-                                        } else {
-                                            runningPlaybacks.add(playback)
-                                        }
-                                    }
-                                }
-                            }
-                            staredVideoPlaybacks = runningPlaybacks
-
-                            if (finishedPlaybacks.isNotEmpty()) {
-                                eventListener?.onMediaPlaybackEnded(finishedPlaybacks)
-                            }
-                        }
-                    }
-
                     val infoNeeded = command.sources.filterNot {
-                        userInMeeting.containsKey(it)
+                        userInMeeting.containsKey(it) || it.contains(VIDEO_PLAYBACK_PREFIX)
                     }
                     if (infoNeeded.isNotEmpty()) {
                         fetchUserInfo(meeting ?: return@withContext, infoNeeded)
@@ -557,6 +501,10 @@ class EyesonMeeting(
                  */
                 Logger.d("RecordingStatusUpdate: enabled ${command.enabled}; active ${command.active}")
             }
+
+            is PresentationUpdate -> {
+                eventListener?.onPresentationUpdate(command)
+            }
         }
     }
 
@@ -575,10 +523,9 @@ class EyesonMeeting(
         callLogic?.disconnectCall()
         callLogic = null
 
-        meeting = null
         eventListener = null
+        meeting = null
         joined.set(false)
-
     }
 
     fun getMeetingInfo(): MeetingInfo? {
@@ -673,17 +620,6 @@ class EyesonMeeting(
                 audio,
                 loopCount
             )
-
-            if (MediaPlaybackResponse.isSuccessful(response) && !playId.isNullOrBlank()) {
-                staredVideoPlaybacksMutex.withLock {
-                    val element = if (replacementId.isNullOrBlank()) {
-                        VideoElements.AdditionalUser(playId)
-                    } else {
-                        VideoElements.Replacement(playId, replacementId)
-                    }
-                    staredVideoPlaybacks.add(element)
-                }
-            }
 
             eventListener?.onMediaPlaybackStartResponse(
                 playId,
@@ -888,6 +824,6 @@ class EyesonMeeting(
 
     companion object {
         internal var API_URL = BuildConfig.API_URL
-        internal const val videoPlaybackPrefix = "media-"
+        internal const val VIDEO_PLAYBACK_PREFIX = "media-"
     }
 }

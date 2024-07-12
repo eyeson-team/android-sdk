@@ -76,6 +76,16 @@ internal class EyesonRestClient(
             eyesonApi.stopVideoPlayback(accessKey = accessKey, playerId = playId)
         }
 
+    suspend fun startPresentation(accessKey: String): Response<Unit> =
+        withContext(ioDispatcher) {
+            eyesonApi.startPresentation(accessKey = accessKey)
+        }
+
+    suspend fun stopPresentation(accessKey: String): Response<Unit> =
+        withContext(ioDispatcher) {
+            eyesonApi.stopPresentation(accessKey = accessKey)
+        }
+
     companion object {
         const val TYPE_CHAT = "chat"
         const val TYPE_CUSTOM = "custom"

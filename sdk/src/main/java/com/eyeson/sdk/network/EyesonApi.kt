@@ -56,4 +56,16 @@ internal interface EyesonApi {
         @Path("accessKey") accessKey: String,
         @Path("playerId") playerId: String
     ): Response<Unit>
+
+    @POST("/rooms/{accessKey}/presentation")
+    suspend fun startPresentation(
+        @Path("accessKey") accessKey: String,
+    ): Response<Unit>
+
+
+    @DELETE("/rooms/{accessKey}/presentation")
+    suspend fun stopPresentation(
+        @Path("accessKey") accessKey: String,
+    ): Response<Unit>
+
 }

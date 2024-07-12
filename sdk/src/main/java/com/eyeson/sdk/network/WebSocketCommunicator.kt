@@ -13,7 +13,6 @@ import com.eyeson.sdk.model.local.sepp.CallStart
 import com.eyeson.sdk.model.local.sepp.CallTerminate
 import com.eyeson.sdk.model.local.sepp.DesktopStreaming
 import com.eyeson.sdk.model.local.sepp.MuteVideo
-import com.eyeson.sdk.model.local.sepp.SetPresenter
 import com.eyeson.sdk.model.local.ws.ReconnectSignaling
 import com.eyeson.sdk.model.local.ws.WsFailure
 import com.eyeson.sdk.model.local.ws.WsOpen
@@ -23,7 +22,6 @@ import com.eyeson.sdk.model.sepp.outgoing.CallStartDto
 import com.eyeson.sdk.model.sepp.outgoing.CallTerminateDto
 import com.eyeson.sdk.model.sepp.outgoing.DesktopStreamingDto
 import com.eyeson.sdk.model.sepp.outgoing.MuteVideoDto
-import com.eyeson.sdk.model.sepp.outgoing.SetPresenterDto
 import com.eyeson.sdk.model.sepp.outgoing.fromLocal
 import com.eyeson.sdk.utils.collectIn
 import kotlinx.coroutines.CoroutineScope
@@ -91,22 +89,6 @@ internal class WebSocketCommunicator(
         meetingCommunicator?.disconnect()
         signalingConnection?.disconnect()
     }
-
-    fun enablePresentation(enable: Boolean) {
-        val setPresenter = SetPresenter(on = enable, cid = meeting.signaling.options.clientId)
-        val desktopStreaming =
-            DesktopStreaming(on = enable, cid = meeting.signaling.options.clientId)
-
-        signalingConnection?.sendMessage(
-            moshi.adapter(SetPresenterDto::class.java)
-                .toJson(setPresenter.fromLocal(callId, meeting))
-        )
-        signalingConnection?.sendMessage(
-            moshi.adapter(DesktopStreamingDto::class.java)
-                .toJson(desktopStreaming.fromLocal(callId, meeting))
-        )
-    }
-
 
     fun setLocalVideoEnabled(enable: Boolean) {
         val muteVideo = MuteVideo(muted = !enable, cid = meeting.signaling.options.clientId)

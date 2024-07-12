@@ -8,5 +8,6 @@ data class Playback(
     val name: String?,
     val playId: String?,
     val replacedUser: UserInfo?,
-    val audio: Boolean
+    val audio: Boolean,
+    val loopCount: Int
 ) : LocalBaseCommand
