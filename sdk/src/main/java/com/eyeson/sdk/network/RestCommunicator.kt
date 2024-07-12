@@ -75,6 +75,17 @@ internal class RestCommunicator {
         restClient.stopVideoPlayback(accessKey, playId).code()
     }
 
+    suspend fun startPresentation(
+        accessKey: String,
+    ): Int = coroutineScope {
+        restClient.startPresentation(accessKey).code()
+    }
+
+    suspend fun stopPresentation(
+        accessKey: String,
+    ): Int = coroutineScope {
+        restClient.stopPresentation(accessKey).code()
+    }
 
 }
 

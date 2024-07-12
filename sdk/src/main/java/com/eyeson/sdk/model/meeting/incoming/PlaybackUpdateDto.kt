@@ -17,7 +17,8 @@ internal data class PlaybackUpdateDto(
         @Json(name = "name") val name: String?,
         @Json(name = "play_id") val playId: String?,
         @Json(name = "replacement_id") val replacementId: String?,
-        @Json(name = "audio") val audio: Boolean?
+        @Json(name = "audio") val audio: Boolean?,
+        @Json(name = "loop_count") val loopCount: Int?
     )
 
     override fun toLocal(): PlaybackUpdate {
@@ -28,7 +29,8 @@ internal data class PlaybackUpdateDto(
                     name = it.name,
                     playId = it.playId,
                     replacementId = it.replacementId,
-                    audio = it.audio ?: false
+                    audio = it.audio ?: false,
+                    loopCount = it.loopCount ?: 0
                 )
             }
         )

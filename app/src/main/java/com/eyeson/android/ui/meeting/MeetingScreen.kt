@@ -14,7 +14,6 @@ import android.widget.Toast
 import androidx.activity.compose.BackHandler
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.annotation.OptIn
 import androidx.appcompat.app.AppCompatActivity
 import androidx.compose.animation.Crossfade
 import androidx.compose.foundation.background
@@ -91,6 +90,7 @@ import org.webrtc.EglBase
 import org.webrtc.RendererCommon
 import kotlin.math.roundToInt
 
+@UnstableApi
 @Composable
 fun MeetingScreen(
     onBack: () -> Unit,
@@ -517,7 +517,7 @@ fun MeetingScreen(
                             startScreenShare()
                         }
                     },
-                    stopFullScreenPresentation = { viewModel.stopScreenShare() },
+                    stopFullScreenPresentation = { viewModel.stopFullScreenPresentation() },
                     showVideoPlayback = {
                         whatIsOpen = SETTINGS_VIDEO_PLAYBACK
                     },
@@ -595,7 +595,7 @@ fun MeetingScreen(
     }
 }
 
-@OptIn(UnstableApi::class)
+@UnstableApi
 @Composable
 private fun VideoViews(
     showLocal: Boolean,
@@ -840,6 +840,7 @@ private fun generateInCallNotification(context: Context): Notification {
 }
 
 
+@UnstableApi
 @Preview
 @Composable
 fun SettingsScreenPreview() {

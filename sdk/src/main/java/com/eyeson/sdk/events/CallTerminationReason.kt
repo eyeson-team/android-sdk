@@ -9,7 +9,7 @@ enum class CallTerminationReason(val terminationCode:Int) {
 
     companion object {
         private val mapping =
-            values().associateBy(CallTerminationReason::terminationCode)
+            entries.associateBy(CallTerminationReason::terminationCode)
 
         fun fromTerminationCode(code: Int) = mapping[code] ?: ERROR
     }

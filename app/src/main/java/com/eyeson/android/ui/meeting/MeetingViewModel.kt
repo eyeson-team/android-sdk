@@ -4,7 +4,6 @@ import android.app.Application
 import android.app.Notification
 import android.content.ClipData
 import android.content.Intent
-import androidx.annotation.OptIn
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
@@ -31,11 +30,13 @@ import com.eyeson.sdk.events.CallTerminationReason
 import com.eyeson.sdk.events.EyesonEventListener
 import com.eyeson.sdk.events.MediaPlaybackResponse
 import com.eyeson.sdk.events.NeededPermissions
+import com.eyeson.sdk.events.PresentationResponse
 import com.eyeson.sdk.model.local.api.MeetingInfo
 import com.eyeson.sdk.model.local.api.UserInfo
 import com.eyeson.sdk.model.local.call.ConnectionStatistic
 import com.eyeson.sdk.model.local.meeting.BroadcastUpdate
 import com.eyeson.sdk.model.local.meeting.Playback
+import com.eyeson.sdk.model.local.meeting.PresentationUpdate
 import com.eyeson.sdk.model.local.meeting.Recording
 import com.eyeson.sdk.model.local.meeting.SnapshotUpdate
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -54,6 +55,8 @@ import java.util.UUID
 import java.util.concurrent.atomic.AtomicBoolean
 import javax.inject.Inject
 
+
+@UnstableApi
 @HiltViewModel
 class MeetingViewModel @Inject constructor(
     private val savedStateHandle: SavedStateHandle,
@@ -149,8 +152,6 @@ class MeetingViewModel @Inject constructor(
                 eyesonMeeting.setVideoEnabled(lastCameraState)
                 _cameraActive.value = lastCameraState
             }
-
-            _presentationActive.value = presenter?.id != null
         }
 
         override fun onAudioMutedBy(user: UserInfo) {
@@ -189,13 +190,6 @@ class MeetingViewModel @Inject constructor(
             }
         }
 
-        override fun onMediaPlaybackEnded(playIds: List<String>) {
-            addEvent("onMediaPlaybackEnded: ended $playIds")
-
-            _localVideoPlaybackActive.value = false
-            _localVideoPlaybackPlayId.value = null
-        }
-
         override fun onMediaPlaybackStartResponse(
             playId: String?,
             mediaPlaybackResponse: MediaPlaybackResponse
@@ -220,6 +214,20 @@ class MeetingViewModel @Inject constructor(
             _localVideoPlaybackPlayId.value = null
         }
 
+        override fun onPresentationUpdate(presentationUpdate: PresentationUpdate) {
+            addEvent("onPresentationUpdate: presentationUpdate $presentationUpdate")
+            _presentationActive.value = presentationUpdate.user != null
+        }
+
+        override fun onPresentationStartResponse(presentationResponse: PresentationResponse) {
+            addEvent("onPresentationStartResponse: presentationResponse $presentationResponse")
+        }
+
+
+        override fun onPresentationStopResponse(presentationResponse: PresentationResponse) {
+            addEvent("onPresentationStopResponse: presentationResponse $presentationResponse")
+        }
+
         override fun onBroadcastUpdate(activeBroadcasts: BroadcastUpdate) {
             addEvent("onBroadcastUpdate: activeBroadcasts $activeBroadcasts")
         }
@@ -233,6 +241,7 @@ class MeetingViewModel @Inject constructor(
         }
 
         override fun onConnectionStatisticUpdate(statistic: ConnectionStatistic) {
+            // NOTE: omitted to reduce clutter
 //            addEvent("onConnectionStatisticUpdate: statistic $statistic")
 //            Timber.d("onConnectionStatisticUpdate: statistic $statistic")
         }
@@ -251,6 +260,7 @@ class MeetingViewModel @Inject constructor(
         }
 
         override fun onVoiceActivity(user: UserInfo, active: Boolean) {
+            // NOTE: omitted to reduce clutter
 //            addEvent("onVoiceActivity: users $user; active $active")
         }
 
@@ -324,11 +334,15 @@ class MeetingViewModel @Inject constructor(
     }
 
 
-    val remoteExoPlayer = getExoPlayer { _remoteVideoPlaybackActive.value = false }
-    val localExoPlayer = getExoPlayer { _localVideoPlaybackActive.value = false }
+    val remoteExoPlayer = getExoPlayer {
+        _remoteVideoPlaybackActive.value = false
+    }
+    val localExoPlayer = getExoPlayer {
+        _localVideoPlaybackActive.value = false
+        _localVideoPlaybackPlayId.value = null
+    }
 
 
-    @OptIn(UnstableApi::class)
     private fun getExoPlayer(onPlaybackEnd: () -> Unit): ExoPlayer {
         return ExoPlayer.Builder(application).build().apply {
             playWhenReady = true
@@ -540,6 +554,9 @@ class MeetingViewModel @Inject constructor(
     fun stopScreenShare() {
         _screenShareActive.value = false
         eyesonMeeting.stopScreenShare(true)
+    }
+
+    fun stopFullScreenPresentation() {
         eyesonMeeting.stopPresentation()
     }
 
@@ -581,6 +598,7 @@ class MeetingViewModel @Inject constructor(
                         exoPlayer.pause()
                         exoPlayer.clearMediaItems()
                     }
+
                     else -> Unit
                 }
             }
