@@ -3,7 +3,6 @@ package com.eyeson.android.ui.meeting
 import android.app.Notification
 import android.app.NotificationChannel
 import android.app.NotificationManager
-import android.app.PendingIntent
 import android.content.ClipboardManager
 import android.content.Context
 import android.content.Intent
@@ -69,6 +68,7 @@ import androidx.compose.ui.viewinterop.AndroidView
 import androidx.compose.ui.zIndex
 import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
+import androidx.core.content.ContextCompat
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
@@ -76,8 +76,8 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.media3.common.util.UnstableApi
 import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.ui.PlayerView
-import com.eyeson.android.MainActivity
 import com.eyeson.android.R
+import com.eyeson.android.service.MeetingActiveService
 import com.eyeson.android.ui.components.Chat
 import com.eyeson.android.ui.components.KeepScreenOn
 import com.eyeson.android.ui.components.findActivity
@@ -235,9 +235,11 @@ fun MeetingScreen(
                     !callConnected -> {
                         Connecting()
                     }
+
                     viewModel.meetingSettings.audioOnly -> {
                         AudioOnly(participants = userInMeeting.count())
                     }
+
                     else -> {
                         VideoViews(
                             showLocal = sfu && videoActive,
@@ -334,9 +336,11 @@ fun MeetingScreen(
                     !callConnected -> {
                         Connecting()
                     }
+
                     viewModel.meetingSettings.audioOnly -> {
                         AudioOnly(participants = userInMeeting.count())
                     }
+
                     else -> {
                         VideoViews(
                             showLocal = sfu && videoActive,
@@ -387,6 +391,7 @@ fun MeetingScreen(
                 val manager = context.getSystemService(MediaProjectionManager::class.java)
                 connectWithScreenShareLauncher.launch(manager.createScreenCaptureIntent())
             }
+
             !viewModel.inCall() -> {
                 viewModel.connect(localView, remoteView)
             }
@@ -398,15 +403,19 @@ fun MeetingScreen(
             CallTerminationReason.UNSPECIFIED -> {
                 null
             }
+
             CallTerminationReason.OK -> {
                 R.string.call_terminated_remotely
             }
+
             CallTerminationReason.FORBIDDEN -> {
                 R.string.call_terminated_forbidden
             }
+
             CallTerminationReason.UNWANTED -> {
                 R.string.call_terminated_unwanted
             }
+
             else -> {
                 R.string.call_terminated_error
             }
@@ -451,6 +460,7 @@ fun MeetingScreen(
                     verticalContentRatio = vertical
                 )
             }
+
             SETTINGS_EVENT_LOG -> {
                 EventLog(
                     visible = open,
@@ -470,6 +480,7 @@ fun MeetingScreen(
                     verticalContentRatio = vertical
                 )
             }
+
             SETTINGS_VIDEO_PLAYBACK -> {
                 VideoPlayback(
                     visible = open,
@@ -492,6 +503,7 @@ fun MeetingScreen(
                     verticalContentRatio = vertical
                 )
             }
+
             else -> {
                 MeetingSettings(
                     visible = open,
@@ -569,16 +581,19 @@ fun MeetingScreen(
                         && !context.findActivity().isChangingConfigurations
                         && viewModel.inCall() -> {
 
-                    val notification = generateInCallNotification(context)
+                    val intent = Intent(context, MeetingActiveService::class.java)
 
-                    with(NotificationManagerCompat.from(context)) {
-                        notify(IN_CALL_NOTIFICATION_ID, notification)
+                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                        ContextCompat.startForegroundService(context, intent)
+                    } else {
+                        context.startService(intent)
                     }
                 }
+
                 event == Lifecycle.Event.ON_RESUME || event == Lifecycle.Event.ON_DESTROY -> {
-                    with(NotificationManagerCompat.from(context)) {
-                        cancel(IN_CALL_NOTIFICATION_ID)
-                    }
+                    val intent = Intent(context, MeetingActiveService::class.java)
+                    context.stopService(intent)
+
                     viewModel.setRemoteVideoTarget(remoteView)
 
                     if (event == Lifecycle.Event.ON_DESTROY && context.findActivity().isFinishing) {
@@ -617,9 +632,11 @@ private fun VideoViews(
             Modifier
                 .fillMaxSize()
         }
+
         wideScreen -> {
             Modifier.aspectRatio(16f / 9f)
         }
+
         else -> {
             Modifier.aspectRatio(4f / 3f)
         }
@@ -807,39 +824,6 @@ private fun generateScreenShareNotification(context: Context): Notification {
         .build()
 }
 
-private fun generateInCallNotification(context: Context): Notification {
-    val pendingIntent =
-        PendingIntent.getActivity(
-            context, 0,
-            Intent(context, MainActivity::class.java),
-            PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_ONE_SHOT
-        )
-
-    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-        context.getSystemService(NotificationManager::class.java).apply {
-            createNotificationChannel(
-                NotificationChannel(
-                    IN_CALL_CHANNEL_ID,
-                    IN_CALL_CHANNEL_NAME,
-                    NotificationManager.IMPORTANCE_DEFAULT
-                )
-            )
-        }
-    }
-
-    return NotificationCompat.Builder(context, IN_CALL_CHANNEL_ID)
-        .setOngoing(true)
-        .setSilent(true)
-        .setContentText(context.getText(R.string.click_to_resume))
-        .setContentTitle(context.getText(R.string.active_call))
-        .setPriority(NotificationCompat.PRIORITY_DEFAULT)
-        .setSmallIcon(R.drawable.video_call_24)
-        .setContentIntent(pendingIntent)
-        .setAutoCancel(true)
-        .build()
-}
-
-
 @UnstableApi
 @Preview
 @Composable
@@ -858,9 +842,7 @@ private const val SETTINGS_VIDEO_PLAYBACK = 3
 private const val SCREEN_SHARE_NOTIFICATION_ID = 42
 private const val SCREEN_SHARE_CHANNEL_ID = "7"
 private const val SCREEN_SHARE_CHANNEL_NAME = "Screen share active"
-private const val IN_CALL_NOTIFICATION_ID = 3
-private const val IN_CALL_CHANNEL_ID = "17"
-private const val IN_CALL_CHANNEL_NAME = "In call"
+
 
 private const val DEMO_VIDEO_URL =
     "https://s3.eu-west-1.amazonaws.com/eyeson.team.mediainject/eyeson-1950.webm"

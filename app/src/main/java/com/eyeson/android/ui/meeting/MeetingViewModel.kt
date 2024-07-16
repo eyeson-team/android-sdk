@@ -288,7 +288,7 @@ class MeetingViewModel @Inject constructor(
     }
 
     private val eyesonMeeting: EyesonMeeting by lazy {
-        EyesonMeeting(eventListener = eventListener, application = application)
+        EyesonMeeting(application = application)
     }
 
     private val audioManager by lazy { EyesonAudioManager(application) }
@@ -395,6 +395,7 @@ class MeetingViewModel @Inject constructor(
                     audioOnly = meetingSettings.audioOnly,
                     local = local,
                     remote = remote,
+                    eventListener = eventListener,
                     microphoneEnabledOnStart = meetingSettings.micOnStar,
                     videoEnabledOnStart = meetingSettings.videoOnStart,
                     screenShareInfo = screenShareInfo
@@ -411,6 +412,7 @@ class MeetingViewModel @Inject constructor(
                     audioOnly = meetingSettings.audioOnly,
                     local = local,
                     remote = remote,
+                    eventListener = eventListener,
                     microphoneEnabledOnStart = meetingSettings.micOnStar,
                     videoEnabledOnStart = meetingSettings.videoOnStart,
                     screenShareInfo = screenShareInfo

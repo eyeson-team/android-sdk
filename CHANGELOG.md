@@ -7,6 +7,12 @@ The format is based on [Keep a Changelog] and this project adheres to
 ## [Unreleased]
 
 ## [Released]
+## [1.1.11] - 2024-07-16
+### Added
+- MeetingActiveService foreground service
+### Changed
+- Moved EyesonEventListener from EyesonMeeting construction to join/joinAsGuest
+
 ## [1.1.10] - 2024-07-12
 ### Added
 - loopCount in `Playback`

@@ -314,6 +314,7 @@ internal class CallLogic(
 
     private fun endScreenShareForeground() {
         screenCapturerService?.endForeground()
+        // TODO Unbind service
         screenCapturerService = null
         screenCapturerServiceBound = false
     }

@@ -73,11 +73,12 @@ import java.util.concurrent.Executors
 import java.util.concurrent.atomic.AtomicBoolean
 
 class EyesonMeeting(
-    private val eventListener: EyesonEventListener,
     private val application: Application,
     private val experimentalFeatureStereo: Boolean = false,
     customApiUrl: String? = null
 ) {
+    private var eventListener: EyesonEventListener? = null
+
     private val eyesonMeetingScope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
 
     private val nameLookupScope =
@@ -118,10 +119,12 @@ class EyesonMeeting(
         audioOnly: Boolean,
         local: VideoSink?,
         remote: VideoSink?,
+        eventListener: EyesonEventListener,
         microphoneEnabledOnStart: Boolean = true,
         videoEnabledOnStart: Boolean = true,
         screenShareInfo: ScreenShareInfo? = null
     ) {
+        this.eventListener = eventListener
         joinMeeting(
             { restCommunicator.getMeetingInfo(accessKey) },
             frontCamera,
@@ -143,10 +146,12 @@ class EyesonMeeting(
         audioOnly: Boolean,
         local: VideoSink?,
         remote: VideoSink?,
+        eventListener: EyesonEventListener,
         microphoneEnabledOnStart: Boolean = true,
         videoEnabledOnStart: Boolean = true,
         screenShareInfo: ScreenShareInfo? = null
     ) {
+        this.eventListener = eventListener
         joinMeeting(
             {
                 restCommunicator.getMeetingInfoAsGuest(
@@ -181,7 +186,7 @@ class EyesonMeeting(
         }
         val neededPermissions = checkForNeededPermissions(audiOnly, application)
         if (neededPermissions.isNotEmpty()) {
-            eventListener.onPermissionsNeeded(neededPermissions)
+            eventListener?.onPermissionsNeeded(neededPermissions)
             return
         }
         audioOnStart = microphoneEnabledOnStart
@@ -197,12 +202,12 @@ class EyesonMeeting(
                     }
 
                     is FaultyInfoException -> {
-                        eventListener.onMeetingJoinFailed(CallRejectionReason.fromRejectCode(e.code))
+                        eventListener?.onMeetingJoinFailed(CallRejectionReason.fromRejectCode(e.code))
                         return@launch
                     }
 
                     else -> {
-                        eventListener.onMeetingJoinFailed(CallRejectionReason.ERROR)
+                        eventListener?.onMeetingJoinFailed(CallRejectionReason.ERROR)
                         return@launch
                     }
                 }
@@ -216,7 +221,7 @@ class EyesonMeeting(
                 }
 
                 else -> {
-                    eventListener.onMeetingJoining(
+                    eventListener?.onMeetingJoining(
                         meetingInfoParsed
                     )
                 }
@@ -266,7 +271,7 @@ class EyesonMeeting(
     fun setVideoAsPresentation() {
         eyesonMeetingScope.launch {
             val response = restCommunicator.startPresentation(meeting?.accessKey ?: return@launch)
-            eventListener.onPresentationStartResponse(
+            eventListener?.onPresentationStartResponse(
                 PresentationResponse.fromResponseCode(response)
             )
         }
@@ -275,7 +280,7 @@ class EyesonMeeting(
     fun stopPresentation() {
         eyesonMeetingScope.launch {
             val response = restCommunicator.stopPresentation(meeting?.accessKey ?: return@launch)
-            eventListener.onPresentationStopResponse(
+            eventListener?.onPresentationStopResponse(
                 PresentationResponse.fromResponseCode(response)
             )
         }
@@ -304,7 +309,7 @@ class EyesonMeeting(
                     command.sdp,
                     SessionDescription.Type.ANSWER
                 )
-                eventListener.onStreamingModeChanged(callLogic?.isSfuMode() ?: return)
+                eventListener?.onStreamingModeChanged(callLogic?.isSfuMode() ?: return)
             }
 
             is CallResumed -> {
@@ -312,17 +317,17 @@ class EyesonMeeting(
                     command.sdp,
                     SessionDescription.Type.OFFER
                 )
-                eventListener.onStreamingModeChanged(callLogic?.isSfuMode() ?: return)
+                eventListener?.onStreamingModeChanged(callLogic?.isSfuMode() ?: return)
             }
 
             is CallRejected -> {
                 leave()
-                eventListener.onMeetingJoinFailed(CallRejectionReason.fromRejectCode(command.rejectCode))
+                eventListener?.onMeetingJoinFailed(CallRejectionReason.fromRejectCode(command.rejectCode))
             }
 
             is CallTerminated -> {
                 leave()
-                eventListener.onMeetingTerminated(CallTerminationReason.fromTerminationCode(command.terminateCode))
+                eventListener?.onMeetingTerminated(CallTerminationReason.fromTerminationCode(command.terminateCode))
             }
 
             is SdpUpdate -> {
@@ -330,7 +335,7 @@ class EyesonMeeting(
                     command.sdp,
                     SessionDescription.Type.OFFER
                 )
-                eventListener.onStreamingModeChanged(callLogic?.isSfuMode() ?: return)
+                eventListener?.onStreamingModeChanged(callLogic?.isSfuMode() ?: return)
             }
 
             is ChatIncoming -> {
@@ -343,11 +348,11 @@ class EyesonMeeting(
 
             is MuteLocalAudio -> {
                 setMicrophoneEnabled(false)
-                eventListener.onAudioMutedBy(command.byUser)
+                eventListener?.onAudioMutedBy(command.byUser)
             }
 
             is MeetingLocked -> {
-                eventListener.onMeetingLocked(command.locked)
+                eventListener?.onMeetingLocked(command.locked)
             }
 
             is PlaybackUpdate -> {
@@ -374,25 +379,25 @@ class EyesonMeeting(
                             loopCount = it.loopCount
                         )
                     }
-                    eventListener.onMediaPlayback(event)
+                    eventListener?.onMediaPlayback(event)
                 }
             }
 
             is BroadcastUpdate -> {
-                eventListener.onBroadcastUpdate(command)
+                eventListener?.onBroadcastUpdate(command)
             }
 
             is Recording -> {
-                eventListener.onRecordingUpdate(command)
+                eventListener?.onRecordingUpdate(command)
             }
 
             is SnapshotUpdate -> {
-                eventListener.onSnapshotUpdate(command)
+                eventListener?.onSnapshotUpdate(command)
             }
 
             is WsFailure -> {
                 leave()
-                eventListener.onMeetingTerminated(
+                eventListener?.onMeetingTerminated(
                     CallTerminationReason.fromTerminationCode(
                         command.response?.code ?: CallTerminationReason.ERROR.terminationCode
                     )
@@ -401,7 +406,7 @@ class EyesonMeeting(
 
             is WsClosed -> {
                 leave()
-                eventListener.onMeetingTerminated(CallTerminationReason.OK)
+                eventListener?.onMeetingTerminated(CallTerminationReason.OK)
             }
 
             is ReconnectSignaling -> {
@@ -439,14 +444,14 @@ class EyesonMeeting(
                     }
 
                     if (command.added.isNotEmpty()) {
-                        eventListener.onUserJoinedMeeting(
+                        eventListener?.onUserJoinedMeeting(
                             userInMeeting.filter { command.added.contains(it.key) }
                                 .values.toSet().toList()
                         )
                     }
 
                     if (command.deleted.isNotEmpty()) {
-                        eventListener.onUserLeftMeeting(
+                        eventListener?.onUserLeftMeeting(
                             userInMeeting.filter { command.deleted.contains(it.key) }
                                 .values.toSet().toList()
                         )
@@ -457,7 +462,7 @@ class EyesonMeeting(
                             userInMeeting.remove(it)
                         }
                     }
-                    eventListener.onUserListUpdate(
+                    eventListener?.onUserListUpdate(
                         userInMeeting.values.toSet().toList(),
                         command.mediaPlayIds
                     )
@@ -476,7 +481,7 @@ class EyesonMeeting(
                     val videoSourceIds =
                         command.sources.slice(command.videSources.filter { it >= 0 })
 
-                    eventListener.onVideoSourceUpdate(
+                    eventListener?.onVideoSourceUpdate(
                         userInMeeting.filter {
                             videoSourceIds.contains(it.key)
                         }.values.toSet().toList(),
@@ -498,14 +503,14 @@ class EyesonMeeting(
             }
 
             is PresentationUpdate -> {
-                eventListener.onPresentationUpdate(command)
+                eventListener?.onPresentationUpdate(command)
             }
         }
     }
 
     private fun terminateCallWithError() {
         leave()
-        eventListener.onMeetingTerminated(CallTerminationReason.ERROR)
+        eventListener?.onMeetingTerminated(CallTerminationReason.ERROR)
     }
 
     fun leave() {
@@ -518,8 +523,9 @@ class EyesonMeeting(
         callLogic?.disconnectCall()
         callLogic = null
 
-        joined.set(false)
+        eventListener = null
         meeting = null
+        joined.set(false)
     }
 
     fun getMeetingInfo(): MeetingInfo? {
@@ -615,7 +621,7 @@ class EyesonMeeting(
                 loopCount
             )
 
-            eventListener.onMediaPlaybackStartResponse(
+            eventListener?.onMediaPlaybackStartResponse(
                 playId,
                 MediaPlaybackResponse.fromResponseCode(response)
             )
@@ -628,7 +634,7 @@ class EyesonMeeting(
                 meeting?.accessKey ?: return@launch, playId
             )
 
-            eventListener.onMediaPlaybackStopResponse(
+            eventListener?.onMediaPlaybackStopResponse(
                 playId,
                 MediaPlaybackResponse.fromResponseCode(response)
             )
@@ -713,7 +719,7 @@ class EyesonMeeting(
                     if (!userInMeeting.containsKey(command.userId)) {
                         fetchUserInfo(meeting, listOf(command.userId))
                     }
-                    eventListener.onVoiceActivity(
+                    eventListener?.onVoiceActivity(
                         user = userInMeeting[command.userId] ?: return@withContext,
                         active = command.on
                     )
@@ -722,24 +728,24 @@ class EyesonMeeting(
 
             is CallTerminated -> {
                 leave()
-                eventListener.onMeetingTerminated(CallTerminationReason.fromTerminationCode(command.terminateCode))
+                eventListener?.onMeetingTerminated(CallTerminationReason.fromTerminationCode(command.terminateCode))
             }
 
             is MeetingJoined -> {
                 webSocketCommunicator?.setLocalVideoEnabled(videoOnStart)
-                eventListener.onMeetingJoined(getMeetingInfo() ?: return)
+                eventListener?.onMeetingJoined(getMeetingInfo() ?: return)
             }
 
             is CameraSwitchDone -> {
-                eventListener.onCameraSwitchDone(command.isFrontCamera)
+                eventListener?.onCameraSwitchDone(command.isFrontCamera)
             }
 
             is CameraSwitchError -> {
-                eventListener.onCameraSwitchError(command.error)
+                eventListener?.onCameraSwitchError(command.error)
             }
 
             is ConnectionStatistic -> {
-                eventListener.onConnectionStatisticUpdate(command)
+                eventListener?.onConnectionStatisticUpdate(command)
             }
         }
     }
@@ -760,7 +766,7 @@ class EyesonMeeting(
         withContext(nameLookupScope.coroutineContext) {
             val id = fetchUserInfoBasedOnLegacyId(chat.userId, meeting)
 
-            eventListener.onChatMessageReceived(
+            eventListener?.onChatMessageReceived(
                 user = userInMeeting[id] ?: return@withContext,
                 message = chat.content,
                 timestamp = chat.timestamp
@@ -772,7 +778,7 @@ class EyesonMeeting(
         withContext(nameLookupScope.coroutineContext) {
             val id = fetchUserInfoBasedOnLegacyId(message.userId, meeting)
 
-            eventListener.onCustomMessageReceived(
+            eventListener?.onCustomMessageReceived(
                 user = userInMeeting[id] ?: return@withContext,
                 message = message.content,
                 timestamp = message.createdAt
