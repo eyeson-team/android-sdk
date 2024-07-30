@@ -7,6 +7,10 @@ The format is based on [Keep a Changelog] and this project adheres to
 ## [Unreleased]
 
 ## [Released]
+## [1.1.12] - 2024-07-30
+### Fixed
+- Some events have not been triggered
+
 ## [1.1.11] - 2024-07-16
 ### Added
 - MeetingActiveService foreground service

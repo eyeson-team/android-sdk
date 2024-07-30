@@ -321,13 +321,13 @@ class EyesonMeeting(
             }
 
             is CallRejected -> {
-                leave()
                 eventListener?.onMeetingJoinFailed(CallRejectionReason.fromRejectCode(command.rejectCode))
+                leave()
             }
 
             is CallTerminated -> {
-                leave()
                 eventListener?.onMeetingTerminated(CallTerminationReason.fromTerminationCode(command.terminateCode))
+                leave()
             }
 
             is SdpUpdate -> {
@@ -396,17 +396,17 @@ class EyesonMeeting(
             }
 
             is WsFailure -> {
-                leave()
                 eventListener?.onMeetingTerminated(
                     CallTerminationReason.fromTerminationCode(
                         command.response?.code ?: CallTerminationReason.ERROR.terminationCode
                     )
                 )
+                leave()
             }
 
             is WsClosed -> {
-                leave()
                 eventListener?.onMeetingTerminated(CallTerminationReason.OK)
+                leave()
             }
 
             is ReconnectSignaling -> {
@@ -509,8 +509,8 @@ class EyesonMeeting(
     }
 
     private fun terminateCallWithError() {
-        leave()
         eventListener?.onMeetingTerminated(CallTerminationReason.ERROR)
+        leave()
     }
 
     fun leave() {
@@ -727,8 +727,8 @@ class EyesonMeeting(
             }
 
             is CallTerminated -> {
-                leave()
                 eventListener?.onMeetingTerminated(CallTerminationReason.fromTerminationCode(command.terminateCode))
+                leave()
             }
 
             is MeetingJoined -> {
