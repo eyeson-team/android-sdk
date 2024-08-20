@@ -33,7 +33,7 @@ android {
     productFlavors {
         create("production") {
             dimension = "version"
-            resValue("string", "app_name", "eyeson SDK")
+            resValue("string", "app_name", "Eyeson SDK")
         }
     }
 
