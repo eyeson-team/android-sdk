@@ -7,6 +7,10 @@ The format is based on [Keep a Changelog] and this project adheres to
 ## [Unreleased]
 
 ## [Released]
+## [1.1.13] - 2024-07-30
+### Added
+- ProGuard rules 
+
 ## [1.1.12] - 2024-07-30
 ### Fixed
 - Some events have not been triggered

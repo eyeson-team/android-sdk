@@ -19,3 +19,8 @@
 # If you keep the line number information, uncomment this to
 # hide the original source file name.
 #-renamesourcefileattribute SourceFile
+
+-keep class com.eyeson.sdk.** { *; }
+-keep class org.webrtc.** { *; }
+-dontwarn org.webrtc.Dav1dDecoder
+-dontwarn java.lang.invoke.StringConcatFactory
