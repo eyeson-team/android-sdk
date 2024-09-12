@@ -67,7 +67,6 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.compose.ui.zIndex
 import androidx.core.app.NotificationCompat
-import androidx.core.app.NotificationManagerCompat
 import androidx.core.content.ContextCompat
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.Lifecycle
@@ -577,10 +576,10 @@ fun MeetingScreen(
     DisposableEffect(key1 = lifecycle) {
         val observer = LifecycleEventObserver { _, event ->
             when {
-                event == Lifecycle.Event.ON_STOP
+                event.targetState == Lifecycle.State.STARTED
+                        && event == Lifecycle.Event.ON_PAUSE
                         && !context.findActivity().isChangingConfigurations
                         && viewModel.inCall() -> {
-
                     val intent = Intent(context, MeetingActiveService::class.java)
 
                     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
