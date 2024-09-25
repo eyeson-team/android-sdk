@@ -11,8 +11,9 @@ object Libraries {
     // UI and appcompat
     const val coreKtx = "androidx.core:core-ktx:${Versions.coreKtx}"
     const val appcompat = "androidx.appcompat:appcompat:${Versions.appCompat}"
-    const val material = "com.google.android.material:material:${Versions.material}"
+    const val material = "androidx.compose.material3:material3:${Versions.material3}"
     const val fragmentKtx = "androidx.fragment:fragment-ktx:${Versions.fragmentKtx}"
+    const val googleAndroidMaterial = "com.google.android.material:material:${Versions.googleAndroidMaterial}"
 
     const val constraintLayout =
         "androidx.constraintlayout:constraintlayout:${Versions.constraintLayout}"

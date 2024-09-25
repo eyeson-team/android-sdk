@@ -1,6 +1,7 @@
 package  com.eyeson.sdk.network
 
 import com.eyeson.sdk.model.api.MeetingDto
+import com.eyeson.sdk.model.api.PermalinkDto
 import com.eyeson.sdk.model.api.UserInMeetingDto
 import retrofit2.Response
 import retrofit2.http.DELETE
@@ -17,18 +18,18 @@ internal interface EyesonApi {
         @Path("guestToken") guestToken: String,
         @Field("name") name: String,
         @Field("id") id: String?,
-        @Field("avatar") avatar: String?
+        @Field("avatar") avatar: String?,
     ): Response<MeetingDto>
 
     @GET("/rooms/{accessKey}")
     suspend fun getRoomInfo(
-        @Path("accessKey") accessKey: String
+        @Path("accessKey") accessKey: String,
     ): Response<MeetingDto>
 
     @GET("/rooms/{accessKey}/users/{userId}")
     suspend fun getUsernameInRoom(
         @Path("accessKey") accessKey: String,
-        @Path("userId") userId: String
+        @Path("userId") userId: String,
     ): Response<UserInMeetingDto>
 
     @POST("/rooms/{accessKey}/messages")
@@ -36,7 +37,7 @@ internal interface EyesonApi {
     suspend fun sendMessage(
         @Path("accessKey") accessKey: String,
         @Field("type") type: String,
-        @Field("content") content: String
+        @Field("content") content: String,
     ): Response<Unit>
 
     @POST("/rooms/{accessKey}/playbacks")
@@ -54,7 +55,7 @@ internal interface EyesonApi {
     @DELETE("/rooms/{accessKey}/playbacks/{playerId}")
     suspend fun stopVideoPlayback(
         @Path("accessKey") accessKey: String,
-        @Path("playerId") playerId: String
+        @Path("playerId") playerId: String,
     ): Response<Unit>
 
     @POST("/rooms/{accessKey}/presentation")
@@ -68,4 +69,9 @@ internal interface EyesonApi {
         @Path("accessKey") accessKey: String,
     ): Response<Unit>
 
+    @GET("/permalink/{token}")
+    suspend fun getPermalinkMeetingInfo(token: String): Response<PermalinkDto>
+
+    @POST("/permalink/{userToken}")
+    suspend fun startPermalinkMeeting(userToken: String): Response<MeetingDto>
 }

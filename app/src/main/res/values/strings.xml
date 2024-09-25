@@ -27,6 +27,7 @@
     <string name="screen_sharing_permission_denied">screen sharing permission denied</string>
 
     <!--  Scanner screen -->
+    <string name="android_sdk">Android SDK</string>
     <string name="enter_access_key">Enter the access key of a meeting</string>
     <string name="join_via_guest">… or join via guest token or link.</string>
     <string name="scan_qr">Scan guest QR code</string>

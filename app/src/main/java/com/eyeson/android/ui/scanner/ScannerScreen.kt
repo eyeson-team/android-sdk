@@ -2,14 +2,15 @@ package com.eyeson.android.ui.scanner
 
 import android.net.UrlQuerySanitizer
 import androidx.compose.foundation.layout.padding
-import androidx.compose.material.Icon
-import androidx.compose.material.IconButton
-import androidx.compose.material.MaterialTheme
-import androidx.compose.material.Scaffold
-import androidx.compose.material.Text
-import androidx.compose.material.TopAppBar
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Scaffold
+import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.derivedStateOf
@@ -22,7 +23,6 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
-import androidx.compose.ui.platform.LocalLifecycleOwner
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.Density
@@ -30,6 +30,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
+import androidx.lifecycle.compose.LocalLifecycleOwner
 import com.budiyev.android.codescanner.CodeScanner
 import com.budiyev.android.codescanner.CodeScannerView
 import com.budiyev.android.codescanner.DecodeCallback
@@ -37,24 +38,23 @@ import com.eyeson.android.R
 import com.eyeson.android.ui.theme.EyesonDemoTheme
 import timber.log.Timber
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ScannerScreen(modifier: Modifier = Modifier, onBack: (String) -> Unit = {}) {
 
     Scaffold(
         modifier = modifier, topBar = {
             TopAppBar(
-                backgroundColor = MaterialTheme.colors.surface,
-                elevation = 0.dp,
                 navigationIcon = {
                     IconButton(onClick = { onBack("") }) {
                         Icon(
-                            imageVector = Icons.Filled.ArrowBack,
+                            imageVector = Icons.AutoMirrored.Filled.ArrowBack,
                             stringResource(id = R.string.label_go_back),
-                            tint = MaterialTheme.colors.onSurface
+                            tint = MaterialTheme.colorScheme.onSurface
                         )
                     }
                 },
-                title = { Text("") }
+                title = { /* NOOP*/ }
             )
         }
     ) { padding ->
@@ -77,7 +77,7 @@ fun extractGuestToken(url: String): String {
 
 @Composable
 fun rememberCodeScannerViewWithLifecycle(
-    decodeCallback: (String) -> Unit
+    decodeCallback: (String) -> Unit,
 ): CodeScannerView {
     val currentDecodeCallback by rememberUpdatedState(decodeCallback)
 
@@ -132,7 +132,7 @@ class ScannerViewSizes(
     density: Density,
     frameCornersSizeDp: Int,
     frameCornersRadiusDp: Int,
-    frameThicknessDp: Int
+    frameThicknessDp: Int,
 ) {
     val frameCornersSize: Int
     val frameThickness: Int

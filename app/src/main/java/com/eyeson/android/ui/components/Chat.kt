@@ -9,7 +9,6 @@ import androidx.compose.animation.slideOut
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -26,16 +25,16 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
-import androidx.compose.material.Divider
-import androidx.compose.material.Icon
-import androidx.compose.material.IconButton
-import androidx.compose.material.MaterialTheme
-import androidx.compose.material.Surface
-import androidx.compose.material.Text
-import androidx.compose.material.contentColorFor
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.Send
 import androidx.compose.material.icons.filled.Close
-import androidx.compose.material.icons.filled.Send
+import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Surface
+import androidx.compose.material3.Text
+import androidx.compose.material3.contentColorFor
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -80,17 +79,17 @@ fun Chat(
     modifier: Modifier = Modifier,
     sendMessage: (String) -> Unit,
     title: String = stringResource(id = R.string.chat).uppercase(),
-    scrimColor: Color = MaterialTheme.colors.onSurface.copy(alpha = 0.40f),
+    scrimColor: Color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.40f),
     @FloatRange(from = 0.0, to = 1.0) horizontalContentRatio: Float = 1.0f,
     @FloatRange(from = 0.0, to = 1.0) verticalContentRatio: Float = 1.0f,
     contentShape: Shape = MaterialTheme.shapes.large,
-    contentBackgroundColor: Color = MaterialTheme.colors.surface
+    contentBackgroundColor: Color = MaterialTheme.colorScheme.surface,
 ) {
     var textState by rememberSaveable(stateSaver = TextFieldValue.Saver) {
         mutableStateOf(TextFieldValue())
     }
 
-    BoxWithConstraints(modifier) {
+    Box(modifier) {
         Scrim(scrimColor, visible, onClose)
 
         Column(
@@ -121,7 +120,7 @@ fun Chat(
                             Text(
                                 modifier = modifier.padding(start = 16.dp),
                                 text = title,
-                                style = MaterialTheme.typography.h1
+                                style = MaterialTheme.typography.displayLarge
                             )
                             IconButton(onClick = onClose) {
                                 Icon(
@@ -131,7 +130,7 @@ fun Chat(
                                 )
                             }
                         }
-                        Divider(Modifier.background(color = contentBackgroundColor))
+                        HorizontalDivider(Modifier.background(color = contentBackgroundColor))
 
                         LazyColumn(
                             reverseLayout = true, modifier = Modifier
@@ -157,7 +156,7 @@ fun Chat(
                             }
                         }
                         Spacer(modifier = Modifier.height(12.dp))
-                        Divider(Modifier.background(color = contentBackgroundColor))
+                        HorizontalDivider(Modifier.background(color = contentBackgroundColor))
                         UserInputText(
                             textFieldValue = textState,
                             onTextChanged = { textState = it },
@@ -184,7 +183,7 @@ fun ChatMessageIncoming(
     from: String,
     time: Date,
     modifier: Modifier = Modifier,
-    avatarUrl: String? = null
+    avatarUrl: String? = null,
 ) {
     Column(modifier = modifier.padding(start = 16.dp, end = 16.dp)) {
         Row(verticalAlignment = CenterVertically) {
@@ -272,7 +271,7 @@ private fun UserInputText(
     onTextChanged: (TextFieldValue) -> Unit,
     textFieldValue: TextFieldValue,
     onMessageSend: () -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
 ) {
     Surface(modifier = modifier) {
         Row(
@@ -302,7 +301,7 @@ private fun UserInputText(
                             onMessageSend()
                         }
                     }),
-                    textStyle = MaterialTheme.typography.body1.copy(fontSize = 16.sp)
+                    textStyle = MaterialTheme.typography.bodyLarge.copy(fontSize = 16.sp)
                 )
 
                 if (textFieldValue.text.isEmpty()) {
@@ -311,9 +310,9 @@ private fun UserInputText(
                             .align(Alignment.CenterStart)
                             .padding(start = 16.dp),
                         text = stringResource(id = R.string.type_message),
-                        style = MaterialTheme.typography.body1.copy(
+                        style = MaterialTheme.typography.bodyLarge.copy(
                             fontSize = 16.sp,
-                            color = MaterialTheme.colors.onSurface.copy(alpha = 0.6f)
+                            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
                         )
                     )
                 }
@@ -323,7 +322,7 @@ private fun UserInputText(
                 enabled = textFieldValue.text.isNotBlank()
             ) {
                 Icon(
-                    imageVector = Icons.Filled.Send,
+                    imageVector = Icons.AutoMirrored.Filled.Send,
                     stringResource(id = R.string.close_menu),
                 )
             }

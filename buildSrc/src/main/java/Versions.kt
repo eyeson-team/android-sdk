@@ -19,7 +19,7 @@ object Versions {
     // UI and appcompat
     const val coreKtx = "1.7.0"
     const val appCompat = "1.4.0"
-    const val material = "1.5.0"
+    const val material3 = "1.3.0"
     const val fragmentKtx = "1.5.2"
 
     const val appcompat = "1.4.1"
@@ -28,10 +28,11 @@ object Versions {
     const val lifecycleRuntimeKtx = "2.5.0-beta01"
     const val legacySupportV4 = "1.0.0"
     const val recyclerview = "1.2.1"
+    const val googleAndroidMaterial = "1.13.0-alpha06"
 
     // Compose
-    const val androidxComposeBom = "2023.01.00"
-    const val androidxComposeMaterial = "androidx.compose.material:material"
+    const val androidxComposeBom = "2024.09.02"
+    const val androidxComposeMaterial = "androidx.compose.material3:material3"
     const val androidxComposeUiToolingPreview = "androidx.compose.ui:ui-tooling-preview"
     const val androidxComposeDebugUiTooling = "androidx.compose.ui:ui-tooling"
     const val androidxActivityCompose = "1.5.1"

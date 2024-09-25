@@ -8,10 +8,10 @@ import androidx.compose.foundation.relocation.BringIntoViewRequester
 import androidx.compose.foundation.relocation.bringIntoViewRequester
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
-import androidx.compose.material.MaterialTheme
-import androidx.compose.material.Text
-import androidx.compose.material.TextField
-import androidx.compose.material.TextFieldDefaults
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Text
+import androidx.compose.material3.TextField
+import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -19,7 +19,6 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
-import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.onFocusEvent
 import androidx.compose.ui.graphics.Color
@@ -32,7 +31,7 @@ import androidx.compose.ui.unit.sp
 import com.eyeson.android.ui.theme.EyesonDemoTheme
 import kotlinx.coroutines.launch
 
-@OptIn(ExperimentalComposeUiApi::class, ExperimentalFoundationApi::class)
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun EyesonDemoTextField(
     onValueChange: (String) -> Unit,
@@ -50,15 +49,17 @@ fun EyesonDemoTextField(
         label = {
             Text(
                 text = label,
-                style = MaterialTheme.typography.overline,
-                color = MaterialTheme.colors.onSurface.copy(alpha = 0.69f)
+                style = MaterialTheme.typography.labelSmall,
+                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.69f)
             )
         },
-        textStyle = MaterialTheme.typography.body1.copy(fontSize = 16.sp),
+        textStyle = MaterialTheme.typography.bodyLarge.copy(fontSize = 16.sp),
         maxLines = 1,
         shape = MaterialTheme.shapes.small,
-        colors = TextFieldDefaults.textFieldColors(
+        colors = TextFieldDefaults.colors(
+            focusedLabelColor = MaterialTheme.colorScheme.secondary,
             unfocusedIndicatorColor = Color.Transparent,
+            focusedIndicatorColor = Color.Transparent
         ),
         keyboardOptions =
         KeyboardOptions(
@@ -68,7 +69,8 @@ fun EyesonDemoTextField(
         keyboardActions = KeyboardActions(onDone = {
             keyboardController?.hide()
         }),
-        modifier = modifier.fillMaxWidth()
+        modifier = modifier
+            .fillMaxWidth()
             .bringIntoViewRequester(bringIntoViewRequester)
             .onFocusEvent { focusState ->
                 if (focusState.isFocused) {

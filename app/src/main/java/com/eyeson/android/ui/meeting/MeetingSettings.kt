@@ -16,14 +16,15 @@ import androidx.compose.foundation.layout.requiredHeightIn
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CornerSize
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material.Button
-import androidx.compose.material.ButtonDefaults
-import androidx.compose.material.Divider
-import androidx.compose.material.MaterialTheme
-import androidx.compose.material.OutlinedButton
-import androidx.compose.material.Text
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -61,6 +62,10 @@ fun MeetingSettings(
         visible = visible,
         onClose = onClose,
         showDivider = true,
+        contentShape = MaterialTheme.shapes.large.copy(
+            topStart = CornerSize(0.dp),
+            topEnd = CornerSize(0.dp)
+        ),
         horizontalContentRatio = horizontalContentRatio,
         modifier = modifier
     ) {
@@ -203,7 +208,7 @@ fun EventLog(
                 ) {
                     items(events) { event ->
                         val color = if (event.error) {
-                            MaterialTheme.colors.error
+                            MaterialTheme.colorScheme.error
                         } else {
                             Color.Unspecified
                         }
@@ -211,14 +216,14 @@ fun EventLog(
                     }
                 }
                 Spacer(modifier = Modifier.height(4.dp))
-                Divider()
+                HorizontalDivider()
                 Row(modifier = Modifier.padding(top = 16.dp)) {
                     OutlinedButton(
                         onClick = onClear,
                         contentPadding = PaddingValues(top = 12.dp, bottom = 12.dp),
-                        border = BorderStroke(1.dp, MaterialTheme.colors.error),
+                        border = BorderStroke(1.dp, MaterialTheme.colorScheme.error),
                         colors = ButtonDefaults.outlinedButtonColors(
-                            contentColor = MaterialTheme.colors.error
+                            contentColor = MaterialTheme.colorScheme.error
                         ),
                         modifier = Modifier
                             .padding(start = 16.dp, end = 8.dp)

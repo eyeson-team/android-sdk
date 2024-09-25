@@ -4,13 +4,12 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
-import androidx.compose.material.ContentAlpha
-import androidx.compose.material.Divider
-import androidx.compose.material.MaterialTheme
-import androidx.compose.material.Surface
-import androidx.compose.material.Switch
-import androidx.compose.material.SwitchDefaults
-import androidx.compose.material.Text
+import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Surface
+import androidx.compose.material3.Switch
+import androidx.compose.material3.SwitchDefaults
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -20,6 +19,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import com.eyeson.android.ui.theme.DisabledContentAlpha
 import com.eyeson.android.ui.theme.EyesonDemoTheme
 import com.eyeson.android.ui.theme.Gray500
 
@@ -31,7 +31,7 @@ fun SettingsToggle(
     modifier: Modifier = Modifier,
     enabled: Boolean = true,
     description: String = "",
-    showDivider: Boolean = true
+    showDivider: Boolean = true,
 ) {
     Column(modifier = modifier) {
         Row(
@@ -44,20 +44,20 @@ fun SettingsToggle(
                 modifier = Modifier.weight(1f)
             ) {
                 Text(
-                    text = title, style = MaterialTheme.typography.body1, color = if (enabled) {
-                        MaterialTheme.colors.onSurface
+                    text = title, style = MaterialTheme.typography.bodyLarge, color = if (enabled) {
+                        MaterialTheme.colorScheme.onSurface
                     } else {
-                        MaterialTheme.colors.onSurface.copy(alpha = ContentAlpha.disabled)
+                        MaterialTheme.colorScheme.onSurface.copy(alpha = DisabledContentAlpha)
                     }
                 )
                 if (description.isNotBlank()) {
                     Text(
                         text = description,
-                        style = MaterialTheme.typography.caption.copy(),
+                        style = MaterialTheme.typography.bodySmall.copy(),
                         color = if (enabled) {
-                            MaterialTheme.colors.onSurface.copy(alpha = 0.69f)
+                            MaterialTheme.colorScheme.onSurface.copy(alpha = 0.69f)
                         } else {
-                            MaterialTheme.colors.onSurface.copy(alpha = ContentAlpha.disabled)
+                            MaterialTheme.colorScheme.onSurface.copy(alpha = DisabledContentAlpha)
                         },
                         modifier = Modifier.padding(top = 4.dp)
                     )
@@ -68,16 +68,10 @@ fun SettingsToggle(
                 onCheckedChange = onValueChange,
                 enabled = enabled,
                 modifier = Modifier.padding(start = 8.dp, end = 16.dp),
-                colors = SwitchDefaults.colors(
-                    checkedThumbColor = MaterialTheme.colors.primary,
-                    checkedTrackColor = MaterialTheme.colors.primary,
-                    uncheckedThumbColor = Gray500,
-                    uncheckedTrackColor = Gray500,
-                )
             )
         }
         if (showDivider) {
-            Divider(modifier = Modifier.padding(top = 4.dp))
+            HorizontalDivider(modifier = Modifier.padding(top = 4.dp))
         }
     }
 }
@@ -102,4 +96,3 @@ fun SettingsTogglePreview() {
 
     }
 }
-

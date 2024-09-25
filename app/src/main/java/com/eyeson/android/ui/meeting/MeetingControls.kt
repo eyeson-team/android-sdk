@@ -8,12 +8,16 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.Icon
-import androidx.compose.material.IconButton
-import androidx.compose.material.LocalContentColor
-import androidx.compose.material.MaterialTheme
-import androidx.compose.material.Surface
-import androidx.compose.material.ripple.LocalRippleTheme
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.LocalContentColor
+import androidx.compose.material3.LocalRippleConfiguration
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.RippleConfiguration
+import androidx.compose.material3.Surface
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.getValue
@@ -29,7 +33,6 @@ import androidx.compose.ui.unit.dp
 import com.eyeson.android.R
 import com.eyeson.android.ui.theme.DarkGray800
 import com.eyeson.android.ui.theme.EyesonDemoTheme
-import com.eyeson.android.ui.theme.WhiteRippleTheme
 
 @Composable
 fun HorizontalMeetingControls(
@@ -42,7 +45,7 @@ fun HorizontalMeetingControls(
     onMuteMicrophone: () -> Unit,
     modifier: Modifier = Modifier,
     onShowChat: () -> Unit,
-    iconTint: Color = MaterialTheme.colors.onSurface
+    iconTint: Color = MaterialTheme.colorScheme.onSurface,
 ) {
     Surface(
         modifier = modifier
@@ -96,8 +99,10 @@ fun HorizontalMeetingControls(
     }
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun VerticalMeetingControls(
+    onBack: () -> Unit,
     audioOnly: Boolean,
     cameraChangeable: Boolean,
     onSwitchCamera: () -> Unit,
@@ -106,14 +111,30 @@ fun VerticalMeetingControls(
     microphoneMuted: Boolean,
     onMuteMicrophone: () -> Unit,
     modifier: Modifier = Modifier,
-    iconTint: Color = Color.White
+    iconTint: Color = Color.White,
+    rippleConfig: RippleConfiguration = RippleConfiguration(color = MaterialTheme.colorScheme.inverseOnSurface),
 ) {
+
     Column(
-        modifier = modifier,
-        verticalArrangement = Arrangement.SpaceEvenly
+        modifier = modifier
     ) {
         CompositionLocalProvider(LocalContentColor provides iconTint) {
-            CompositionLocalProvider(LocalRippleTheme provides WhiteRippleTheme) {
+            CompositionLocalProvider(LocalRippleConfiguration provides rippleConfig) {
+
+                Box(modifier = Modifier.weight(1f)) {
+
+                    IconButton(onClick = onBack) {
+                        Icon(
+                            imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                            stringResource(id = R.string.label_go_back),
+                            tint = Color.White
+                        )
+                    }
+                }
+            }
+
+
+            Column(verticalArrangement = Arrangement.SpaceEvenly) {
                 IconButton(onClick = onSwitchCamera, enabled = !audioOnly && cameraChangeable) {
                     Icon(
                         painter = painterResource(id = R.drawable.baseline_cameraswitch_24),
@@ -146,6 +167,7 @@ fun VerticalMeetingControls(
                         stringResource(id = descriptionMic),
                     )
                 }
+
             }
         }
     }
@@ -173,6 +195,7 @@ fun HorizontalMeetingControlsPreview() {
     }
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Preview(name = "landscape", device = "spec:shape=Normal,width=640,height=360,unit=dp,dpi=480")
 @Composable
 fun VerticalMeetingControlsPreview() {
@@ -188,6 +211,7 @@ fun VerticalMeetingControlsPreview() {
                 .padding(16.dp)
         ) {
             VerticalMeetingControls(
+                onBack = {},
                 audioOnly = false,
                 cameraChangeable = true,
                 onSwitchCamera = { /*NOOP*/ },
@@ -197,8 +221,6 @@ fun VerticalMeetingControlsPreview() {
                 onMuteMicrophone = { microphoneMuted = !microphoneMuted }
             )
         }
-
-
     }
 }
 

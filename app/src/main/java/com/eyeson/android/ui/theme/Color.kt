@@ -9,3 +9,5 @@ val Gray400 = Color(0xFFF0F0F0)
 
 val Neutral7 = Color(0xDE000000)
 val Neutral6 = Color(0x99000000)
+
+const val DisabledContentAlpha = 0.38f

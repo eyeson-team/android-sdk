@@ -29,17 +29,18 @@ import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.CircularProgressIndicator
-import androidx.compose.material.Icon
-import androidx.compose.material.IconButton
-import androidx.compose.material.MaterialTheme
-import androidx.compose.material.Text
-import androidx.compose.material.TopAppBar
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.Person
-import androidx.compose.material.ripple.LocalRippleTheme
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.LocalRippleConfiguration
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.RippleConfiguration
+import androidx.compose.material3.Text
+import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.DisposableEffect
@@ -57,7 +58,6 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.platform.LocalLifecycleOwner
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
@@ -77,24 +77,26 @@ import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.ui.PlayerView
 import com.eyeson.android.R
 import com.eyeson.android.service.MeetingActiveService
+import androidx.compose.material3.CircularProgressIndicator
+import androidx.lifecycle.compose.LocalLifecycleOwner
 import com.eyeson.android.ui.components.Chat
 import com.eyeson.android.ui.components.KeepScreenOn
 import com.eyeson.android.ui.components.findActivity
 import com.eyeson.android.ui.theme.DarkGray800
 import com.eyeson.android.ui.theme.EyesonDemoTheme
-import com.eyeson.android.ui.theme.WhiteRippleTheme
 import com.eyeson.sdk.events.CallTerminationReason
 import com.eyeson.sdk.webrtc.VideoRenderer
 import org.webrtc.EglBase
 import org.webrtc.RendererCommon
 import kotlin.math.roundToInt
 
+@OptIn(ExperimentalMaterial3Api::class)
 @UnstableApi
 @Composable
 fun MeetingScreen(
     onBack: () -> Unit,
     modifier: Modifier = Modifier,
-    viewModel: MeetingViewModel = hiltViewModel()
+    viewModel: MeetingViewModel = hiltViewModel(),
 ) {
     var open by rememberSaveable { mutableStateOf(false) }
     var chatOpen by rememberSaveable { mutableStateOf(false) }
@@ -203,17 +205,9 @@ fun MeetingScreen(
                     .zIndex(1f),
                 verticalArrangement = Arrangement.SpaceBetween
             ) {
-                CompositionLocalProvider(LocalRippleTheme provides WhiteRippleTheme) {
-                    IconButton(onClick = onOnBack) {
-                        Icon(
-                            imageVector = Icons.Filled.ArrowBack,
-                            stringResource(id = R.string.label_go_back),
-                            tint = Color.White
-                        )
-                    }
-                }
 
                 VerticalMeetingControls(
+                    onBack = onBack,
                     audioOnly = viewModel.meetingSettings.audioOnly,
                     cameraChangeable = !presentationActive,
                     onSwitchCamera = { viewModel.switchCamera() },
@@ -266,7 +260,8 @@ fun MeetingScreen(
                     }
                 }
             }
-            CompositionLocalProvider(LocalRippleTheme provides WhiteRippleTheme) {
+
+            CompositionLocalProvider(LocalRippleConfiguration provides RippleConfiguration(color = MaterialTheme.colorScheme.inverseOnSurface)) {
                 Column(
                     modifier = Modifier
                         .fillMaxHeight()
@@ -299,15 +294,13 @@ fun MeetingScreen(
     } else {
         Column(modifier = modifier) {
             TopAppBar(
-                backgroundColor = MaterialTheme.colors.surface,
-                elevation = 0.dp,
                 title = { Text("") },
                 navigationIcon = {
                     IconButton(onClick = onOnBack) {
                         Icon(
-                            imageVector = Icons.Filled.ArrowBack,
+                            imageVector = Icons.AutoMirrored.Filled.ArrowBack,
                             stringResource(id = R.string.label_go_back),
-                            tint = MaterialTheme.colors.onSurface
+                            tint = MaterialTheme.colorScheme.onSurface
                         )
                     }
                 },
@@ -319,7 +312,7 @@ fun MeetingScreen(
                         Icon(
                             imageVector = Icons.Filled.MoreVert,
                             stringResource(id = R.string.label_settings),
-                            tint = MaterialTheme.colors.onSurface
+                            tint = MaterialTheme.colorScheme.onSurface
                         )
                     }
                 },
@@ -554,7 +547,7 @@ fun MeetingScreen(
         }
 
         val chatShape = if (configuration.isLandscape()) {
-            MaterialTheme.shapes.large
+            RoundedCornerShape(topStart = 16.dp, bottomStart = 16.dp)
         } else {
             RoundedCornerShape(topStart = 16.dp, topEnd = 16.dp)
         }
@@ -621,7 +614,7 @@ private fun VideoViews(
     remoteExoPlayer: ExoPlayer? = null,
     localExoPlayer: ExoPlayer? = null,
     modifierLocalView: Modifier = Modifier,
-    wideScreen: Boolean = false
+    wideScreen: Boolean = false,
 ) {
     var offsetX by remember { mutableStateOf(0f) }
     var offsetY: Float by remember { mutableStateOf(0f) }
@@ -699,7 +692,7 @@ private fun VideoViews(
 @Composable
 fun AudioOnly(
     participants: Int,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
 ) {
     Column(
         modifier = modifier.fillMaxSize(),
@@ -714,7 +707,7 @@ fun AudioOnly(
                 tint = Color.White,
             )
             Text(
-                "$participants", style = MaterialTheme.typography.h1.copy(
+                "$participants", style = MaterialTheme.typography.displayLarge.copy(
                     color = Color.White
                 ),
 
@@ -723,7 +716,7 @@ fun AudioOnly(
             )
         }
         Text(
-            stringResource(id = R.string.audio_only), style = MaterialTheme.typography.body1.copy(
+            stringResource(id = R.string.audio_only), style = MaterialTheme.typography.bodyLarge.copy(
                 color = Color.White
             ),
             textAlign = TextAlign.Center,
@@ -731,7 +724,7 @@ fun AudioOnly(
         )
         Text(
             stringResource(id = R.string.no_video_is_sent_or_received),
-            style = MaterialTheme.typography.caption.copy(
+            style = MaterialTheme.typography.bodySmall.copy(
                 color = Color.White.copy(alpha = 0.6f)
             ),
             textAlign = TextAlign.Center,
@@ -744,7 +737,7 @@ fun AudioOnly(
 
 @Composable
 fun Connecting(
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
 ) {
     Column(
         modifier = modifier.fillMaxSize(),
@@ -756,7 +749,7 @@ fun Connecting(
             color = Color.White
         )
         Text(
-            stringResource(id = R.string.connecting), style = MaterialTheme.typography.body1.copy(
+            stringResource(id = R.string.connecting), style = MaterialTheme.typography.bodyLarge.copy(
                 color = Color.White
             ),
             textAlign = TextAlign.Center,

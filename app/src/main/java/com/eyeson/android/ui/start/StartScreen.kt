@@ -4,7 +4,6 @@ import android.content.Intent
 import android.net.Uri
 import android.provider.Settings
 import androidx.compose.foundation.BorderStroke
-import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Column
@@ -12,39 +11,32 @@ import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.relocation.BringIntoViewRequester
-import androidx.compose.foundation.relocation.bringIntoViewRequester
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material.AlertDialog
-import androidx.compose.material.AppBarDefaults
-import androidx.compose.material.Button
-import androidx.compose.material.Card
-import androidx.compose.material.Divider
-import androidx.compose.material.Icon
-import androidx.compose.material.IconButton
-import androidx.compose.material.MaterialTheme
-import androidx.compose.material.OutlinedButton
-import androidx.compose.material.Scaffold
-import androidx.compose.material.Text
-import androidx.compose.material.TopAppBar
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Settings
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Button
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Text
+import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.SideEffect
-import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.Saver
 import androidx.compose.runtime.saveable.listSaver
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.focus.onFocusEvent
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
@@ -59,10 +51,8 @@ import com.eyeson.android.ui.theme.EyesonDemoTheme
 import com.google.accompanist.permissions.ExperimentalPermissionsApi
 import com.google.accompanist.permissions.MultiplePermissionsState
 import com.google.accompanist.permissions.rememberMultiplePermissionsState
-import kotlinx.coroutines.launch
-import timber.log.Timber
 
-@OptIn(ExperimentalPermissionsApi::class)
+@OptIn(ExperimentalPermissionsApi::class, ExperimentalMaterial3Api::class)
 @Composable
 fun StartScreen(
     multiplePermissionsState: MultiplePermissionsState,
@@ -71,7 +61,7 @@ fun StartScreen(
     onScanClicked: () -> Unit = {},
     onSettingsClicked: () -> Unit = {},
     connect: (accessKey: String) -> Unit = { _ -> },
-    connectAsGuest: (guestToken: String, guestName: String) -> Unit = { _, _ -> }
+    connectAsGuest: (guestToken: String, guestName: String) -> Unit = { _, _ -> },
 ) {
     val scrollState = rememberScrollState()
     val screenState by rememberSaveable(stateSaver = StartScreenState.Saver) {
@@ -90,25 +80,16 @@ fun StartScreen(
         }
     }
 
-    val elevation = if (scrollState.value > 0) {
-        AppBarDefaults.TopAppBarElevation
-    } else {
-        0.dp
-    }
     Scaffold(
         modifier = modifier, topBar = {
             TopAppBar(
-                backgroundColor = MaterialTheme.colors.surface,
-                elevation = elevation,
-                title = {
-                    Text("")
-                },
+                title = {                    /*NOOP*/ },
                 actions = {
                     IconButton(onClick = { onSettingsClicked() }) {
                         Icon(
                             imageVector = Icons.Filled.Settings,
                             stringResource(id = R.string.label_settings),
-                            tint = MaterialTheme.colors.onSurface
+                            tint = MaterialTheme.colorScheme.onSurface
                         )
                     }
                 }
@@ -119,22 +100,25 @@ fun StartScreen(
                 modifier = Modifier
                     .background(Color.White)
             ) {
-                Divider()
+                HorizontalDivider()
                 Button(
                     onClick = {
                         when {
                             !multiplePermissionsState.allPermissionsGranted -> {
                                 showPermissionDialog = true
                             }
+
                             screenState.accessKey.isNotBlank() -> {
                                 connect(screenState.accessKey)
                             }
+
                             else -> {
                                 connectAsGuest(screenState.guestToken, screenState.guestName)
                             }
                         }
                     },
                     contentPadding = PaddingValues(top = 12.dp, bottom = 12.dp),
+                    shape = MaterialTheme.shapes.small,
                     enabled = screenState.canConnect,
                     modifier = Modifier
                         .fillMaxWidth()
@@ -165,10 +149,11 @@ fun StartScreen(
                 modifier = Modifier.padding(top = 24.dp)
             )
             Text(
-                text = stringResource(id = R.string.app_name),
-                style = MaterialTheme.typography.h1,
-                modifier = Modifier.padding(top = 18.dp)
+                text = stringResource(id = R.string.android_sdk),
+                style = MaterialTheme.typography.displayLarge,
+                modifier = Modifier.padding(top = 8.dp)
             )
+
             Text(
                 text = stringResource(id = R.string.enter_access_key),
                 modifier = Modifier.padding(top = 40.dp)
@@ -204,8 +189,9 @@ fun StartScreen(
                 onClick = {
                     onScanClicked()
                 },
+                shape = MaterialTheme.shapes.small,
                 contentPadding = PaddingValues(top = 12.dp, bottom = 12.dp),
-                border = BorderStroke(1.dp, MaterialTheme.colors.primary),
+                border = BorderStroke(1.dp, MaterialTheme.colorScheme.primary),
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(top = 16.dp)
@@ -235,7 +221,7 @@ fun PermissionsDialog(modifier: Modifier = Modifier) {
         title = {
             Text(
                 text = stringResource(id = R.string.permissions),
-                style = MaterialTheme.typography.h1
+                style = MaterialTheme.typography.displayLarge
             )
         },
         text = {
@@ -259,22 +245,44 @@ fun PermissionsDialog(modifier: Modifier = Modifier) {
     )
 }
 
-private class StartScreenState(testToke: String = "") {
+private class StartScreenState {
+    // Default
     var accessKey by mutableStateOf("")
     var guestName by mutableStateOf("SDK test user")
-    var guestToken by mutableStateOf(testToke)
+    var guestToken by mutableStateOf("")
+
+    // Permalink
+    var userTokenPermalink by mutableStateOf("")
+    var guestNamePermalink by mutableStateOf("SDK test user")
+    var guestTokenPermalink by mutableStateOf("")
+
 
     val canConnect: Boolean
         get() = accessKey.isNotBlank() || (guestName.isNotBlank() && guestToken.isNotBlank())
 
+    val canConnectPermalink: Boolean
+        get() = userTokenPermalink.isNotBlank() || (guestNamePermalink.isNotBlank() && guestTokenPermalink.isNotBlank())
+
     companion object {
         val Saver: Saver<StartScreenState, *> = listSaver(
-            save = { listOf(it.accessKey, it.guestName, it.guestToken) },
+            save = {
+                listOf(
+                    it.accessKey,
+                    it.guestName,
+                    it.guestToken,
+                    it.userTokenPermalink,
+                    it.guestNamePermalink,
+                    it.guestTokenPermalink
+                )
+            },
             restore = {
                 StartScreenState().apply {
                     accessKey = it[0]
                     guestName = it[1]
                     guestToken = it[2]
+                    userTokenPermalink = it[3]
+                    guestNamePermalink = it[4]
+                    guestTokenPermalink = it[5]
                 }
             }
         )

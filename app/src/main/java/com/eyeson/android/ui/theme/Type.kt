@@ -1,6 +1,6 @@
 package com.eyeson.android.ui.theme
 
-import androidx.compose.material.Typography
+import androidx.compose.material3.Typography
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.Font
@@ -16,35 +16,34 @@ private val OpenSans = FontFamily(
 )
 
 val Typography = Typography(
-    defaultFontFamily = OpenSans,
-    h1 = TextStyle(
+    displayLarge = TextStyle(
         fontFamily = OpenSans,
         fontWeight = FontWeight.Bold,
         fontSize = 18.sp,
         letterSpacing = 2.sp
     ),
-    body1 = TextStyle(
+    bodyLarge = TextStyle(
         fontFamily = OpenSans,
         fontWeight = FontWeight.Normal,
         fontSize = 15.sp,
         letterSpacing = 0.sp,
         lineHeight = 25.sp
     ),
-    button = TextStyle(
+    labelLarge = TextStyle(
         fontFamily = OpenSans,
         fontSize = 15.sp,
         fontWeight = FontWeight.SemiBold,
         lineHeight = 16.sp,
         letterSpacing = 1.sp
     ),
-    caption = TextStyle(
+    bodySmall = TextStyle(
         fontFamily = OpenSans,
         fontSize = 14.sp,
         fontWeight = FontWeight.Normal,
         lineHeight = 20.sp,
         letterSpacing = 0.25.sp
     ),
-    overline = TextStyle(
+    labelSmall = TextStyle(
         fontFamily = OpenSans,
         fontSize = 12.sp,
         fontWeight = FontWeight.SemiBold,
