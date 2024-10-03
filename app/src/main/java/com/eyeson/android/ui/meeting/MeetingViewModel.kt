@@ -18,7 +18,10 @@ import androidx.media3.common.util.UnstableApi
 import androidx.media3.exoplayer.ExoPlayer
 import com.eyeson.android.EyesonNavigationParameter.ACCESS_KEY
 import com.eyeson.android.EyesonNavigationParameter.GUEST_NAME
+import com.eyeson.android.EyesonNavigationParameter.GUEST_NAME_PERMALINK
 import com.eyeson.android.EyesonNavigationParameter.GUEST_TOKEN
+import com.eyeson.android.EyesonNavigationParameter.GUEST_TOKEN_PERMALINK
+import com.eyeson.android.EyesonNavigationParameter.USER_TOKEN
 import com.eyeson.android.R
 import com.eyeson.android.data.SettingsRepository
 import com.eyeson.android.ui.meeting.ChatMessage.IncomingMessage
@@ -32,6 +35,8 @@ import com.eyeson.sdk.events.MediaPlaybackResponse
 import com.eyeson.sdk.events.NeededPermissions
 import com.eyeson.sdk.events.PresentationResponse
 import com.eyeson.sdk.model.local.api.MeetingInfo
+import com.eyeson.sdk.model.local.api.MeetingOptions
+import com.eyeson.sdk.model.local.api.PermalinkMeetingInfo
 import com.eyeson.sdk.model.local.api.UserInfo
 import com.eyeson.sdk.model.local.call.ConnectionStatistic
 import com.eyeson.sdk.model.local.meeting.BroadcastUpdate
@@ -41,6 +46,7 @@ import com.eyeson.sdk.model.local.meeting.Recording
 import com.eyeson.sdk.model.local.meeting.SnapshotUpdate
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -55,13 +61,12 @@ import java.util.UUID
 import java.util.concurrent.atomic.AtomicBoolean
 import javax.inject.Inject
 
-
 @UnstableApi
 @HiltViewModel
 class MeetingViewModel @Inject constructor(
     private val savedStateHandle: SavedStateHandle,
     private val application: Application,
-    private val settingsRepository: SettingsRepository
+    private val settingsRepository: SettingsRepository,
 ) : ViewModel() {
 
     val meetingSettings = runBlocking { settingsRepository.meetingSettings.first() }
@@ -98,7 +103,7 @@ class MeetingViewModel @Inject constructor(
                     "onMeetingJoining: accessKey: $accessKey;  name $name; startedAt $startedAt; user $user; " +
                             "locked $locked; guestToke $guestToken; guestLink $guestLink; activeRecording " +
                             "$activeRecording; activeBroadcasts $activeBroadcasts; snapshots $snapshots;" +
-                            " isWidescreen $isWidescreen"
+                            " meetingOptions $meetingOptions"
                 )
             }
         }
@@ -139,7 +144,7 @@ class MeetingViewModel @Inject constructor(
 
         override fun onVideoSourceUpdate(
             visibleUsers: List<UserInfo>,
-            presenter: UserInfo?
+            presenter: UserInfo?,
         ) {
             addEvent("onVideoSourceUpdate: $visibleUsers; presenter $presenter")
             if (!_presentationActive.value && presenter?.id != null && presenter.id != eyesonMeeting.getUserInfo()?.id) {
@@ -192,7 +197,7 @@ class MeetingViewModel @Inject constructor(
 
         override fun onMediaPlaybackStartResponse(
             playId: String?,
-            mediaPlaybackResponse: MediaPlaybackResponse
+            mediaPlaybackResponse: MediaPlaybackResponse,
         ) {
             addEvent(
                 "onMediaPlaybackStartResponse: mediaPlaybackResponse $mediaPlaybackResponse",
@@ -204,7 +209,7 @@ class MeetingViewModel @Inject constructor(
 
         override fun onMediaPlaybackStopResponse(
             playId: String,
-            mediaPlaybackResponse: MediaPlaybackResponse
+            mediaPlaybackResponse: MediaPlaybackResponse,
         ) {
             addEvent(
                 "onMediaPlaybackStopResponse: playId: $playId mediaPlaybackResponse $mediaPlaybackResponse",
@@ -246,6 +251,10 @@ class MeetingViewModel @Inject constructor(
 //            Timber.d("onConnectionStatisticUpdate: statistic $statistic")
         }
 
+        override fun onOptionsUpdate(meetingOptions: MeetingOptions) {
+            addEvent("onOptionsUpdate: meetingOptions $meetingOptions")
+        }
+
         override fun onUserJoinedMeeting(users: List<UserInfo>) {
             addEvent("onUserJoinedMeeting: users $users")
         }
@@ -267,7 +276,7 @@ class MeetingViewModel @Inject constructor(
         override fun onChatMessageReceived(
             user: UserInfo,
             message: String,
-            timestamp: Date
+            timestamp: Date,
         ) {
             addEvent("onChatMessageReceived: user $user; message $message; timestamp $timestamp")
 
@@ -372,7 +381,7 @@ class MeetingViewModel @Inject constructor(
         remote: VideoSink?,
         mediaProjectionPermissionResultData: Intent? = null,
         notificationId: Int? = null,
-        notification: Notification? = null
+        notification: Notification? = null,
     ) {
 
         val screenShareInfo = if (mediaProjectionPermissionResultData != null &&
@@ -417,6 +426,59 @@ class MeetingViewModel @Inject constructor(
                     videoEnabledOnStart = meetingSettings.videoOnStart,
                     screenShareInfo = screenShareInfo
                 )
+            }
+
+            savedStateHandle.get<String>(USER_TOKEN) != null -> {
+                eyesonMeeting.connectPermalink(
+                    userToken = checkNotNull(savedStateHandle.get<String>(USER_TOKEN)),
+                    frontCamera = !meetingSettings.rearCamOnStart,
+                    audioOnly = meetingSettings.audioOnly,
+                    local = local,
+                    remote = remote,
+                    eventListener = eventListener,
+                    microphoneEnabledOnStart = meetingSettings.micOnStar,
+                    videoEnabledOnStart = meetingSettings.videoOnStart,
+                    screenShareInfo = screenShareInfo
+                )
+            }
+
+            savedStateHandle.get<String>(GUEST_TOKEN_PERMALINK) != null -> {
+                viewModelScope.launch {
+
+                    var permalinkMeetingInfo: PermalinkMeetingInfo?
+                    while (true) {
+                        permalinkMeetingInfo = eyesonMeeting.getPermalinkMeetingInfo(
+                            checkNotNull(savedStateHandle.get<String>(GUEST_TOKEN_PERMALINK))
+                        )
+                        when {
+                            permalinkMeetingInfo == null -> {
+                                _meetingJoinFailed.value = true
+                                audioManager.stop()
+                                return@launch
+                            }
+
+                            permalinkMeetingInfo.room.startedAt != null -> {
+                                break
+                            }
+                        }
+                        delay(PERMALINK_GUEST_POLLING_INTERVAL_MILLIS)
+                    }
+
+                    eyesonMeeting.joinAsGuest(
+                        guestToken = checkNotNull(savedStateHandle.get<String>(GUEST_TOKEN_PERMALINK)),
+                        name = checkNotNull(savedStateHandle.get<String>(GUEST_NAME_PERMALINK)),
+                        id = null,
+                        avatar = null,
+                        frontCamera = !meetingSettings.rearCamOnStart,
+                        audioOnly = meetingSettings.audioOnly,
+                        local = local,
+                        remote = remote,
+                        eventListener = eventListener,
+                        microphoneEnabledOnStart = meetingSettings.micOnStar,
+                        videoEnabledOnStart = meetingSettings.videoOnStart,
+                        screenShareInfo = screenShareInfo
+                    )
+                }
             }
 
             else -> {
@@ -507,7 +569,7 @@ class MeetingViewModel @Inject constructor(
         audioManager.start(object : EyesonAudioManager.AudioManagerEvents {
             override fun onAudioDeviceChanged(
                 selectedAudioDevice: EyesonAudioManager.AudioDevice,
-                availableAudioDevices: Set<EyesonAudioManager.AudioDevice>
+                availableAudioDevices: Set<EyesonAudioManager.AudioDevice>,
             ) {
                 Timber.d("onAudioManagerDevicesChanged: $availableAudioDevices, selected: $selectedAudioDevice")
 
@@ -532,7 +594,7 @@ class MeetingViewModel @Inject constructor(
     fun startScreenShare(
         mediaProjectionPermissionResultData: Intent,
         notificationId: Int,
-        notification: Notification
+        notification: Notification,
     ) {
         val started = eyesonMeeting.startScreenShare(
             EyesonMeeting.ScreenShareInfo(
@@ -567,7 +629,7 @@ class MeetingViewModel @Inject constructor(
         replaceOwnVideo: Boolean,
         playAudio: Boolean,
         name: String? = null,
-        playerId: String = UUID.randomUUID().toString()
+        playerId: String = UUID.randomUUID().toString(),
     ): String {
         eyesonMeeting.startVideoPlayback(
             url = url,
@@ -612,6 +674,10 @@ class MeetingViewModel @Inject constructor(
         pausePayer(remoteExoPlayer)
         _remoteVideoPlaybackActive.value = false
     }
+
+    companion object {
+        const val PERMALINK_GUEST_POLLING_INTERVAL_MILLIS = 5_000L
+    }
 }
 
 sealed class ChatMessage {
@@ -620,7 +686,7 @@ sealed class ChatMessage {
         val text: String,
         val from: String,
         val time: Date,
-        val avatarUrl: String? = null
+        val avatarUrl: String? = null,
     ) : ChatMessage()
 }
 
@@ -630,5 +696,5 @@ data class AudioDevice(
     val title: String,
     val selected: Boolean,
     val onClick: () -> Unit,
-    val enabled: Boolean = true
+    val enabled: Boolean = true,
 )

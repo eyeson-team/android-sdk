@@ -15,7 +15,7 @@ internal data class MeetingDto(
     @Json(name = "broadcasts") var broadcasts: List<BroadcastDto>,
     @Json(name = "snapshots") var snapshots: List<SnapshotDto>,
     @Json(name = "signaling") var signaling: SignalingDto,
-    @Json(name = "options") var options: OptionsDto
+    @Json(name = "options") var options: MeetingOptionsDto
 ) {
     @JsonClass(generateAdapter = true)
     data class Links(

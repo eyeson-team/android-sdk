@@ -8,6 +8,7 @@ import com.eyeson.sdk.model.meeting.incoming.CustomMessageDto
 import com.eyeson.sdk.model.meeting.incoming.MeetingLockedDto
 import com.eyeson.sdk.model.meeting.incoming.MeetingMessagesIncoming
 import com.eyeson.sdk.model.meeting.incoming.MuteLocalAudioDto
+import com.eyeson.sdk.model.meeting.incoming.OptionsUpdateDto
 import com.eyeson.sdk.model.meeting.incoming.PlaybackUpdateDto
 import com.eyeson.sdk.model.meeting.incoming.PresentationUpdateDto
 import com.eyeson.sdk.model.meeting.incoming.RecordingUpdateDto
@@ -46,6 +47,7 @@ internal object MeetingIncomingMessagesAdapter {
             .withSubtype(MeetingLockedDto::class.java, MeetingMessagesIncoming.ROOM_LOCKED.type)
             .withSubtype(CustomMessageDto::class.java, MeetingMessagesIncoming.CUSTOM.type)
             .withSubtype(PresentationUpdateDto::class.java, MeetingMessagesIncoming.PRESENTATION_UPDATE.type)
+            .withSubtype(OptionsUpdateDto::class.java, MeetingMessagesIncoming.OPTIONS_UPDATE.type)
             .withDefaultValue(UnknownMessageDto())
     }
 }

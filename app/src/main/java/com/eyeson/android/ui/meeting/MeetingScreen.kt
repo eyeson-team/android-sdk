@@ -294,7 +294,7 @@ fun MeetingScreen(
     } else {
         Column(modifier = modifier) {
             TopAppBar(
-                title = { Text("") },
+                title = { /* NOOP */ },
                 navigationIcon = {
                     IconButton(onClick = onOnBack) {
                         Icon(
@@ -323,7 +323,6 @@ fun MeetingScreen(
                     .fillMaxSize()
                     .background(DarkGray800)
             ) {
-
                 when {
                     !callConnected -> {
                         Connecting()

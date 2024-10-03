@@ -17,6 +17,7 @@ import com.eyeson.sdk.events.PresentationResponse
 import com.eyeson.sdk.exceptions.internal.FaultyInfoException
 import com.eyeson.sdk.model.api.MeetingDto
 import com.eyeson.sdk.model.local.api.MeetingInfo
+import com.eyeson.sdk.model.local.api.PermalinkMeetingInfo
 import com.eyeson.sdk.model.local.api.UserInfo
 import com.eyeson.sdk.model.local.base.LocalBaseCommand
 import com.eyeson.sdk.model.local.call.CameraSwitchDone
@@ -30,6 +31,7 @@ import com.eyeson.sdk.model.local.meeting.BroadcastUpdate
 import com.eyeson.sdk.model.local.meeting.CustomMessage
 import com.eyeson.sdk.model.local.meeting.MeetingLocked
 import com.eyeson.sdk.model.local.meeting.MuteLocalAudio
+import com.eyeson.sdk.model.local.meeting.OptionsUpdate
 import com.eyeson.sdk.model.local.meeting.Playback
 import com.eyeson.sdk.model.local.meeting.PlaybackUpdate
 import com.eyeson.sdk.model.local.meeting.PresentationUpdate
@@ -75,7 +77,7 @@ import java.util.concurrent.atomic.AtomicBoolean
 class EyesonMeeting(
     private val application: Application,
     private val experimentalFeatureStereo: Boolean = false,
-    customApiUrl: String? = null
+    customApiUrl: String? = null,
 ) {
     private var eventListener: EyesonEventListener? = null
 
@@ -110,7 +112,7 @@ class EyesonMeeting(
     data class ScreenShareInfo(
         val mediaProjectionPermissionResultData: Intent,
         val notificationId: Int,
-        val notification: Notification
+        val notification: Notification,
     )
 
     fun join(
@@ -122,7 +124,7 @@ class EyesonMeeting(
         eventListener: EyesonEventListener,
         microphoneEnabledOnStart: Boolean = true,
         videoEnabledOnStart: Boolean = true,
-        screenShareInfo: ScreenShareInfo? = null
+        screenShareInfo: ScreenShareInfo? = null,
     ) {
         this.eventListener = eventListener
         joinMeeting(
@@ -149,7 +151,7 @@ class EyesonMeeting(
         eventListener: EyesonEventListener,
         microphoneEnabledOnStart: Boolean = true,
         videoEnabledOnStart: Boolean = true,
-        screenShareInfo: ScreenShareInfo? = null
+        screenShareInfo: ScreenShareInfo? = null,
     ) {
         this.eventListener = eventListener
         joinMeeting(
@@ -171,6 +173,34 @@ class EyesonMeeting(
         )
     }
 
+    fun connectPermalink(
+        userToken: String,
+        frontCamera: Boolean,
+        audioOnly: Boolean,
+        local: VideoSink?,
+        remote: VideoSink?,
+        eventListener: EyesonEventListener,
+        microphoneEnabledOnStart: Boolean = true,
+        videoEnabledOnStart: Boolean = true,
+        screenShareInfo: ScreenShareInfo? = null,
+    ) {
+        this.eventListener = eventListener
+        joinMeeting(
+            { restCommunicator.startPermalinkMeeting(userToken) },
+            frontCamera,
+            audioOnly,
+            local,
+            remote,
+            microphoneEnabledOnStart,
+            videoEnabledOnStart,
+            screenShareInfo
+        )
+    }
+
+    suspend fun getPermalinkMeetingInfo(token: String): PermalinkMeetingInfo? {
+        return restCommunicator.getPermalinkMeetingInfo(token)
+    }
+
     private fun joinMeeting(
         meetingInfoRequest: suspend () -> MeetingDto,
         frontCamera: Boolean,
@@ -179,7 +209,7 @@ class EyesonMeeting(
         remote: VideoSink?,
         microphoneEnabledOnStart: Boolean = true,
         videoEnabledOnStart: Boolean = true,
-        screenShareInfo: ScreenShareInfo?
+        screenShareInfo: ScreenShareInfo?,
     ) {
         if (joined.getAndSet(true)) {
             return
@@ -292,7 +322,7 @@ class EyesonMeeting(
         frontCamera: Boolean,
         local: VideoSink?,
         remote: VideoSink?,
-        screenShareInfo: ScreenShareInfo?
+        screenShareInfo: ScreenShareInfo?,
     ) {
         when (command) {
             is StartCallLocal -> {
@@ -505,6 +535,10 @@ class EyesonMeeting(
             is PresentationUpdate -> {
                 eventListener?.onPresentationUpdate(command)
             }
+
+            is OptionsUpdate -> {
+                eventListener?.onOptionsUpdate(command.meetingOptions)
+            }
         }
     }
 
@@ -531,17 +565,17 @@ class EyesonMeeting(
     fun getMeetingInfo(): MeetingInfo? {
         return meeting?.let { meetingInfo ->
             MeetingInfo(
-                meetingInfo.accessKey,
-                meetingInfo.room.name,
-                meetingInfo.room.startedAt,
-                meetingInfo.user.toLocal(Date()),
-                meetingInfo.locked,
-                meetingInfo.room.guestToken,
-                meetingInfo.links.guestJoin,
-                meetingInfo.recording?.toLocal(),
-                BroadcastUpdateDto("", meetingInfo.broadcasts).toLocal(),
-                SnapshotUpdateDto("", meetingInfo.snapshots).toLocal(),
-                meetingInfo.options.widescreen
+                accessKey = meetingInfo.accessKey,
+                name = meetingInfo.room.name,
+                startedAt = meetingInfo.room.startedAt,
+                user = meetingInfo.user.toLocal(Date()),
+                locked = meetingInfo.locked,
+                guestToken = meetingInfo.room.guestToken,
+                guestLink = meetingInfo.links.guestJoin,
+                activeRecording = meetingInfo.recording?.toLocal(),
+                activeBroadcasts = BroadcastUpdateDto("", meetingInfo.broadcasts).toLocal(),
+                snapshots = SnapshotUpdateDto("", meetingInfo.snapshots).toLocal(),
+                meetingOptions = meetingInfo.options.toLocal()
             )
         }
     }
@@ -601,7 +635,7 @@ class EyesonMeeting(
         playId: String?,
         replacedUser: UserInfo?,
         audio: Boolean,
-        loopCount: Int = 0
+        loopCount: Int = 0,
     ) {
         eyesonMeetingScope.launch {
             val replacementId =
@@ -667,7 +701,7 @@ class EyesonMeeting(
         frontCamera: Boolean,
         local: VideoSink?,
         remote: VideoSink?,
-        screenShareInfo: ScreenShareInfo?
+        screenShareInfo: ScreenShareInfo?,
     ) {
         callLogic = CallLogic(
             meeting,
@@ -707,7 +741,7 @@ class EyesonMeeting(
 
     private suspend fun handleCallEvents(
         command: LocalBaseCommand,
-        meeting: MeetingDto
+        meeting: MeetingDto,
     ) {
         when (command) {
             is CallStart -> {
@@ -752,7 +786,7 @@ class EyesonMeeting(
 
     private suspend fun fetchUserInfo(
         meeting: MeetingDto,
-        userIds: List<String>
+        userIds: List<String>,
     ) {
         restCommunicator.getUserInfo(meeting.accessKey, userIds)
             .forEach {
@@ -801,7 +835,7 @@ class EyesonMeeting(
 
     private fun checkForNeededPermissions(
         audiOnly: Boolean,
-        context: Context
+        context: Context,
     ): List<NeededPermissions> {
         val neededPermissions = mutableListOf<NeededPermissions>()
 

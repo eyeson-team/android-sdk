@@ -20,16 +20,20 @@
     <string name="label_access_key">Access key</string>
     <string name="label_guest_name">Guest name</string>
     <string name="label_guest_token">Guest token</string>
+    <string name="label_user_token">User token</string>
 
     <string name="permissions">Permissions</string>
     <string name="permissions_description">Please grant all permissions for the demo app to function properly</string>
     <string name="go_to_settings">Go to settings</string>
     <string name="screen_sharing_permission_denied">screen sharing permission denied</string>
+    <string name="default_tab">Default</string>
+    <string name="permalink_tab">Permalink</string>
+    <string name="create_a_new_meeting">Create a new meeting or join an existing via the</string>
+    <string name="permalink_user_token">permalink\'s user token</string>
 
-    <!--  Scanner screen -->
     <string name="android_sdk">Android SDK</string>
     <string name="enter_access_key">Enter the access key of a meeting</string>
-    <string name="join_via_guest">… or join via guest token or link.</string>
+    <string name="join_via_guest">… or join via guest token.</string>
     <string name="scan_qr">Scan guest QR code</string>
     <string name="connect">Connect</string>
 

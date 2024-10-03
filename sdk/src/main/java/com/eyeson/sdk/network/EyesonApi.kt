@@ -70,8 +70,8 @@ internal interface EyesonApi {
     ): Response<Unit>
 
     @GET("/permalink/{token}")
-    suspend fun getPermalinkMeetingInfo(token: String): Response<PermalinkDto>
+    suspend fun getPermalinkMeetingInfo(@Path("token") token: String): Response<PermalinkDto>
 
     @POST("/permalink/{userToken}")
-    suspend fun startPermalinkMeeting(userToken: String): Response<MeetingDto>
+    suspend fun startPermalinkMeeting(@Path("userToken") userToken: String): Response<MeetingDto>
 }

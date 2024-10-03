@@ -5,7 +5,7 @@ import com.squareup.moshi.JsonClass
 import java.util.Date
 
 @JsonClass(generateAdapter = true)
-data class PresentationDto(
+internal data class PresentationDto(
     @Json(name = "room") val room: Room?,
     @Json(name = "user") val user: User?
 ) {

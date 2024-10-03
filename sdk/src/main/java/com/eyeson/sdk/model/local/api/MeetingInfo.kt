@@ -16,5 +16,5 @@ data class MeetingInfo(
     val activeRecording: Recording?,
     val activeBroadcasts: BroadcastUpdate?,
     val snapshots: SnapshotUpdate?,
-    val isWidescreen: Boolean
+    val meetingOptions: MeetingOptions
 )

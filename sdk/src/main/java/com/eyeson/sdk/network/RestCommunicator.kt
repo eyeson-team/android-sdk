@@ -4,11 +4,11 @@ import com.eyeson.sdk.di.NetworkModule
 import com.eyeson.sdk.exceptions.internal.FaultyInfoException
 import com.eyeson.sdk.model.api.MeetingDto
 import com.eyeson.sdk.model.api.toLocal
+import com.eyeson.sdk.model.local.api.PermalinkMeetingInfo
 import com.eyeson.sdk.model.local.api.UserWithSignaling
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.coroutineScope
-import retrofit2.Response
 
 internal class RestCommunicator {
     private val restClient by lazy { NetworkModule.restClient }
@@ -22,7 +22,7 @@ internal class RestCommunicator {
         guestToken: String,
         name: String,
         id: String?,
-        avatar: String?
+        avatar: String?,
     ): MeetingDto =
         coroutineScope {
             val meetingInfo = restClient.joinMeetingAsGuest(guestToken, name, id, avatar)
@@ -62,9 +62,10 @@ internal class RestCommunicator {
         playId: String?,
         replacementId: String?,
         audio: Boolean,
-        loopCount: Int
+        loopCount: Int,
     ): Int = coroutineScope {
-        restClient.videoPlayback(accessKey, url, name, playId, replacementId, audio, loopCount).code()
+        restClient.videoPlayback(accessKey, url, name, playId, replacementId, audio, loopCount)
+            .code()
     }
 
 
@@ -87,5 +88,14 @@ internal class RestCommunicator {
         restClient.stopPresentation(accessKey).code()
     }
 
+    suspend fun getPermalinkMeetingInfo(token: String): PermalinkMeetingInfo? = coroutineScope {
+        val permalinkInfo = restClient.getPermalinkMeetingInfo(token)
+        permalinkInfo.body()?.toLocal()
+    }
+
+    suspend fun startPermalinkMeeting(userToken: String): MeetingDto = coroutineScope {
+        val meetingInfo = restClient.startPermalinkMeeting(userToken)
+        meetingInfo.body() ?: throw FaultyInfoException(meetingInfo.code())
+    }
 }
 

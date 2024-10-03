@@ -16,8 +16,6 @@ private val LightColorPalette = lightColorScheme(
     inverseOnSurface = Color.White,
     surfaceContainerHighest = Gray400,
     outlineVariant = DarkGray900.copy(alpha = 0.1f)
-
-
 )
 
 @Composable

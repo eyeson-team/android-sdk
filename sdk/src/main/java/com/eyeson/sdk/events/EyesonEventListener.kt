@@ -1,6 +1,7 @@
 package com.eyeson.sdk.events
 
 import com.eyeson.sdk.model.local.api.MeetingInfo
+import com.eyeson.sdk.model.local.api.MeetingOptions
 import com.eyeson.sdk.model.local.api.UserInfo
 import com.eyeson.sdk.model.local.call.ConnectionStatistic
 import com.eyeson.sdk.model.local.meeting.BroadcastUpdate
@@ -42,6 +43,7 @@ abstract class EyesonEventListener {
     open fun onRecordingUpdate(recording: Recording) {}
     open fun onSnapshotUpdate(snapshots: SnapshotUpdate) {}
     open fun onConnectionStatisticUpdate(statistic: ConnectionStatistic) {}
+    open fun onOptionsUpdate(meetingOptions: MeetingOptions) {}
 
     open fun onUserJoinedMeeting(users: List<UserInfo>) {}
     open fun onUserLeftMeeting(users: List<UserInfo>) {}

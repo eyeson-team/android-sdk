@@ -5,8 +5,22 @@ The format is based on [Keep a Changelog] and this project adheres to
 [Semantic Versioning].  
 
 ## [Unreleased]
-
 ## [Released]
+## [1.1.14] - 2024-10-03
+### Added
+- MeetingOptions
+- EyesonEventListener
+  - `onOptionsUpdate`
+- Permalink support
+- EyesonMeeting
+  - `connectPermalink`
+  - `getPermalinkMeetingInfo`
+- CallRejectionReason
+  - `SERVICE_UNAVAILABLE`
+### Changed
+- MeetingInfo
+  - Moved `isWidescreen` -> **MeetingOptions** `widescreen`
+  
 ## [1.1.13] - 2024-07-30
 ### Added
 - ProGuard rules 

@@ -1,6 +1,7 @@
 package com.eyeson.sdk.network
 
 import com.eyeson.sdk.model.api.MeetingDto
+import com.eyeson.sdk.model.api.PermalinkDto
 import com.eyeson.sdk.model.api.UserInMeetingDto
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
@@ -9,13 +10,13 @@ import retrofit2.Response
 
 internal class EyesonRestClient(
     private val eyesonApi: EyesonApi,
-    private val ioDispatcher: CoroutineDispatcher = Dispatchers.IO
+    private val ioDispatcher: CoroutineDispatcher = Dispatchers.IO,
 ) {
     suspend fun joinMeetingAsGuest(
         guestToken: String,
         name: String,
         id: String?,
-        avatar: String?
+        avatar: String?,
     ): Response<MeetingDto> = withContext(ioDispatcher) {
         eyesonApi.joinRoomAsGuest(guestToken = guestToken, name = name, id = id, avatar = avatar)
     }
@@ -27,7 +28,7 @@ internal class EyesonRestClient(
 
     suspend fun getUserInfo(
         accessKey: String,
-        userId: String
+        userId: String,
     ): Response<UserInMeetingDto> = withContext(ioDispatcher) {
         eyesonApi.getUsernameInRoom(accessKey = accessKey, userId = userId)
     }
@@ -41,7 +42,7 @@ internal class EyesonRestClient(
     private suspend fun sendMessage(
         accessKey: String,
         content: String,
-        type: String
+        type: String,
     ): Response<Unit> =
         withContext(ioDispatcher) {
             eyesonApi.sendMessage(accessKey = accessKey, type = type, content = content)
@@ -54,7 +55,7 @@ internal class EyesonRestClient(
         playId: String?,
         replacementId: String?,
         audio: Boolean,
-        loopCount: Int
+        loopCount: Int,
     ): Response<Unit> =
         withContext(ioDispatcher) {
             eyesonApi.videoPlayback(
@@ -84,6 +85,16 @@ internal class EyesonRestClient(
     suspend fun stopPresentation(accessKey: String): Response<Unit> =
         withContext(ioDispatcher) {
             eyesonApi.stopPresentation(accessKey = accessKey)
+        }
+
+    suspend fun getPermalinkMeetingInfo(token: String): Response<PermalinkDto> =
+        withContext(ioDispatcher) {
+            eyesonApi.getPermalinkMeetingInfo(token)
+        }
+
+    suspend fun startPermalinkMeeting(userToken: String): Response<MeetingDto> =
+        withContext(ioDispatcher) {
+            eyesonApi.startPermalinkMeeting(userToken)
         }
 
     companion object {
