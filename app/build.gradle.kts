@@ -3,6 +3,7 @@ plugins {
     id("kotlin-android")
     kotlin("kapt")
     id(Plugins.hilt)
+    id(Plugins.compose)
 }
 
 android {
@@ -40,6 +41,7 @@ android {
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_17
         targetCompatibility = JavaVersion.VERSION_17
+        isCoreLibraryDesugaringEnabled = true
     }
     kotlinOptions {
         jvmTarget = "17"
@@ -70,6 +72,8 @@ if (project.file("flavor-configurations.gradle").exists()) {
 
 dependencies {
     implementation(project(":sdk"))
+
+    coreLibraryDesugaring(Libraries.desugarJdkLibsNio)
 
     implementation(Libraries.hiltAndroid)
     kapt(LibrariesKapt.hiltAndroidCompiler)

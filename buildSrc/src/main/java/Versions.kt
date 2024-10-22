@@ -3,14 +3,17 @@ object Versions {
     const val versionCode = 10
     const val groupId = "com.eyeson"
     const val versionName = "1.1.14" // X.Y.Z; X = Major, Y = minor, Z = Patch level
-    const val compileSdk = 34
-    const val targetSdk = 34
+    const val compileSdk = 35
+    const val targetSdk = 35
     const val minSdk = 23
+    const val kotlin = "2.0.20"
     const val composeCompiler = "1.5.2"
-    const val ksp = "1.9.0-1.0.13"
+    const val ksp = "2.0.20-1.0.25"
 
+    // Desugaring
+    const val desugarJdkLibsNio = "2.1.2"
     // WebRTC
-    const val webrtcAndroid = "1.0.0"
+    const val webrtcAndroid = "1.0.1"
 
     // DI
     const val hilt = "2.48"

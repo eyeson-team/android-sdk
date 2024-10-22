@@ -6,6 +6,20 @@ The format is based on [Keep a Changelog] and this project adheres to
 
 ## [Unreleased]
 ## [Released]
+## [1.1.15] - 2024-10-22
+### Added
+- Desugaring demo app
+  - desugar_jdk_libs_nio `2.1.2`
+### Changed
+- Dependency updates
+  - Kotlin `2.0.20` 
+  - AndroidGradlePlugin `8.7.1`
+  - KSP `2.0.20-1.0.25`
+  - Eyeson WebrtcAndroid `1.0.1` (Supports [16 KB page sizes](https://developer.android.com/guide/practices/page-sizes))
+- API level to 35
+  - SDK: compileSdk
+  - Demo apk: targetSdk and compileSdk
+  
 ## [1.1.14] - 2024-10-03
 ### Added
 - MeetingOptions

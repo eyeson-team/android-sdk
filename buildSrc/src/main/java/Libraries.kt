@@ -1,5 +1,8 @@
 object Libraries {
 
+    // Desugaring
+    const val desugarJdkLibsNio = "com.android.tools:desugar_jdk_libs_nio:${Versions.desugarJdkLibsNio}"
+
     // WebRTC
     const val webrtcAndroid = "com.github.eyeson-team:webrtc-android:${Versions.webrtcAndroid}"
 

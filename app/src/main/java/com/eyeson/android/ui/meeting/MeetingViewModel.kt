@@ -109,7 +109,14 @@ class MeetingViewModel @Inject constructor(
         }
 
         override fun onMeetingJoined(meetingInfo: MeetingInfo) {
-            addEvent("onMeetingJoined")
+            with(meetingInfo) {
+                addEvent(
+                    "onMeetingJoined:" + "accessKey: $accessKey;  name $name; startedAt $startedAt; user $user; " +
+                            "locked $locked; guestToke $guestToken; guestLink $guestLink; activeRecording " +
+                            "$activeRecording; activeBroadcasts $activeBroadcasts; snapshots $snapshots;" +
+                            " meetingOptions $meetingOptions"
+                )
+            }
             _inCall.set(true)
             _callConnected.value = true
             lastCameraState = isVideoEnabled()
