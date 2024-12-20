@@ -1,5 +1,6 @@
 package com.eyeson.android.ui.components
 
+import android.content.res.Configuration
 import androidx.annotation.FloatRange
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.fadeIn
@@ -10,13 +11,21 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.asPaddingValues
+import androidx.compose.foundation.layout.calculateEndPadding
+import androidx.compose.foundation.layout.displayCutout
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.imePadding
+import androidx.compose.foundation.layout.navigationBarsIgnoringVisibility
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.windowInsetsEndWidth
 import androidx.compose.foundation.layout.wrapContentWidth
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -50,6 +59,8 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
@@ -63,6 +74,7 @@ import com.eyeson.android.R
 import com.eyeson.android.ui.meeting.ChatMessage
 import com.eyeson.android.ui.meeting.ChatMessage.IncomingMessage
 import com.eyeson.android.ui.meeting.ChatMessage.OutgoingMessage
+import com.eyeson.android.ui.meeting.isLandscape
 import com.eyeson.android.ui.theme.ChatHeader
 import com.eyeson.android.ui.theme.ChatMessage
 import com.eyeson.android.ui.theme.DarkGray900
@@ -71,6 +83,7 @@ import timber.log.Timber
 import java.text.DecimalFormat
 import java.util.Date
 
+@OptIn(ExperimentalLayoutApi::class)
 @Composable
 fun Chat(
     visible: Boolean,
@@ -89,83 +102,133 @@ fun Chat(
         mutableStateOf(TextFieldValue())
     }
 
+    val configuration: Configuration = LocalConfiguration.current
     Box(modifier) {
+
         Scrim(scrimColor, visible, onClose)
+        Column(modifier = Modifier.align(BottomEnd)) {
+            Row {
 
-        Column(
-            modifier = Modifier
-                .fillMaxWidth(horizontalContentRatio)
-                .fillMaxHeight(verticalContentRatio)
-                .wrapContentWidth(Alignment.CenterHorizontally)
-                .align(BottomEnd)
-        ) {
-            AnimatedVisibility(
-                visible = visible,
-                enter = slideIn { fullSize ->
-                    IntOffset(fullSize.width / 4, 100)
-                } + fadeIn(),
-                exit = slideOut { fullSize ->
-                    IntOffset(fullSize.width / 4, 100)
-                } + fadeOut(),
-                modifier = modifier
-            ) {
-                Surface(shape = contentShape, color = contentBackgroundColor) {
-                    Column(verticalArrangement = Arrangement.Bottom) {
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            verticalAlignment = CenterVertically,
-                            horizontalArrangement = Arrangement.SpaceBetween
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth(horizontalContentRatio)
+                        .fillMaxHeight(verticalContentRatio)
+                        .wrapContentWidth(Alignment.CenterHorizontally)
 
-                        ) {
-                            Text(
-                                modifier = modifier.padding(start = 16.dp),
-                                text = title,
-                                style = MaterialTheme.typography.displayLarge
-                            )
-                            IconButton(onClick = onClose) {
-                                Icon(
-                                    imageVector = Icons.Filled.Close,
-                                    stringResource(id = R.string.close_menu),
-                                    tint = contentColorFor(contentBackgroundColor)
-                                )
-                            }
-                        }
-                        HorizontalDivider(Modifier.background(color = contentBackgroundColor))
+                ) {
+                    AnimatedVisibility(
+                        visible = visible,
+                        enter = slideIn { fullSize ->
+                            IntOffset(fullSize.width / 4, 100)
+                        } + fadeIn(),
+                        exit = slideOut { fullSize ->
+                            IntOffset(fullSize.width / 4, 100)
+                        } + fadeOut(),
+                        modifier = modifier
+                    ) {
 
-                        LazyColumn(
-                            reverseLayout = true, modifier = Modifier
-                                .fillMaxWidth()
-                                .weight(1f)
-                        ) {
-                            items(messages) { message ->
-                                when (message) {
-                                    is OutgoingMessage -> {
-                                        ChatMessageOutgoing(message.text, message.time)
-                                    }
+                        Surface(shape = contentShape, color = contentBackgroundColor) {
 
-                                    is IncomingMessage -> {
-                                        ChatMessageIncoming(
-                                            text = message.text,
-                                            from = message.from,
-                                            time = message.time,
-                                            avatarUrl = message.avatarUrl
+                            Column(verticalArrangement = Arrangement.Bottom) {
+                                Row(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    verticalAlignment = CenterVertically,
+                                    horizontalArrangement = Arrangement.SpaceBetween
+
+                                ) {
+                                    Text(
+                                        modifier = modifier.padding(start = 16.dp),
+                                        text = title,
+                                        style = MaterialTheme.typography.displayLarge
+                                    )
+                                    IconButton(onClick = onClose) {
+                                        Icon(
+                                            imageVector = Icons.Filled.Close,
+                                            stringResource(id = R.string.close_menu),
+                                            tint = contentColorFor(contentBackgroundColor)
                                         )
                                     }
                                 }
-                                Spacer(modifier = Modifier.height(8.dp))
+                                HorizontalDivider(Modifier.background(color = contentBackgroundColor))
+
+                                LazyColumn(
+                                    reverseLayout = true, modifier = Modifier
+                                        .fillMaxWidth()
+                                        .weight(1f)
+                                ) {
+                                    items(messages) { message ->
+                                        when (message) {
+                                            is OutgoingMessage -> {
+                                                ChatMessageOutgoing(message.text, message.time)
+                                            }
+
+                                            is IncomingMessage -> {
+                                                ChatMessageIncoming(
+                                                    text = message.text,
+                                                    from = message.from,
+                                                    time = message.time,
+                                                    avatarUrl = message.avatarUrl
+                                                )
+                                            }
+                                        }
+                                        Spacer(modifier = Modifier.height(8.dp))
+                                    }
+                                }
+                                Spacer(modifier = Modifier.height(12.dp))
+                                HorizontalDivider(Modifier.background(color = contentBackgroundColor))
+                                UserInputText(
+                                    textFieldValue = textState,
+                                    onTextChanged = { textState = it },
+                                    onMessageSend = {
+                                        sendMessage(textState.text.trim())
+                                        textState = TextFieldValue()
+                                    }
+                                )
+
                             }
                         }
-                        Spacer(modifier = Modifier.height(12.dp))
-                        HorizontalDivider(Modifier.background(color = contentBackgroundColor))
-                        UserInputText(
-                            textFieldValue = textState,
-                            onTextChanged = { textState = it },
-                            onMessageSend = {
-                                sendMessage(textState.text.trim())
-                                textState = TextFieldValue()
-                            }
+                    }
+                }
+                AnimatedVisibility(
+                    visible = visible,
+                    enter = fadeIn(),
+                    exit = slideOut { fullSize ->
+                        IntOffset(fullSize.width / 4, 100)
+                    } + fadeOut(),
+                ) {
+                    if (configuration.isLandscape() && visible) {
+                        val landscapeNavigationBarPadding =
+                            WindowInsets.navigationBarsIgnoringVisibility.asPaddingValues()
+                        val layoutDirection = LocalLayoutDirection.current
+
+                        Spacer(
+                            Modifier
+                                .fillMaxHeight()
+                                .background(contentBackgroundColor)
+                                .windowInsetsEndWidth(WindowInsets.displayCutout)
+                        )
+                        Spacer(
+                            Modifier
+                                .fillMaxHeight()
+                                .background(contentBackgroundColor)
+                                .windowInsetsEndWidth(WindowInsets.navigationBarsIgnoringVisibility)
                         )
 
+                        Spacer(
+                            modifier = Modifier
+                                .fillMaxHeight()
+                                .background(contentBackgroundColor)
+                                .size(
+                                    if (landscapeNavigationBarPadding.calculateEndPadding(
+                                            layoutDirection
+                                        ) != 0.dp
+                                    ) {
+                                        0.dp
+                                    } else {
+                                        16.dp
+                                    }
+                                )
+                        )
                     }
                 }
             }
@@ -276,6 +339,7 @@ private fun UserInputText(
     Surface(modifier = modifier) {
         Row(
             modifier = Modifier
+                .imePadding()
                 .fillMaxWidth(),
             horizontalArrangement = Arrangement.End
         ) {
@@ -323,7 +387,7 @@ private fun UserInputText(
             ) {
                 Icon(
                     imageVector = Icons.AutoMirrored.Filled.Send,
-                    stringResource(id = R.string.close_menu),
+                    stringResource(id = R.string.send),
                 )
             }
         }

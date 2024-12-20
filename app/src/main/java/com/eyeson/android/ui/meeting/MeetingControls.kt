@@ -5,11 +5,13 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -30,6 +32,7 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.zIndex
 import com.eyeson.android.R
 import com.eyeson.android.ui.theme.DarkGray800
 import com.eyeson.android.ui.theme.EyesonDemoTheme
@@ -114,60 +117,91 @@ fun VerticalMeetingControls(
     iconTint: Color = Color.White,
     rippleConfig: RippleConfiguration = RippleConfiguration(color = MaterialTheme.colorScheme.inverseOnSurface),
 ) {
+    Column(modifier = modifier) {
+        CompositionLocalProvider(LocalRippleConfiguration provides rippleConfig) {
 
-    Column(
-        modifier = modifier
-    ) {
-        CompositionLocalProvider(LocalContentColor provides iconTint) {
-            CompositionLocalProvider(LocalRippleConfiguration provides rippleConfig) {
+            Box(modifier = Modifier.weight(1f)) {
 
-                Box(modifier = Modifier.weight(1f)) {
-
-                    IconButton(onClick = onBack) {
-                        Icon(
-                            imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                            stringResource(id = R.string.label_go_back),
-                            tint = Color.White
-                        )
-                    }
+                IconButton(onClick = onBack) {
+                    Icon(
+                        imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                        stringResource(id = R.string.label_go_back),
+                        tint = iconTint
+                    )
                 }
             }
+        }
 
+        Column(verticalArrangement = Arrangement.SpaceEvenly) {
+            IconButton(onClick = onSwitchCamera, enabled = !audioOnly && cameraChangeable) {
+                Icon(
+                    painter = painterResource(id = R.drawable.baseline_cameraswitch_24),
+                    stringResource(id = R.string.switch_camera),
+                    tint = iconTint
+                )
+            }
 
-            Column(verticalArrangement = Arrangement.SpaceEvenly) {
-                IconButton(onClick = onSwitchCamera, enabled = !audioOnly && cameraChangeable) {
-                    Icon(
-                        painter = painterResource(id = R.drawable.baseline_cameraswitch_24),
-                        stringResource(id = R.string.switch_camera),
-                    )
-                }
+            val (descriptionCam, iconCam) = if (audioOnly || !videoMuted) {
+                Pair(R.string.unmute_camera, R.drawable.baseline_videocam_off_24)
+            } else {
+                Pair(R.string.mute_camera, R.drawable.baseline_videocam_24)
+            }
 
-                val (descriptionCam, iconCam) = if (audioOnly || !videoMuted) {
-                    Pair(R.string.unmute_camera, R.drawable.baseline_videocam_off_24)
-                } else {
-                    Pair(R.string.mute_camera, R.drawable.baseline_videocam_24)
-                }
+            IconButton(onClick = onMuteVideo, enabled = !audioOnly && cameraChangeable) {
+                Icon(
+                    painter = painterResource(id = iconCam),
+                    stringResource(id = descriptionCam),
+                    tint = iconTint
+                )
+            }
 
-                IconButton(onClick = onMuteVideo, enabled = !audioOnly && cameraChangeable) {
-                    Icon(
-                        painter = painterResource(id = iconCam),
-                        stringResource(id = descriptionCam),
-                    )
-                }
+            val (descriptionMic, iconMic) = if (microphoneMuted) {
+                Pair(R.string.unmute_microphone, R.drawable.baseline_mic_off_24)
+            } else {
+                Pair(R.string.mute_microphone, R.drawable.baseline_mic_24)
+            }
 
-                val (descriptionMic, iconMic) = if (microphoneMuted) {
-                    Pair(R.string.unmute_microphone, R.drawable.baseline_mic_off_24)
-                } else {
-                    Pair(R.string.mute_microphone, R.drawable.baseline_mic_24)
-                }
+            IconButton(onClick = onMuteMicrophone) {
+                Icon(
+                    painter = painterResource(id = iconMic),
+                    stringResource(id = descriptionMic),
+                    tint = iconTint
+                )
+            }
+        }
+    }
+}
 
-                IconButton(onClick = onMuteMicrophone) {
-                    Icon(
-                        painter = painterResource(id = iconMic),
-                        stringResource(id = descriptionMic),
-                    )
-                }
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun VerticalMeetingSettings(
+    openSetting: () -> Unit,
+    openChat: () -> Unit,
+    modifier: Modifier = Modifier,
+    iconTint: Color = Color.White,
+    rippleConfig: RippleConfiguration = RippleConfiguration(color = MaterialTheme.colorScheme.inverseOnSurface),
+) {
+    CompositionLocalProvider(LocalRippleConfiguration provides rippleConfig) {
+        Column(
+            modifier = modifier
+                .fillMaxHeight()
+                .zIndex(1f),
+            verticalArrangement = Arrangement.SpaceBetween
+        ) {
+            IconButton(onClick = openSetting) {
+                Icon(
+                    imageVector = Icons.Filled.MoreVert,
+                    stringResource(id = R.string.label_settings),
+                    tint = iconTint
+                )
+            }
 
+            IconButton(onClick = openChat) {
+                Icon(
+                    painter = painterResource(id = R.drawable.baseline_chat_24),
+                    stringResource(id = R.string.show_chat),
+                    tint = iconTint
+                )
             }
         }
     }
@@ -196,7 +230,7 @@ fun HorizontalMeetingControlsPreview() {
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
-@Preview(name = "landscape", device = "spec:shape=Normal,width=640,height=360,unit=dp,dpi=480")
+@Preview(name = "landscape", device = "spec:width=640dp,height=360dp,dpi=480")
 @Composable
 fun VerticalMeetingControlsPreview() {
 
@@ -225,3 +259,20 @@ fun VerticalMeetingControlsPreview() {
 }
 
 
+@OptIn(ExperimentalMaterial3Api::class)
+@Preview(name = "landscape", device = "spec:width=640dp,height=360dp,dpi=480")
+@Composable
+fun VerticalMeetingSettingsPreview() {
+    EyesonDemoTheme {
+        Box(
+            modifier = Modifier
+                .background(color = DarkGray800)
+                .padding(16.dp)
+        ) {
+            VerticalMeetingSettings(
+                openSetting = {},
+                openChat = {}
+            )
+        }
+    }
+}

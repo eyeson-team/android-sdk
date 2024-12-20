@@ -94,6 +94,7 @@
     <string name="you">You</string>
     <string name="chat">Chat</string>
     <string name="type_message">Type message…</string>
+    <string name="send">Send</string>
 
     <!-- Overlay Menu -->
     <string name="close_menu">Close menu</string>

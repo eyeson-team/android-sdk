@@ -5,6 +5,13 @@ The format is based on [Keep a Changelog] and this project adheres to
 [Semantic Versioning].  
 
 ## [Unreleased]
+### Added
+- Edge to edge support
+### Changed
+- Dependency updates  
+  - Accompanist `0.36.0`
+  - Media3 `1.5.0`
+
 ## [Released]
 ## [1.1.15] - 2024-10-22
 ### Added

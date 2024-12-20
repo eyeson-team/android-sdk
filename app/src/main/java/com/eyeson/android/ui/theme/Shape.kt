@@ -7,3 +7,5 @@ import androidx.compose.ui.unit.dp
 val Shapes = Shapes(
     small = RoundedCornerShape(6.dp)
 )
+val OverlayMenuVerticalShape = RoundedCornerShape(bottomStart = 16.dp, bottomEnd = 16.dp)
+val OverlayMenuHorizontalShape = RoundedCornerShape(bottomStart = 16.dp)

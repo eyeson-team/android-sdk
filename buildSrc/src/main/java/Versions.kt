@@ -2,7 +2,7 @@ object Versions {
     // Config
     const val versionCode = 10
     const val groupId = "com.eyeson"
-    const val versionName = "1.1.15" // X.Y.Z; X = Major, Y = minor, Z = Patch level
+    const val versionName = "1.1.16" // X.Y.Z; X = Major, Y = minor, Z = Patch level
     const val compileSdk = 35
     const val targetSdk = 35
     const val minSdk = 23
@@ -34,7 +34,7 @@ object Versions {
     const val googleAndroidMaterial = "1.13.0-alpha06"
 
     // Compose
-    const val androidxComposeBom = "2024.09.02"
+    const val androidxComposeBom = "2024.11.00"
     const val androidxComposeMaterial = "androidx.compose.material3:material3"
     const val androidxComposeUiToolingPreview = "androidx.compose.ui:ui-tooling-preview"
     const val androidxComposeDebugUiTooling = "androidx.compose.ui:ui-tooling"
@@ -43,7 +43,7 @@ object Versions {
     const val androidxNavigationCompose = "2.5.3"
     const val constraintLayoutCompose = "1.0.1"
 
-    const val accompanist = "0.28.0"
+    const val accompanist = "0.36.0"
 
     const val qrScanner = "2.1.2"
 
@@ -60,7 +60,7 @@ object Versions {
     const val coil = "2.6.0"
 
     // Media
-    const val media3 = "1.3.1"
+    const val media3 = "1.5.0"
 
     // Logging
     const val timber = "5.0.1"

@@ -3,6 +3,7 @@ package com.eyeson.android.ui.meeting
 import android.app.Notification
 import android.app.NotificationChannel
 import android.app.NotificationManager
+import android.content.ClipData
 import android.content.ClipboardManager
 import android.content.Context
 import android.content.Intent
@@ -20,11 +21,20 @@ import androidx.compose.foundation.gestures.detectDragGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.asPaddingValues
 import androidx.compose.foundation.layout.aspectRatio
-import androidx.compose.foundation.layout.fillMaxHeight
+import androidx.compose.foundation.layout.calculateEndPadding
+import androidx.compose.foundation.layout.calculateStartPadding
+import androidx.compose.foundation.layout.consumeWindowInsets
+import androidx.compose.foundation.layout.displayCutout
+import androidx.compose.foundation.layout.displayCutoutPadding
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.navigationBarsIgnoringVisibility
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -33,19 +43,18 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.Person
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
-import androidx.compose.material3.LocalRippleConfiguration
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.RippleConfiguration
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -58,7 +67,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
@@ -68,99 +77,89 @@ import androidx.compose.ui.viewinterop.AndroidView
 import androidx.compose.ui.zIndex
 import androidx.core.app.NotificationCompat
 import androidx.core.content.ContextCompat
+import androidx.core.view.WindowCompat
+import androidx.core.view.WindowInsetsCompat
+import androidx.core.view.WindowInsetsControllerCompat
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
+import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.media3.common.util.UnstableApi
 import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.ui.PlayerView
 import com.eyeson.android.R
 import com.eyeson.android.service.MeetingActiveService
-import androidx.compose.material3.CircularProgressIndicator
-import androidx.lifecycle.compose.LocalLifecycleOwner
 import com.eyeson.android.ui.components.Chat
 import com.eyeson.android.ui.components.KeepScreenOn
 import com.eyeson.android.ui.components.findActivity
 import com.eyeson.android.ui.theme.DarkGray800
 import com.eyeson.android.ui.theme.EyesonDemoTheme
+import com.eyeson.android.ui.theme.OverlayMenuHorizontalShape
+import com.eyeson.android.ui.theme.OverlayMenuVerticalShape
 import com.eyeson.sdk.events.CallTerminationReason
+import com.eyeson.sdk.model.local.api.MeetingInfo
+import com.eyeson.sdk.model.local.api.MeetingOptions
+import com.eyeson.sdk.model.local.api.UserInfo
 import com.eyeson.sdk.webrtc.VideoRenderer
 import org.webrtc.EglBase
 import org.webrtc.RendererCommon
+import timber.log.Timber
+import java.util.Date
 import kotlin.math.roundToInt
 
-@OptIn(ExperimentalMaterial3Api::class)
-@UnstableApi
+
 @Composable
-fun MeetingScreen(
+fun MeetingRout(
     onBack: () -> Unit,
     modifier: Modifier = Modifier,
     viewModel: MeetingViewModel = hiltViewModel(),
 ) {
-    var open by rememberSaveable { mutableStateOf(false) }
-    var chatOpen by rememberSaveable { mutableStateOf(false) }
-    val callConnected by viewModel.callConnected.collectAsStateWithLifecycle()
-    val callTerminated by viewModel.callTerminated.collectAsStateWithLifecycle()
-    val meetingJoinFailed by viewModel.meetingJoinFailed.collectAsStateWithLifecycle()
+    val context = LocalContext.current
+
+    val meetingState by viewModel.meetingState
     val presentationActive by viewModel.presentationActive.collectAsStateWithLifecycle()
     val screenShareActive by viewModel.screenShareActive.collectAsStateWithLifecycle()
     val remoteVideoPlaybackActive by viewModel.remoteVideoPlaybackActive.collectAsStateWithLifecycle()
     val localVideoPlaybackActive by viewModel.localVideoPlaybackActive.collectAsStateWithLifecycle()
     val videoPlaybackSelectable by viewModel.localVideoPlaybackPlayId.collectAsStateWithLifecycle()
-
     val sfu by viewModel.p2p.collectAsStateWithLifecycle()
-
-    var whatIsOpen by rememberSaveable { mutableIntStateOf(0) }
-    var videoUrl by rememberSaveable {
-        mutableStateOf(DEMO_VIDEO_URL)
-    }
-
-    var playAudio by rememberSaveable {
-        mutableStateOf(false)
-    }
-    var replaceOwnVideo by rememberSaveable {
-        mutableStateOf(true)
-    }
-
-    val context = LocalContext.current
-    val configuration: Configuration = LocalConfiguration.current
-
-    val videoActive by viewModel.cameraActive.collectAsStateWithLifecycle()
+    val cameraActive by viewModel.cameraActive.collectAsStateWithLifecycle()
     val microphoneActive by viewModel.microphoneActive.collectAsStateWithLifecycle()
 
-    val remoteView = rememberVideoRendererWithLifecycle(viewModel.getEglContext()) {
+    val remoteVideoRenderer = rememberVideoRendererWithLifecycle(viewModel.getEglContext()) {
         viewModel.setRemoteVideoTarget(it)
     }
 
-    val localView = rememberVideoRendererWithLifecycle(viewModel.getEglContext()) {
+    val localVideoRenderer = rememberVideoRendererWithLifecycle(viewModel.getEglContext()) {
         viewModel.setLocalVideoTarget(it)
     }
 
     val events by viewModel.events.collectAsStateWithLifecycle()
     val chatMessages by viewModel.chatMessages.collectAsStateWithLifecycle()
     val audioDevices by viewModel.audioDevices.collectAsStateWithLifecycle()
-
     val userInMeeting by viewModel.userInMeeting.collectAsStateWithLifecycle()
 
-    val connectWithScreenShareLauncher = rememberLauncherForActivityResult(
-        ActivityResultContracts.StartActivityForResult()
-    ) {
-        if (it.resultCode != AppCompatActivity.RESULT_OK || it.data == null) {
-            Toast.makeText(
-                context,
-                context.getString(R.string.screen_sharing_permission_denied),
-                Toast.LENGTH_SHORT
-            ).show()
-        } else {
-            viewModel.connect(
-                local = localView,
-                remote = remoteView,
-                mediaProjectionPermissionResultData = it.data,
-                notificationId = SCREEN_SHARE_NOTIFICATION_ID,
-                notification = generateScreenShareNotification(context)
-            )
+    val window = context.findActivity().window
+    val windowInsetsController =
+        WindowCompat.getInsetsController(window, window.decorView)
+    LaunchedEffect(Unit) {
+        windowInsetsController.systemBarsBehavior =
+            WindowInsetsControllerCompat.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
+
+        windowInsetsController.hide(WindowInsetsCompat.Type.systemBars())
+    }
+
+    val onOnBack = {
+        viewModel.disconnect()
+        if (screenShareActive) {
+            viewModel.stopScreenShare()
         }
+        windowInsetsController.show(WindowInsetsCompat.Type.systemBars())
+        onBack()
+    }
+    BackHandler {
+        onOnBack()
     }
 
     val startScreenShareLauncher = rememberLauncherForActivityResult(
@@ -186,117 +185,346 @@ fun MeetingScreen(
         startScreenShareLauncher.launch(manager.createScreenCaptureIntent())
     }
 
-    KeepScreenOn()
-
-    val onOnBack = {
-        viewModel.disconnect()
-        onBack()
+    val connectWithScreenShareLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.StartActivityForResult()
+    ) {
+        if (it.resultCode != AppCompatActivity.RESULT_OK || it.data == null) {
+            Toast.makeText(
+                context,
+                context.getString(R.string.screen_sharing_permission_denied),
+                Toast.LENGTH_SHORT
+            ).show()
+        } else {
+            viewModel.connect(
+                local = localVideoRenderer,
+                remote = remoteVideoRenderer,
+                mediaProjectionPermissionResultData = it.data,
+                notificationId = SCREEN_SHARE_NOTIFICATION_ID,
+                notification = generateScreenShareNotification(context)
+            )
+        }
     }
-    BackHandler {
-        onOnBack()
-    }
 
-    if (configuration.isLandscape()) {
-        Row(modifier = modifier) {
-            Column(
-                modifier = Modifier
-                    .fillMaxHeight()
-                    .background(DarkGray800)
-                    .zIndex(1f),
-                verticalArrangement = Arrangement.SpaceBetween
-            ) {
-
-                VerticalMeetingControls(
-                    onBack = onBack,
-                    audioOnly = viewModel.meetingSettings.audioOnly,
-                    cameraChangeable = !presentationActive,
-                    onSwitchCamera = { viewModel.switchCamera() },
-                    videoMuted = videoActive,
-                    onMuteVideo = { viewModel.toggleLocalVideo() },
-                    microphoneMuted = !microphoneActive,
-                    onMuteMicrophone = { viewModel.toggleLocalMicrophone() }
-                )
-            }
-            Column(
-                modifier = Modifier
-                    .weight(1f)
-                    .background(DarkGray800),
-                verticalArrangement = Arrangement.Center,
-                horizontalAlignment = Alignment.CenterHorizontally
-            ) {
-                when {
-                    !callConnected -> {
-                        Connecting()
-                    }
-
-                    viewModel.meetingSettings.audioOnly -> {
-                        AudioOnly(participants = userInMeeting.count())
-                    }
-
-                    else -> {
-                        VideoViews(
-                            showLocal = sfu && videoActive,
-                            fullSizeRemote = false,
-                            remoteView = remoteView,
-                            localView = localView,
-                            setLocalTarget = { viewModel.setLocalVideoTarget(it) },
-                            modifierLocalView = Modifier
-                                .padding(end = 16.dp, bottom = 16.dp)
-                                .size(120.dp, 80.dp)
-                                .fillMaxSize()
-                                .zIndex(1f),
-                            wideScreen = viewModel.isWideScreen(),
-                            remoteExoPlayer = if (remoteVideoPlaybackActive) {
-                                viewModel.remoteExoPlayer
-                            } else {
-                                null
-                            },
-                            localExoPlayer = if (localVideoPlaybackActive && sfu) {
-                                viewModel.localExoPlayer
-                            } else {
-                                null
-                            }
-                        )
-                    }
+    LaunchedEffect(meetingState) {
+        when (meetingState) {
+            is MeetingState.Initial -> {
+                if (viewModel.meetingSettings.screenShareOnStart) {
+                    val manager = context.getSystemService(MediaProjectionManager::class.java)
+                    connectWithScreenShareLauncher.launch(manager.createScreenCaptureIntent())
+                } else {
+                    viewModel.connect(local = localVideoRenderer, remote = remoteVideoRenderer)
                 }
             }
 
-            CompositionLocalProvider(LocalRippleConfiguration provides RippleConfiguration(color = MaterialTheme.colorScheme.inverseOnSurface)) {
-                Column(
-                    modifier = Modifier
-                        .fillMaxHeight()
-                        .background(DarkGray800)
-                        .zIndex(1f),
-                    verticalArrangement = Arrangement.SpaceBetween
-                ) {
+            is MeetingState.ConnectionFailed -> {
+                Toast.makeText(
+                    context,
+                    context.getString(R.string.connecting_to_meeting_failed),
+                    Toast.LENGTH_SHORT
+                ).show()
+                onOnBack()
+            }
 
-                    IconButton(onClick = {
-                        whatIsOpen = SETTINGS_DEFAULT
-                        open = true
-                    }) {
-                        Icon(
-                            imageVector = Icons.Filled.MoreVert,
-                            stringResource(id = R.string.label_settings),
-                            tint = Color.White
-                        )
+            is MeetingState.ConnectionTerminated -> {
+                when ((meetingState as MeetingState.ConnectionTerminated).reason) {
+                    CallTerminationReason.UNSPECIFIED -> {
+                        null
                     }
 
-                    IconButton(onClick = { chatOpen = true }) {
-                        Icon(
-                            painter = painterResource(id = R.drawable.baseline_chat_24),
-                            stringResource(id = R.string.show_chat),
-                            tint = Color.White
-                        )
+                    CallTerminationReason.OK -> {
+                        R.string.call_terminated_remotely
+                    }
+
+                    CallTerminationReason.FORBIDDEN -> {
+                        R.string.call_terminated_forbidden
+                    }
+
+                    CallTerminationReason.UNWANTED -> {
+                        R.string.call_terminated_unwanted
+                    }
+
+                    else -> {
+                        R.string.call_terminated_error
+                    }
+                }?.let {
+                    Toast.makeText(
+                        context,
+                        context.getString(it),
+                        Toast.LENGTH_SHORT
+                    ).show()
+                    onOnBack()
+                }
+            }
+
+            else -> {
+                /* NOOP */
+            }
+        }
+    }
+
+    val lifecycle = LocalLifecycleOwner.current.lifecycle
+    DisposableEffect(key1 = lifecycle) {
+        val observer = LifecycleEventObserver { _, event ->
+            when {
+                event.targetState == Lifecycle.State.STARTED
+                        && event == Lifecycle.Event.ON_PAUSE
+                        && !context.findActivity().isChangingConfigurations
+                        && meetingState is MeetingState.Connected -> {
+                    val intent = Intent(context, MeetingActiveService::class.java)
+
+                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                        ContextCompat.startForegroundService(context, intent)
+                    } else {
+                        context.startService(intent)
+                    }
+                }
+
+                event == Lifecycle.Event.ON_RESUME || event == Lifecycle.Event.ON_DESTROY -> {
+                    val intent = Intent(context, MeetingActiveService::class.java)
+                    context.stopService(intent)
+
+                    viewModel.setRemoteVideoTarget(remoteVideoRenderer)
+
+                    if (event == Lifecycle.Event.ON_DESTROY && context.findActivity().isFinishing) {
+                        onOnBack()
                     }
                 }
             }
         }
+
+        lifecycle.addObserver(observer)
+        onDispose {
+            lifecycle.removeObserver(observer)
+        }
+    }
+
+    MeetingScreen(
+        meetingState = meetingState,
+        onBack = onOnBack,
+        audioOnly = viewModel.meetingSettings.audioOnly,
+        presentationActive = presentationActive,
+        screenShareActive = screenShareActive,
+        remoteVideoPlaybackActive = remoteVideoPlaybackActive,
+        remoteExoPlayer = viewModel.remoteExoPlayer,
+        localVideoPlaybackActive = localVideoPlaybackActive,
+        localExoPlayer = viewModel.localExoPlayer,
+        videoPlaybackSelectable = videoPlaybackSelectable,
+        sfu = sfu,
+        cameraActive = cameraActive,
+        microphoneActive = microphoneActive,
+        remoteVideoRenderer = remoteVideoRenderer,
+        setRemoteTarget = { viewModel.setRemoteVideoTarget(it) },
+        localVideoRenderer = localVideoRenderer,
+        setLocalTarget = { viewModel.setLocalVideoTarget(it) },
+        events = events,
+        chatMessages = chatMessages,
+        audioDevices = audioDevices,
+        userInMeeting = userInMeeting,
+        wideScreen = viewModel.isWideScreen(),
+        muteMicrophone = { viewModel.toggleLocalMicrophone() },
+        muteVideo = { viewModel.toggleLocalVideo() },
+        switchCamera = { viewModel.switchCamera() },
+        changeScreenShareActive = {
+            if (screenShareActive) {
+                viewModel.stopScreenShare()
+            } else {
+                viewModel.screenCaptureAsPresentation = false
+                startScreenShare()
+            }
+        },
+        startFullScreenPresentation = {
+            viewModel.screenCaptureAsPresentation = true
+            if (screenShareActive) {
+                viewModel.setVideoAsPresentation()
+            } else {
+                startScreenShare()
+            }
+        },
+        stopFullScreenPresentation = { viewModel.stopFullScreenPresentation() },
+        startVideoPlayback = { url, replaceOwnVideo, audio ->
+            viewModel.startVideoPlayback(url, replaceOwnVideo, audio)
+        },
+        stopVideoPlayback = { viewModel.stopVideoPlayback() },
+        muteAll = { viewModel.muteAll() },
+        sendChatMessage = { viewModel.sendChatMessage(it) },
+        getEventsClip = { viewModel.getEventsClip() },
+        clearLog = { viewModel.clearLog() },
+        modifier = modifier,
+
+        )
+}
+
+
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
+@Composable
+fun MeetingScreen(
+    meetingState: MeetingState,
+    onBack: () -> Unit,
+    audioOnly: Boolean,
+    presentationActive: Boolean,
+    screenShareActive: Boolean,
+    remoteVideoPlaybackActive: Boolean,
+    remoteExoPlayer: ExoPlayer?,
+    localVideoPlaybackActive: Boolean,
+    localExoPlayer: ExoPlayer?,
+    videoPlaybackSelectable: String?,
+    sfu: Boolean,
+    cameraActive: Boolean,
+    microphoneActive: Boolean,
+    remoteVideoRenderer: VideoRenderer,
+    setRemoteTarget: (VideoRenderer?) -> Unit,
+    localVideoRenderer: VideoRenderer,
+    setLocalTarget: (VideoRenderer?) -> Unit,
+    events: List<EventEntry>,
+    chatMessages: List<ChatMessage>,
+    audioDevices: List<AudioDevice>,
+    userInMeeting: List<UserInfo>,
+    wideScreen: Boolean,
+    muteMicrophone: () -> Unit,
+    muteVideo: () -> Unit,
+    switchCamera: () -> Unit,
+    changeScreenShareActive: () -> Unit,
+    startFullScreenPresentation: () -> Unit,
+    stopFullScreenPresentation: () -> Unit,
+    startVideoPlayback: (String, Boolean, Boolean) -> Unit,
+    stopVideoPlayback: () -> Unit,
+    muteAll: () -> Unit,
+    sendChatMessage: (String) -> Unit,
+    getEventsClip: () -> ClipData,
+    clearLog: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+
+    var open by rememberSaveable { mutableStateOf(false) }
+    var chatOpen by rememberSaveable { mutableStateOf(false) }
+
+
+    var whatIsOpen by rememberSaveable { mutableIntStateOf(0) }
+    var videoUrl by rememberSaveable {
+        mutableStateOf(DEMO_VIDEO_URL)
+    }
+
+    var playAudio by rememberSaveable {
+        mutableStateOf(false)
+    }
+    var replaceOwnVideo by rememberSaveable {
+        mutableStateOf(true)
+    }
+
+    val context = LocalContext.current
+    val configuration: Configuration = LocalConfiguration.current
+
+    KeepScreenOn()
+
+
+    val meetingContent =
+        @Composable { meetingContentModifier: Modifier, modifierLocalView: Modifier ->
+            val fullSizeRemote = if (configuration.isLandscape()) {
+                false
+            } else {
+                sfu
+            }
+            MeetingContent(
+                meetingState = meetingState,
+                userInMeeting = userInMeeting,
+                audioOnly = audioOnly,
+                cameraActive = cameraActive,
+                presentationActive = presentationActive,
+                remoteVideoRenderer = remoteVideoRenderer,
+                setRemoteTarget = setRemoteTarget,
+                localVideoRenderer = localVideoRenderer,
+                setLocalTarget = setLocalTarget,
+                sfu = sfu,
+                wideScreen = wideScreen,
+                fullSizeRemote = fullSizeRemote,
+                remoteVideoPlaybackActive = remoteVideoPlaybackActive,
+                remoteExoPlayer = remoteExoPlayer,
+                localVideoPlaybackActive = localVideoPlaybackActive,
+                localExoPlayer = localExoPlayer,
+                modifierLocalView = modifierLocalView,
+                modifier = meetingContentModifier
+            )
+        }
+
+    if (configuration.isLandscape()) {
+        val landscapeNavigationBarPadding =
+            WindowInsets.navigationBarsIgnoringVisibility.asPaddingValues()
+
+
+        val landscapeDisplayCutoutPadding = WindowInsets.displayCutout.asPaddingValues()
+
+        val layoutDirection = LocalLayoutDirection.current
+
+        val paddingValues = PaddingValues(
+            start = landscapeNavigationBarPadding.calculateStartPadding(layoutDirection),
+            end = landscapeNavigationBarPadding.calculateEndPadding(layoutDirection),
+            top = landscapeNavigationBarPadding.calculateTopPadding(),
+            bottom = 0.dp
+        )
+
+        Row(
+            modifier = modifier
+                .background(DarkGray800)
+                .displayCutoutPadding()
+                .padding(paddingValues)
+                .consumeWindowInsets(paddingValues)
+
+        ) {
+            VerticalMeetingControls(
+                onBack = onBack,
+                audioOnly = audioOnly,
+                cameraChangeable = !presentationActive,
+                onSwitchCamera = switchCamera,
+                videoMuted = cameraActive,
+                onMuteVideo = muteVideo,
+                microphoneMuted = !microphoneActive,
+                onMuteMicrophone = muteMicrophone,
+                modifier = Modifier.padding(
+                    start =
+                    if (landscapeNavigationBarPadding.calculateStartPadding(layoutDirection) != 0.dp
+                        || landscapeDisplayCutoutPadding.calculateStartPadding(layoutDirection) != 0.dp
+                    ) {
+                        0.dp
+                    } else {
+                        16.dp
+                    }
+                )
+            )
+
+            meetingContent(
+                Modifier.weight(1f),
+                Modifier
+                    .padding(end = 16.dp, bottom = 16.dp)
+                    .size(120.dp, 80.dp)
+                    .fillMaxSize()
+                    .zIndex(1f)
+            )
+
+            VerticalMeetingSettings(
+                openSetting = {
+                    whatIsOpen = SETTINGS_DEFAULT
+                    open = true
+                },
+                openChat = {
+                    chatOpen = true
+                },
+                modifier = Modifier.padding(
+                    end = if (landscapeNavigationBarPadding.calculateEndPadding(layoutDirection) != 0.dp
+                        || landscapeDisplayCutoutPadding.calculateEndPadding(layoutDirection) != 0.dp
+                    ) {
+                        0.dp
+                    } else {
+                        16.dp
+                    }
+                )
+            )
+        }
     } else {
-        Column(modifier = modifier) {
+        Column(modifier = modifier.displayCutoutPadding()) {
             TopAppBar(
                 title = { /* NOOP */ },
                 navigationIcon = {
-                    IconButton(onClick = onOnBack) {
+                    IconButton(onClick = onBack) {
                         Icon(
                             imageVector = Icons.AutoMirrored.Filled.ArrowBack,
                             stringResource(id = R.string.label_go_back),
@@ -323,52 +551,25 @@ fun MeetingScreen(
                     .fillMaxSize()
                     .background(DarkGray800)
             ) {
-                when {
-                    !callConnected -> {
-                        Connecting()
-                    }
-
-                    viewModel.meetingSettings.audioOnly -> {
-                        AudioOnly(participants = userInMeeting.count())
-                    }
-
-                    else -> {
-                        VideoViews(
-                            showLocal = sfu && videoActive,
-                            fullSizeRemote = sfu,
-                            remoteView = remoteView,
-                            localView = localView,
-                            setLocalTarget = { viewModel.setLocalVideoTarget(it) },
-                            modifier = Modifier
-                                .align(Alignment.Center),
-                            modifierLocalView = Modifier
-                                .padding(end = 16.dp, bottom = 88.dp)
-                                .size(80.dp, 120.dp),
-                            wideScreen = viewModel.isWideScreen(),
-                            remoteExoPlayer = if (remoteVideoPlaybackActive) {
-                                viewModel.remoteExoPlayer
-                            } else {
-                                null
-                            },
-                            localExoPlayer = if (localVideoPlaybackActive && sfu) {
-                                viewModel.localExoPlayer
-                            } else {
-                                null
-                            }
-                        )
-                    }
-                }
+                meetingContent(
+                    Modifier
+                        .align(Alignment.Center),
+                    Modifier
+                        .padding(end = 16.dp, bottom = 134.dp)
+                        .size(80.dp, 120.dp)
+                )
 
                 HorizontalMeetingControls(
-                    audioOnly = viewModel.meetingSettings.audioOnly,
+                    audioOnly = audioOnly,
                     cameraChangeable = !presentationActive,
-                    onSwitchCamera = { viewModel.switchCamera() },
-                    videoMuted = videoActive,
-                    onMuteVideo = { viewModel.toggleLocalVideo() },
+                    onSwitchCamera = switchCamera,
+                    videoMuted = cameraActive,
+                    onMuteVideo = muteVideo,
                     microphoneMuted = !microphoneActive,
-                    onMuteMicrophone = { viewModel.toggleLocalMicrophone() },
+                    onMuteMicrophone = muteMicrophone,
                     onShowChat = { chatOpen = true },
                     modifier = Modifier
+                        .padding(bottom = 46.dp)
                         .align(Alignment.BottomEnd)
                         .zIndex(1f),
                 )
@@ -376,65 +577,10 @@ fun MeetingScreen(
         }
     }
 
-    LaunchedEffect(key1 = Unit) {
-        when {
-            viewModel.meetingSettings.screenShareOnStart && !viewModel.inCall() -> {
-                val manager = context.getSystemService(MediaProjectionManager::class.java)
-                connectWithScreenShareLauncher.launch(manager.createScreenCaptureIntent())
-            }
-
-            !viewModel.inCall() -> {
-                viewModel.connect(localView, remoteView)
-            }
-        }
-    }
-
-    LaunchedEffect(key1 = callTerminated) {
-        when (callTerminated) {
-            CallTerminationReason.UNSPECIFIED -> {
-                null
-            }
-
-            CallTerminationReason.OK -> {
-                R.string.call_terminated_remotely
-            }
-
-            CallTerminationReason.FORBIDDEN -> {
-                R.string.call_terminated_forbidden
-            }
-
-            CallTerminationReason.UNWANTED -> {
-                R.string.call_terminated_unwanted
-            }
-
-            else -> {
-                R.string.call_terminated_error
-            }
-        }?.let {
-            Toast.makeText(
-                context,
-                context.getString(it),
-                Toast.LENGTH_SHORT
-            ).show()
-            onOnBack()
-        }
-    }
-
-    LaunchedEffect(key1 = meetingJoinFailed) {
-        if (meetingJoinFailed) {
-            Toast.makeText(
-                context,
-                context.getString(R.string.connecting_to_meeting_failed),
-                Toast.LENGTH_SHORT
-            ).show()
-            onOnBack()
-        }
-    }
-
-    val (vertical, horizontal) = if (configuration.isLandscape()) {
-        Pair(1f, 0.7f)
+    val (vertical, horizontal, overlayMenuShape) = if (configuration.isLandscape()) {
+        Triple(1f, 0.7f, OverlayMenuHorizontalShape)
     } else {
-        Pair(0.7f, 1f)
+        Triple(0.7f, 1f, OverlayMenuVerticalShape)
     }
 
     Crossfade(targetState = whatIsOpen) { screen ->
@@ -446,9 +592,10 @@ fun MeetingScreen(
                         whatIsOpen = SETTINGS_DEFAULT
                         open = false
                     },
-                    audioDevices,
+                    audioDevices = audioDevices,
                     horizontalContentRatio = horizontal,
-                    verticalContentRatio = vertical
+                    verticalContentRatio = vertical,
+                    contentShape = overlayMenuShape,
                 )
             }
 
@@ -460,15 +607,17 @@ fun MeetingScreen(
                         open = false
                     },
                     events = events,
-                    onClear = { viewModel.clearLog() },
+                    onClear = clearLog,
                     onCopy = {
                         val clipboardManager =
                             context.getSystemService(Context.CLIPBOARD_SERVICE) as? ClipboardManager
 
-                        clipboardManager?.setPrimaryClip(viewModel.getEventsClip())
+                        clipboardManager?.setPrimaryClip(getEventsClip())
                     },
+
                     horizontalContentRatio = horizontal,
-                    verticalContentRatio = vertical
+                    verticalContentRatio = vertical,
+                    contentShape = overlayMenuShape,
                 )
             }
 
@@ -486,12 +635,13 @@ fun MeetingScreen(
                     replaceOwnVideo = replaceOwnVideo,
                     onReplaceOwnVideoChange = { replaceOwnVideo = it },
                     onPlay = {
-                        viewModel.startVideoPlayback(videoUrl, replaceOwnVideo, playAudio)
+                        startVideoPlayback(videoUrl, replaceOwnVideo, playAudio)
                         whatIsOpen = SETTINGS_DEFAULT
                         open = false
                     },
                     horizontalContentRatio = horizontal,
-                    verticalContentRatio = vertical
+                    verticalContentRatio = vertical,
+                    contentShape = overlayMenuShape,
                 )
             }
 
@@ -504,30 +654,16 @@ fun MeetingScreen(
                     },
                     screenShareActive = screenShareActive,
                     presentationActive = presentationActive,
-                    onScreenShareActiveChange = {
-                        if (screenShareActive) {
-                            viewModel.stopScreenShare()
-                        } else {
-                            viewModel.screenCaptureAsPresentation = false
-                            startScreenShare()
-                        }
-                    },
-                    startFullScreenPresentation = {
-                        viewModel.screenCaptureAsPresentation = true
-                        if (screenShareActive) {
-                            viewModel.setVideoAsPresentation()
-                        } else {
-                            startScreenShare()
-                        }
-                    },
-                    stopFullScreenPresentation = { viewModel.stopFullScreenPresentation() },
+                    onScreenShareActiveChange = changeScreenShareActive,
+                    startFullScreenPresentation = startFullScreenPresentation,
+                    stopFullScreenPresentation = stopFullScreenPresentation,
                     showVideoPlayback = {
                         whatIsOpen = SETTINGS_VIDEO_PLAYBACK
                     },
                     isVideoPlaying = videoPlaybackSelectable != null,
-                    stopVideoPlayback = { viewModel.stopVideoPlayback() },
+                    stopVideoPlayback = stopVideoPlayback,
                     muteAll = {
-                        viewModel.muteAll()
+                        muteAll()
                         Toast.makeText(
                             context,
                             context.getString(R.string.you_muted_all_other_participants),
@@ -540,7 +676,8 @@ fun MeetingScreen(
                     },
                     showEventLog = { whatIsOpen = SETTINGS_EVENT_LOG },
                     horizontalContentRatio = horizontal,
-                    verticalContentRatio = vertical
+                    verticalContentRatio = vertical,
+                    contentShape = overlayMenuShape,
                 )
             }
         }
@@ -555,59 +692,87 @@ fun MeetingScreen(
             visible = chatOpen,
             onClose = { chatOpen = !chatOpen },
             messages = chatMessages,
-            sendMessage = {
-                viewModel.sendChatMessage(it)
-            },
+            sendMessage = sendChatMessage,
             contentShape = chatShape,
             verticalContentRatio = vertical,
             horizontalContentRatio = horizontal
         )
     }
+}
 
-    val lifecycle = LocalLifecycleOwner.current.lifecycle
-    DisposableEffect(key1 = lifecycle) {
-        val observer = LifecycleEventObserver { _, event ->
-            when {
-                event.targetState == Lifecycle.State.STARTED
-                        && event == Lifecycle.Event.ON_PAUSE
-                        && !context.findActivity().isChangingConfigurations
-                        && viewModel.inCall() -> {
-                    val intent = Intent(context, MeetingActiveService::class.java)
+@Composable
+fun MeetingContent(
+    meetingState: MeetingState,
+    userInMeeting: List<UserInfo>,
+    audioOnly: Boolean,
+    cameraActive: Boolean,
+    presentationActive: Boolean,
+    remoteVideoRenderer: VideoRenderer,
+    setRemoteTarget: (VideoRenderer?) -> Unit,
+    localVideoRenderer: VideoRenderer,
+    setLocalTarget: (VideoRenderer?) -> Unit,
+    sfu: Boolean,
+    wideScreen: Boolean,
+    fullSizeRemote: Boolean,
+    remoteVideoPlaybackActive: Boolean,
+    remoteExoPlayer: ExoPlayer?,
+    localVideoPlaybackActive: Boolean,
+    localExoPlayer: ExoPlayer?,
+    modifierLocalView: Modifier,
+    modifier: Modifier = Modifier,
+) {
+    when (meetingState) {
+        is MeetingState.Connecting -> {
+            Connecting(
+                modifier = modifier
+            )
+        }
 
-                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-                        ContextCompat.startForegroundService(context, intent)
+        is MeetingState.Connected -> {
+            if (audioOnly) {
+                AudioOnly(
+                    participants = userInMeeting.count(),
+                    modifier = modifier
+                )
+            } else {
+                VideoViews(
+                    showLocal = sfu && cameraActive && !presentationActive,
+                    fullSizeRemote = fullSizeRemote,
+                    remoteVideoRenderer = remoteVideoRenderer,
+                    setRemoteTarget = setRemoteTarget,
+                    localVideoRenderer = localVideoRenderer,
+                    setLocalTarget = setLocalTarget,
+                    modifier = modifier,
+                    modifierLocalView = modifierLocalView,
+                    wideScreen = wideScreen,
+                    remoteExoPlayer = if (remoteVideoPlaybackActive) {
+                        remoteExoPlayer
                     } else {
-                        context.startService(intent)
+                        null
+                    },
+                    localExoPlayer = if (localVideoPlaybackActive && sfu) {
+                        localExoPlayer
+                    } else {
+                        null
                     }
-                }
-
-                event == Lifecycle.Event.ON_RESUME || event == Lifecycle.Event.ON_DESTROY -> {
-                    val intent = Intent(context, MeetingActiveService::class.java)
-                    context.stopService(intent)
-
-                    viewModel.setRemoteVideoTarget(remoteView)
-
-                    if (event == Lifecycle.Event.ON_DESTROY && context.findActivity().isFinishing) {
-                        viewModel.disconnect()
-                    }
-                }
+                )
             }
         }
 
-        lifecycle.addObserver(observer)
-        onDispose {
-            lifecycle.removeObserver(observer)
+        else -> {
+            /* NOOP */
         }
     }
 }
 
-@UnstableApi
+@androidx.annotation.OptIn(UnstableApi::class)
 @Composable
 private fun VideoViews(
     showLocal: Boolean,
     fullSizeRemote: Boolean,
-    remoteView: VideoRenderer,
-    localView: VideoRenderer,
+    remoteVideoRenderer: VideoRenderer,
+    setRemoteTarget: (VideoRenderer?) -> Unit,
+    localVideoRenderer: VideoRenderer,
     setLocalTarget: (VideoRenderer?) -> Unit,
     modifier: Modifier = Modifier,
     remoteExoPlayer: ExoPlayer? = null,
@@ -615,8 +780,8 @@ private fun VideoViews(
     modifierLocalView: Modifier = Modifier,
     wideScreen: Boolean = false,
 ) {
-    var offsetX by remember { mutableStateOf(0f) }
-    var offsetY: Float by remember { mutableStateOf(0f) }
+    var offsetX by remember { mutableFloatStateOf(0f) }
+    var offsetY: Float by remember { mutableFloatStateOf(0f) }
 
     val remoteModifier = when {
         fullSizeRemote -> {
@@ -633,11 +798,12 @@ private fun VideoViews(
         }
     }
 
-    Box(modifier) {
+    Box(modifier.fillMaxSize()) {
         if (remoteExoPlayer == null) {
             AndroidView(modifier = remoteModifier.align(Alignment.Center), factory = {
-                remoteView
+                remoteVideoRenderer
             })
+            setRemoteTarget(remoteVideoRenderer)
         } else {
             AndroidView(
                 factory = { context ->
@@ -665,9 +831,9 @@ private fun VideoViews(
             if (localExoPlayer == null) {
                 val localTarget = if (showLocal) {
                     AndroidView(modifier = Modifier.fillMaxSize(),
-                        factory = { localView })
+                        factory = { localVideoRenderer })
 
-                    localView
+                    localVideoRenderer
                 } else {
                     null
                 }
@@ -715,7 +881,8 @@ fun AudioOnly(
             )
         }
         Text(
-            stringResource(id = R.string.audio_only), style = MaterialTheme.typography.bodyLarge.copy(
+            stringResource(id = R.string.audio_only),
+            style = MaterialTheme.typography.bodyLarge.copy(
                 color = Color.White
             ),
             textAlign = TextAlign.Center,
@@ -743,12 +910,12 @@ fun Connecting(
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center
     ) {
-
         CircularProgressIndicator(
             color = Color.White
         )
         Text(
-            stringResource(id = R.string.connecting), style = MaterialTheme.typography.bodyLarge.copy(
+            stringResource(id = R.string.connecting),
+            style = MaterialTheme.typography.bodyLarge.copy(
                 color = Color.White
             ),
             textAlign = TextAlign.Center,
@@ -817,11 +984,88 @@ private fun generateScreenShareNotification(context: Context): Notification {
 
 @UnstableApi
 @Preview
+@Preview(name = "landscape", device = "spec:width=640dp,height=360dp,dpi=480")
 @Composable
 fun SettingsScreenPreview() {
 
+    val context = LocalContext.current
+    val meetingState = MeetingState.Connected(
+        MeetingInfo(
+            accessKey = "accessKey",
+            name = "name",
+            startedAt = Date(),
+            user = UserInfo(
+                id = "userId",
+                name = "userName",
+                avatar = "userAvatar",
+                guest = false,
+                joinedAt = Date()
+            ),
+            locked = false,
+            guestToken = "guestToken",
+            guestLink = "guestLink",
+            activeRecording = null,
+            activeBroadcasts = null,
+            snapshots = null,
+            MeetingOptions(
+                backgroundColor = "#121212",
+                broadcastAvailable = true,
+                customFields = emptyMap(),
+                exitUrl = null,
+                kickAvailable = true,
+                layout = "auto",
+                layoutAvailable = false,
+                layoutMap = emptyList(),
+                layoutName = null,
+                layoutUsers = emptyList(),
+                lockAvailable = true,
+                reactionAvailable = true,
+                recordingAvailable = true,
+                sfuMode = "ptp",
+                showLabel = true,
+                showNames = true,
+                suggestGuestNames = false,
+                voiceActivation = true,
+                widescreen = true
+            )
+        )
+    )
     EyesonDemoTheme {
-        MeetingScreen({/*NOOP*/ })
+        MeetingScreen(
+            meetingState = meetingState,
+            onBack = {/*NOOP*/ },
+            audioOnly = false,
+            presentationActive = false,
+            screenShareActive = false,
+            remoteVideoPlaybackActive = false,
+            remoteExoPlayer = null,
+            localVideoPlaybackActive = false,
+            localExoPlayer = null,
+            videoPlaybackSelectable = null,
+            sfu = true,
+            cameraActive = true, microphoneActive = true,
+            remoteVideoRenderer = VideoRenderer(context),
+            setRemoteTarget = {/*NOOP*/ },
+            localVideoRenderer = VideoRenderer(context),
+            setLocalTarget = {/*NOOP*/ },
+            events = emptyList(),
+            chatMessages = emptyList(),
+            audioDevices = emptyList(),
+            userInMeeting = emptyList(),
+            wideScreen = true,
+            muteMicrophone = {/*NOOP*/ },
+            muteVideo = {/*NOOP*/ },
+            switchCamera = {/*NOOP*/ },
+            changeScreenShareActive = {/*NOOP*/ },
+            startFullScreenPresentation = {/*NOOP*/ },
+            stopFullScreenPresentation = {/*NOOP*/ },
+            startVideoPlayback = { _, _, _ -> /*NOOP*/ },
+            stopVideoPlayback = {/*NOOP*/ },
+            muteAll = {/*NOOP*/ },
+            sendChatMessage = {/*NOOP*/ },
+            getEventsClip = { ClipData.newPlainText("Eyeson SDK event log", "") },
+            clearLog = {/*NOOP*/ },
+        )
     }
 }
 

@@ -1,16 +1,24 @@
 package com.eyeson.android.ui.start
 
+import android.Manifest
 import android.content.Intent
 import android.net.Uri
+import android.os.Build
 import android.provider.Settings
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.navigationBarsIgnoringVisibility
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.safeDrawingPadding
+import androidx.compose.foundation.layout.windowInsetsEndWidth
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
@@ -29,13 +37,11 @@ import androidx.compose.material3.Tab
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.saveable.Saver
-import androidx.compose.runtime.saveable.listSaver
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -54,52 +60,105 @@ import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.text.withLink
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import androidx.lifecycle.SavedStateHandle
-import com.eyeson.android.EyesonNavigationParameter
+import androidx.compose.ui.util.fastMap
+import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.eyeson.android.R
 import com.eyeson.android.ui.components.EyesonDemoTextField
 import com.eyeson.android.ui.theme.DisabledContentAlpha
 import com.eyeson.android.ui.theme.EyesonDemoTheme
 import com.google.accompanist.permissions.ExperimentalPermissionsApi
 import com.google.accompanist.permissions.MultiplePermissionsState
+import com.google.accompanist.permissions.PermissionState
+import com.google.accompanist.permissions.PermissionStatus
 import com.google.accompanist.permissions.rememberMultiplePermissionsState
 
 
 const val PERMALINK_URL = "https://docs.eyeson.com/docs/rest/features/permalink/"
 
-@OptIn(ExperimentalPermissionsApi::class, ExperimentalMaterial3Api::class)
+@OptIn(ExperimentalPermissionsApi::class)
 @Composable
-fun StartScreen(
-    multiplePermissionsState: MultiplePermissionsState,
-    modifier: Modifier = Modifier,
-    savedStateHandle: SavedStateHandle? = null,
+fun StartRout(
     onScanClicked: () -> Unit = {},
     onSettingsClicked: () -> Unit = {},
     connect: (accessKey: String) -> Unit = { _ -> },
     connectAsGuest: (guestToken: String, guestName: String) -> Unit = { _, _ -> },
     connectPermalink: (userToken: String) -> Unit = { _ -> },
     connectAsGuestPermalink: (guestToken: String, guestName: String) -> Unit = { _, _ -> },
+    viewModel: StartViewModel = hiltViewModel(),
+) {
+
+    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+
+    val permissions = mutableListOf(
+        Manifest.permission.CAMERA,
+        Manifest.permission.RECORD_AUDIO
+    )
+
+    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+        permissions.add(Manifest.permission.BLUETOOTH_CONNECT)
+    }
+    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+        permissions.add(Manifest.permission.POST_NOTIFICATIONS)
+    }
+
+    val multiplePermissionsState = rememberMultiplePermissionsState(
+        permissions
+    )
+
+    StartScreen(
+        uiState = uiState,
+        multiplePermissionsState = multiplePermissionsState,
+        onAccessKeyChange = viewModel::setAccessKey,
+        onGuestNameChange = viewModel::setGuestName,
+        onGuestTokenChange = viewModel::setGuestToken,
+        onUserTokenPermalinkChange = viewModel::setUserTokenPermalink,
+        onGuestNamePermalinkChange = viewModel::setGuestNamePermalink,
+        onGuestTokenPermalinkChange = viewModel::setGuestTokenPermalink,
+        onScanClicked = onScanClicked,
+        onSettingsClicked = onSettingsClicked,
+        connect = { connect(uiState.accessKey) },
+        connectAsGuest = { connectAsGuest(uiState.guestToken, uiState.guestName) },
+        connectPermalink = { connectPermalink(uiState.userTokenPermalink) },
+        connectAsGuestPermalink = {
+            connectAsGuestPermalink(
+                uiState.guestTokenPermalink,
+                uiState.guestNamePermalink
+            )
+        }
+    )
+}
+
+@OptIn(
+    ExperimentalPermissionsApi::class, ExperimentalMaterial3Api::class,
+    ExperimentalLayoutApi::class
+)
+@Composable
+private fun StartScreen(
+    uiState: StartScreenState,
+    multiplePermissionsState: MultiplePermissionsState,
+    onAccessKeyChange: (accessKey: String) -> Unit,
+    onGuestNameChange: (guestName: String) -> Unit,
+    onGuestTokenChange: (guestToken: String) -> Unit,
+    onUserTokenPermalinkChange: (userTokenPermalink: String) -> Unit,
+    onGuestNamePermalinkChange: (guestNamePermalink: String) -> Unit,
+    onGuestTokenPermalinkChange: (guestTokenPermalink: String) -> Unit,
+    onScanClicked: () -> Unit,
+    onSettingsClicked: () -> Unit,
+    connect: () -> Unit,
+    connectAsGuest: () -> Unit,
+    connectPermalink: () -> Unit,
+    connectAsGuestPermalink: () -> Unit,
+    modifier: Modifier = Modifier,
 ) {
     val scrollState = rememberScrollState()
-    val screenState by rememberSaveable(stateSaver = StartScreenState.Saver) {
-        mutableStateOf(StartScreenState())
-    }
-
     var showPermissionDialog = !multiplePermissionsState.allPermissionsGranted
 
-    if (savedStateHandle != null) {
-        val guestToken = savedStateHandle.get<String>(EyesonNavigationParameter.GUEST_TOKEN)
-        LaunchedEffect(guestToken) {
-            guestToken?.let {
-                screenState.guestToken = guestToken
-                savedStateHandle.remove<String>(EyesonNavigationParameter.GUEST_TOKEN)
-            }
-        }
-    }
     var selectedTab by rememberSaveable { mutableIntStateOf(0) }
 
     Scaffold(
-        modifier = modifier, topBar = {
+        modifier = modifier.safeDrawingPadding(),
+        topBar = {
             TopAppBar(
                 title = { /*NOOP*/ },
                 actions = {
@@ -126,29 +185,26 @@ fun StartScreen(
                                 showPermissionDialog = true
                             }
 
-                            screenState.accessKey.isNotBlank() && selectedTab == 0 -> {
-                                connect(screenState.accessKey)
+                            uiState.accessKey.isNotBlank() && selectedTab == 0 -> {
+                                connect()
                             }
 
-                            screenState.guestName.isNotBlank() && screenState.guestToken.isNotBlank() && selectedTab == 0 -> {
-                                connectAsGuest(screenState.guestToken, screenState.guestName)
+                            uiState.guestName.isNotBlank() && uiState.guestToken.isNotBlank() && selectedTab == 0 -> {
+                                connectAsGuest()
                             }
 
-                            screenState.userTokenPermalink.isNotBlank() && selectedTab == 1 -> {
-                                connectPermalink(screenState.userTokenPermalink)
+                            uiState.userTokenPermalink.isNotBlank() && selectedTab == 1 -> {
+                                connectPermalink()
                             }
 
-                            screenState.guestNamePermalink.isNotBlank() && screenState.guestTokenPermalink.isNotBlank() && selectedTab == 1 -> {
-                                connectAsGuestPermalink(
-                                    screenState.guestTokenPermalink,
-                                    screenState.guestNamePermalink
-                                )
+                            uiState.guestNamePermalink.isNotBlank() && uiState.guestTokenPermalink.isNotBlank() && selectedTab == 1 -> {
+                                connectAsGuestPermalink()
                             }
                         }
                     },
                     contentPadding = PaddingValues(top = 12.dp, bottom = 12.dp),
                     shape = MaterialTheme.shapes.small,
-                    enabled = (screenState.canConnect && selectedTab == 0) || (screenState.canConnectPermalink && selectedTab == 1),
+                    enabled = (uiState.canConnect && selectedTab == 0) || (uiState.canConnectPermalink && selectedTab == 1),
                     modifier = Modifier
                         .fillMaxWidth()
                         .background(Color.White)
@@ -158,6 +214,10 @@ fun StartScreen(
                         text = stringResource(id = R.string.connect).uppercase()
                     )
                 }
+                Spacer(
+                    Modifier
+                        .windowInsetsEndWidth(WindowInsets.navigationBarsIgnoringVisibility)
+                )
             }
         }
     ) { padding ->
@@ -168,7 +228,6 @@ fun StartScreen(
                 .verticalScroll(scrollState),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-
             Image(
                 painter = painterResource(id = R.drawable.eyeson_logo_dark),
                 contentDescription = stringResource(
@@ -213,16 +272,28 @@ fun StartScreen(
                     )
                 }
             }
+
+
             when (selectedTab) {
                 0 -> {
-                    DefaultConnect(screenState, onScanClicked)
+                    DefaultConnect(
+                        screenState = uiState,
+                        onScanClicked = onScanClicked,
+                        onAccessKeyChange = onAccessKeyChange,
+                        onGuestNameChange = onGuestNameChange,
+                        onGuestTokenChange = onGuestTokenChange,
+                    )
                 }
 
                 1 -> {
-                    PermalinkConnect(screenState)
+                    PermalinkConnect(
+                        screenState = uiState,
+                        onUserTokenPermalinkChange = onUserTokenPermalinkChange,
+                        onGuestNamePermalinkChange = onGuestNamePermalinkChange,
+                        onGuestTokenPermalinkChange = onGuestTokenPermalinkChange
+                    )
                 }
             }
-
         }
     }
 
@@ -239,8 +310,12 @@ fun StartScreen(
 private fun DefaultConnect(
     screenState: StartScreenState,
     onScanClicked: () -> Unit,
+    onAccessKeyChange: (accessKey: String) -> Unit,
+    onGuestNameChange: (guestName: String) -> Unit,
+    onGuestTokenChange: (guestToken: String) -> Unit,
     modifier: Modifier = Modifier,
 ) {
+
     Column(
         modifier = modifier.padding(start = 16.dp, end = 16.dp),
         horizontalAlignment = Alignment.CenterHorizontally
@@ -249,8 +324,9 @@ private fun DefaultConnect(
             text = stringResource(id = R.string.enter_access_key),
             modifier = Modifier.padding(top = 40.dp)
         )
+
         EyesonDemoTextField(
-            onValueChange = { screenState.accessKey = it },
+            onValueChange = onAccessKeyChange,
             label = stringResource(id = R.string.label_access_key).uppercase(),
             value = screenState.accessKey,
             modifier = Modifier
@@ -261,8 +337,9 @@ private fun DefaultConnect(
             text = stringResource(id = R.string.join_via_guest),
             modifier = Modifier.padding(top = 16.dp)
         )
+
         EyesonDemoTextField(
-            onValueChange = { screenState.guestName = it },
+            onValueChange = onGuestNameChange,
             label = stringResource(id = R.string.label_guest_name).uppercase(),
             value = screenState.guestName,
             modifier = Modifier
@@ -270,7 +347,7 @@ private fun DefaultConnect(
         )
 
         EyesonDemoTextField(
-            onValueChange = { screenState.guestToken = it },
+            onValueChange = onGuestTokenChange,
             label = stringResource(id = R.string.label_guest_token).uppercase(),
             value = screenState.guestToken,
             modifier = Modifier
@@ -297,6 +374,9 @@ private fun DefaultConnect(
 @Composable
 private fun PermalinkConnect(
     screenState: StartScreenState,
+    onUserTokenPermalinkChange: (userTokenPermalink: String) -> Unit,
+    onGuestNamePermalinkChange: (guestNamePermalink: String) -> Unit,
+    onGuestTokenPermalinkChange: (guestTokenPermalink: String) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     Column(
@@ -327,7 +407,7 @@ private fun PermalinkConnect(
             textAlign = TextAlign.Center
         )
         EyesonDemoTextField(
-            onValueChange = { screenState.userTokenPermalink = it },
+            onValueChange = onUserTokenPermalinkChange,
             label = stringResource(id = R.string.label_user_token).uppercase(),
             value = screenState.userTokenPermalink,
             modifier = Modifier
@@ -339,7 +419,7 @@ private fun PermalinkConnect(
             modifier = Modifier.padding(top = 16.dp)
         )
         EyesonDemoTextField(
-            onValueChange = { screenState.guestNamePermalink = it },
+            onValueChange = onGuestNamePermalinkChange,
             label = stringResource(id = R.string.label_guest_name).uppercase(),
             value = screenState.guestNamePermalink,
             modifier = Modifier
@@ -347,7 +427,7 @@ private fun PermalinkConnect(
         )
 
         EyesonDemoTextField(
-            onValueChange = { screenState.guestTokenPermalink = it },
+            onValueChange = onGuestTokenPermalinkChange,
             label = stringResource(id = R.string.label_guest_token).uppercase(),
             value = screenState.guestTokenPermalink,
             modifier = Modifier
@@ -389,57 +469,69 @@ private fun PermissionsDialog(modifier: Modifier = Modifier) {
     )
 }
 
-private class StartScreenState {
-    // Default
-    var accessKey by mutableStateOf("")
-    var guestName by mutableStateOf("SDK test user")
-    var guestToken by mutableStateOf("")
 
-    // Permalink
-    var userTokenPermalink by mutableStateOf("")
-    var guestNamePermalink by mutableStateOf("SDK test user")
-    var guestTokenPermalink by mutableStateOf("")
-
-
-    val canConnect: Boolean
-        get() = accessKey.isNotBlank() || (guestName.isNotBlank() && guestToken.isNotBlank())
-
-    val canConnectPermalink: Boolean
-        get() = userTokenPermalink.isNotBlank() || (guestNamePermalink.isNotBlank() && guestTokenPermalink.isNotBlank())
-
-    companion object {
-        val Saver: Saver<StartScreenState, *> = listSaver(
-            save = {
-                listOf(
-                    it.accessKey,
-                    it.guestName,
-                    it.guestToken,
-                    it.userTokenPermalink,
-                    it.guestNamePermalink,
-                    it.guestTokenPermalink
-                )
-            },
-            restore = {
-                StartScreenState().apply {
-                    accessKey = it[0]
-                    guestName = it[1]
-                    guestToken = it[2]
-                    userTokenPermalink = it[3]
-                    guestNamePermalink = it[4]
-                    guestTokenPermalink = it[5]
-                }
-            }
+@OptIn(ExperimentalPermissionsApi::class)
+@Preview
+@Composable
+fun StartScreenPreview() {
+    var uiState by remember {
+        mutableStateOf(
+            StartScreenState(
+                accessKey = "",
+                guestName = "SDK test user",
+                guestToken = "",
+                userTokenPermalink = "",
+                guestNamePermalink = "SDK test user",
+                guestTokenPermalink = ""
+            )
+        )
+    }
+    EyesonDemoTheme {
+        val multiplePermissionsState = PreviewMultiplePermissionsState(emptyList(), emptyMap())
+        StartScreen(
+            uiState = uiState,
+            multiplePermissionsState = multiplePermissionsState,
+            onAccessKeyChange = { uiState = uiState.copy(accessKey = it) },
+            onGuestNameChange = { uiState = uiState.copy(guestName = it) },
+            onGuestTokenChange = { uiState = uiState.copy(guestToken = it) },
+            onUserTokenPermalinkChange = { uiState = uiState.copy(userTokenPermalink = it) },
+            onGuestNamePermalinkChange = { uiState = uiState.copy(guestNamePermalink = it) },
+            onGuestTokenPermalinkChange = { uiState = uiState.copy(guestTokenPermalink = it) },
+            onScanClicked = { /*NOOP*/ },
+            onSettingsClicked = { /*NOOP*/ },
+            connect = { /*NOOP*/ },
+            connectAsGuest = { /*NOOP*/ },
+            connectPermalink = { /*NOOP*/ },
+            connectAsGuestPermalink = { /*NOOP*/ }
         )
     }
 }
 
 
+// Credit
+// https://github.com/google/accompanist/blob/bb1d0e715dec40804bb6fd763eb02746a2895d02/permissions/src/main/java/com/google/accompanist/permissions/MultiplePermissionsState.kt#L118
 @OptIn(ExperimentalPermissionsApi::class)
-@Preview(name = "StartScreen")
-@Composable
-fun StartScreenPreview() {
-    EyesonDemoTheme {
-        val multiplePermissionsState = rememberMultiplePermissionsState(emptyList())
-        StartScreen(multiplePermissionsState)
+private class PreviewMultiplePermissionsState(
+    permissions: List<String>,
+    permissionStatuses: Map<String, PermissionStatus>,
+) : MultiplePermissionsState {
+    override val permissions: List<PermissionState> = permissions.fastMap { permission ->
+        PreviewPermissionState(
+            permission = permission,
+            status = permissionStatuses[permission] ?: PermissionStatus.Granted,
+        )
+    }
+
+    override val revokedPermissions: List<PermissionState> = emptyList()
+    override val allPermissionsGranted: Boolean = true
+    override val shouldShowRationale: Boolean = false
+
+    override fun launchMultiplePermissionRequest() {}
+
+    class PreviewPermissionState(
+        override val permission: String,
+        override val status: PermissionStatus,
+    ) : PermissionState {
+        override fun launchPermissionRequest() {}
     }
 }

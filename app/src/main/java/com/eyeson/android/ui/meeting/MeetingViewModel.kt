@@ -4,6 +4,8 @@ import android.app.Application
 import android.app.Notification
 import android.content.ClipData
 import android.content.Intent
+import androidx.annotation.OptIn
+import androidx.compose.runtime.mutableStateOf
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
@@ -58,10 +60,9 @@ import org.webrtc.VideoSink
 import timber.log.Timber
 import java.util.Date
 import java.util.UUID
-import java.util.concurrent.atomic.AtomicBoolean
 import javax.inject.Inject
 
-@UnstableApi
+@OptIn(UnstableApi::class)
 @HiltViewModel
 class MeetingViewModel @Inject constructor(
     private val savedStateHandle: SavedStateHandle,
@@ -69,25 +70,16 @@ class MeetingViewModel @Inject constructor(
     private val settingsRepository: SettingsRepository,
 ) : ViewModel() {
 
+    var meetingState = mutableStateOf<MeetingState>(MeetingState.Initial)
+        private set
+
     val meetingSettings = runBlocking { settingsRepository.meetingSettings.first() }
 
     private val _events = MutableStateFlow<List<EventEntry>>(emptyList())
     val events: StateFlow<List<EventEntry>> = _events.asStateFlow()
 
-    private val _inCall = AtomicBoolean(false)
-    fun inCall(): Boolean = _inCall.get()
-
     private val _p2p = MutableStateFlow(false)
     val p2p: StateFlow<Boolean> = _p2p.asStateFlow()
-
-    private val _callConnected = MutableStateFlow(false)
-    val callConnected: StateFlow<Boolean> = _callConnected.asStateFlow()
-
-    private val _callTerminated = MutableStateFlow(CallTerminationReason.UNSPECIFIED)
-    val callTerminated: StateFlow<CallTerminationReason> = _callTerminated.asStateFlow()
-
-    private val _meetingJoinFailed = MutableStateFlow(false)
-    val meetingJoinFailed: StateFlow<Boolean> = _meetingJoinFailed.asStateFlow()
 
     private val _userInMeeting = MutableStateFlow(emptyList<UserInfo>())
     val userInMeeting: StateFlow<List<UserInfo>> = _userInMeeting.asStateFlow()
@@ -106,6 +98,7 @@ class MeetingViewModel @Inject constructor(
                             " meetingOptions $meetingOptions"
                 )
             }
+            meetingState.value = MeetingState.Connecting(meetingInfo)
         }
 
         override fun onMeetingJoined(meetingInfo: MeetingInfo) {
@@ -117,24 +110,22 @@ class MeetingViewModel @Inject constructor(
                             " meetingOptions $meetingOptions"
                 )
             }
-            _inCall.set(true)
-            _callConnected.value = true
+            meetingState.value = MeetingState.Connected(meetingInfo)
             lastCameraState = isVideoEnabled()
             _cameraActive.value = isVideoEnabled()
         }
 
         override fun onMeetingJoinFailed(callRejectionReason: CallRejectionReason) {
             addEvent("onMeetingJoinFailed: callRejectionReason $callRejectionReason", true)
-            _meetingJoinFailed.value = true
             audioManager.stop()
+            meetingState.value = MeetingState.ConnectionFailed(callRejectionReason)
         }
 
         override fun onMeetingTerminated(callTerminationReason: CallTerminationReason) {
             addEvent("onMeetingTerminated: callTerminationReason $callTerminationReason")
             Timber.d("onMeetingTerminated: callTerminationReason $callTerminationReason")
-            _inCall.set(false)
             audioManager.stop()
-            _callTerminated.value = callTerminationReason
+            meetingState.value = MeetingState.ConnectionTerminated(callTerminationReason)
         }
 
         override fun onMeetingLocked(locked: Boolean) {
@@ -158,7 +149,6 @@ class MeetingViewModel @Inject constructor(
                 lastCameraState = isVideoEnabled()
                 _cameraActive.value = false
                 eyesonMeeting.setVideoEnabled(false)
-
             }
             if (_presentationActive.value && presenter == null) {
                 eyesonMeeting.setVideoEnabled(lastCameraState)
@@ -168,7 +158,7 @@ class MeetingViewModel @Inject constructor(
 
         override fun onAudioMutedBy(user: UserInfo) {
             addEvent("onAudioMutedBy: user $user")
-            _microphoneActive.value = !isMicrophoneEnabled()
+            setLocalAudioEnabled(enabled = false)
         }
 
         override fun onMediaPlayback(playing: List<Playback>) {
@@ -338,6 +328,8 @@ class MeetingViewModel @Inject constructor(
     private val _localVideoPlaybackPlayId = MutableStateFlow<String?>(null)
     val localVideoPlaybackPlayId: StateFlow<String?> = _localVideoPlaybackPlayId.asStateFlow()
 
+    private val _recordingActive = MutableStateFlow(false)
+    val recordingActive: StateFlow<Boolean> = _recordingActive.asStateFlow()
 
     private fun addEvent(text: String, error: Boolean = false) {
         _events.value = emptyList<EventEntry>() + EventEntry(text, Date(), error) + _events.value
@@ -459,7 +451,8 @@ class MeetingViewModel @Inject constructor(
                         )
                         when {
                             permalinkMeetingInfo == null -> {
-                                _meetingJoinFailed.value = true
+                                meetingState.value =
+                                    MeetingState.ConnectionFailed(CallRejectionReason.NOT_FOUND)
                                 audioManager.stop()
                                 return@launch
                             }
@@ -502,7 +495,7 @@ class MeetingViewModel @Inject constructor(
         localExoPlayer.release()
 
         eyesonMeeting.leave()
-        _inCall.set(false)
+        meetingState.value = MeetingState.Disconnected
     }
 
     fun setLocalVideoTarget(target: VideoSink?) {
@@ -542,9 +535,13 @@ class MeetingViewModel @Inject constructor(
         eyesonMeeting.setVideoEnabled(!isVideoEnabled())
     }
 
+    private fun setLocalAudioEnabled(enabled: Boolean) {
+        _microphoneActive.value = enabled
+        eyesonMeeting.setMicrophoneEnabled(enabled)
+    }
+
     fun toggleLocalMicrophone() {
-        _microphoneActive.value = !isMicrophoneEnabled()
-        eyesonMeeting.setMicrophoneEnabled(!isMicrophoneEnabled())
+        setLocalAudioEnabled(!isMicrophoneEnabled())
     }
 
     fun muteAll() {
@@ -685,6 +682,15 @@ class MeetingViewModel @Inject constructor(
     companion object {
         const val PERMALINK_GUEST_POLLING_INTERVAL_MILLIS = 5_000L
     }
+}
+
+sealed interface MeetingState {
+    data object Initial : MeetingState
+    data class Connecting(val meetingInfo: MeetingInfo) : MeetingState
+    data class Connected(val meetingInfo: MeetingInfo) : MeetingState
+    data object Disconnected : MeetingState
+    data class ConnectionFailed(val reason: CallRejectionReason) : MeetingState
+    data class ConnectionTerminated(val reason: CallTerminationReason) : MeetingState
 }
 
 sealed class ChatMessage {

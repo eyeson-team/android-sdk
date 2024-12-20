@@ -6,6 +6,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -16,8 +17,6 @@ import androidx.compose.foundation.layout.requiredHeightIn
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.CornerSize
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
@@ -28,6 +27,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.eyeson.android.R
@@ -36,7 +36,6 @@ import com.eyeson.android.ui.components.OverlayMenu
 import com.eyeson.android.ui.components.SettingsRadioButton
 import com.eyeson.android.ui.components.SettingsTextButton
 import com.eyeson.android.ui.components.SettingsToggle
-import timber.log.Timber
 
 
 @Composable
@@ -45,7 +44,7 @@ fun MeetingSettings(
     onClose: () -> Unit,
     screenShareActive: Boolean,
     presentationActive: Boolean,
-    onScreenShareActiveChange: (Boolean) -> Unit,
+    onScreenShareActiveChange: () -> Unit,
     startFullScreenPresentation: () -> Unit,
     stopFullScreenPresentation: () -> Unit,
     showVideoPlayback: () -> Unit,
@@ -57,16 +56,15 @@ fun MeetingSettings(
     modifier: Modifier = Modifier,
     @FloatRange(from = 0.0, to = 1.0) horizontalContentRatio: Float = 1.0f,
     @FloatRange(from = 0.0, to = 1.0) verticalContentRatio: Float = 1.0f,
+    contentShape: Shape = MaterialTheme.shapes.large,
 ) {
     OverlayMenu(
         visible = visible,
         onClose = onClose,
         showDivider = true,
-        contentShape = MaterialTheme.shapes.large.copy(
-            topStart = CornerSize(0.dp),
-            topEnd = CornerSize(0.dp)
-        ),
+        contentShape = contentShape,
         horizontalContentRatio = horizontalContentRatio,
+        insertEdgeToEdgePadding = true,
         modifier = modifier
     ) {
         BoxWithConstraints {
@@ -76,10 +74,11 @@ fun MeetingSettings(
                     .requiredHeightIn(max = (maxHeight.value * verticalContentRatio).dp)
                     .verticalScroll(rememberScrollState())
                     .padding(start = 16.dp)
+
             ) {
                 SettingsToggle(
                     value = screenShareActive,
-                    onValueChange = onScreenShareActiveChange,
+                    onValueChange = { onScreenShareActiveChange() },
                     title = stringResource(id = R.string.share_screen),
                     enabled = !presentationActive
                 )
@@ -139,16 +138,16 @@ fun AudioSettings(
     modifier: Modifier = Modifier,
     @FloatRange(from = 0.0, to = 1.0) horizontalContentRatio: Float = 1.0f,
     @FloatRange(from = 0.0, to = 1.0) verticalContentRatio: Float = 1.0f,
+    contentShape: Shape = MaterialTheme.shapes.large,
 ) {
-
-    Timber.d("audioDevices $audioDevices")
     OverlayMenu(
         visible = visible,
         title = stringResource(id = R.string.audio_settings).uppercase(),
         onClose = onClose,
         showDivider = true,
         horizontalContentRatio = horizontalContentRatio,
-        contentShape = RoundedCornerShape(bottomStart = 16.dp, bottomEnd = 16.dp),
+        contentShape = contentShape,
+        insertEdgeToEdgePadding = true,
         modifier = modifier
     ) {
         BoxWithConstraints {
@@ -182,6 +181,7 @@ fun EventLog(
     modifier: Modifier = Modifier,
     @FloatRange(from = 0.0, to = 1.0) horizontalContentRatio: Float = 1.0f,
     @FloatRange(from = 0.0, to = 1.0) verticalContentRatio: Float = 1.0f,
+    contentShape: Shape = MaterialTheme.shapes.large,
 ) {
     OverlayMenu(
         visible = visible,
@@ -189,7 +189,8 @@ fun EventLog(
         onClose = onClose,
         showDivider = true,
         horizontalContentRatio = horizontalContentRatio,
-        contentShape = RoundedCornerShape(bottomStart = 16.dp, bottomEnd = 16.dp),
+        contentShape = contentShape,
+        insertEdgeToEdgePadding = true,
         modifier = modifier
     ) {
         BoxWithConstraints(Modifier.padding(bottom = 16.dp)) {
@@ -264,6 +265,7 @@ fun VideoPlayback(
     modifier: Modifier = Modifier,
     @FloatRange(from = 0.0, to = 1.0) horizontalContentRatio: Float = 1.0f,
     @FloatRange(from = 0.0, to = 1.0) verticalContentRatio: Float = 1.0f,
+    contentShape: Shape = MaterialTheme.shapes.large,
 ) {
 
     OverlayMenu(
@@ -272,7 +274,8 @@ fun VideoPlayback(
         onClose = onClose,
         showDivider = true,
         horizontalContentRatio = horizontalContentRatio,
-        contentShape = RoundedCornerShape(bottomStart = 16.dp, bottomEnd = 16.dp),
+        contentShape = contentShape,
+        insertEdgeToEdgePadding = true,
         modifier = modifier
     ) {
         BoxWithConstraints {

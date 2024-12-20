@@ -49,6 +49,6 @@ class SettingsViewModel @Inject constructor(
 }
 
 sealed interface SettingsUiState {
-    object Loading : SettingsUiState
+    data object Loading : SettingsUiState
     data class Success(val settings: SettingsRepository.MeetingSettings) : SettingsUiState
 }

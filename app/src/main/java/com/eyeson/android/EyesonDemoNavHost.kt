@@ -19,13 +19,10 @@ import com.eyeson.android.EyesonNavigationParameter.GUEST_NAME_PERMALINK
 import com.eyeson.android.EyesonNavigationParameter.GUEST_TOKEN
 import com.eyeson.android.EyesonNavigationParameter.GUEST_TOKEN_PERMALINK
 import com.eyeson.android.EyesonNavigationParameter.USER_TOKEN
-import com.eyeson.android.ui.meeting.MeetingScreen
+import com.eyeson.android.ui.meeting.MeetingRout
 import com.eyeson.android.ui.scanner.ScannerScreen
-import com.eyeson.android.ui.settings.SettingsScreen
-import com.eyeson.android.ui.start.StartScreen
-import com.eyeson.android.ui.theme.EyesonDemoTheme
-import com.google.accompanist.permissions.ExperimentalPermissionsApi
-import com.google.accompanist.permissions.MultiplePermissionsState
+import com.eyeson.android.ui.settings.SettingsRout
+import com.eyeson.android.ui.start.StartRout
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import timber.log.Timber
@@ -48,107 +45,103 @@ object EyesonNavigationParameter {
     const val GUEST_NAME_PERMALINK = "guest_name_permalink"
 }
 
-@OptIn(ExperimentalPermissionsApi::class)
 @Composable
 fun EyesonDemoNavHost(
-    multiplePermissionsState: MultiplePermissionsState,
     modifier: Modifier = Modifier,
     navController: NavHostController = rememberNavController(),
 ) {
-    EyesonDemoTheme {
-        val coroutineScope = rememberCoroutineScope()
 
-        NavHost(
-            navController = navController,
-            startDestination = START_ROUTE,
-            modifier = modifier
-        ) {
+    val coroutineScope = rememberCoroutineScope()
 
-            composable(route = START_ROUTE) {
-                StartScreen(
-                    multiplePermissionsState = multiplePermissionsState,
-                    savedStateHandle = navController.currentBackStackEntry?.savedStateHandle,
-                    onScanClicked = { navController.navigateSingleTopTo(GUEST_QR_SCANNER_ROUTE) },
-                    onSettingsClicked = { navController.navigateSingleTopTo(START_SETTINGS_ROUTE) },
-                    connect = { accessKey -> navController.navigateToMeetingAccessKey(accessKey) },
-                    connectAsGuest = { guestToken, guestName ->
-                        navController.navigateToMeetingGuest(
-                            guestToken,
-                            guestName
-                        )
-                    },
-                    connectPermalink = { userToken ->
-                        navController.navigateToMeetingUserToken(
-                            userToken
-                        )
-                    },
-                    connectAsGuestPermalink = { guestToken, guestName ->
-                        navController.navigateToMeetingGuestPermalink(guestToken, guestName)
+    NavHost(
+        navController = navController,
+        startDestination = START_ROUTE,
+        modifier = modifier
+    ) {
 
-                    }
-                )
-            }
-            composable(route = GUEST_QR_SCANNER_ROUTE) {
-                ScannerScreen { guestToken ->
-                    coroutineScope.launch(Dispatchers.Main) {
-                        navController.previousBackStackEntry?.savedStateHandle?.set(
-                            GUEST_TOKEN,
-                            guestToken
-                        )
-                        navController.popBackStack()
-                    }
+        composable(route = START_ROUTE) {
+            StartRout(
+                onScanClicked = { navController.navigateSingleTopTo(GUEST_QR_SCANNER_ROUTE) },
+                onSettingsClicked = { navController.navigateSingleTopTo(START_SETTINGS_ROUTE) },
+                connect = { accessKey -> navController.navigateToMeetingAccessKey(accessKey) },
+                connectAsGuest = { guestToken, guestName ->
+                    navController.navigateToMeetingGuest(
+                        guestToken,
+                        guestName
+                    )
+                },
+                connectPermalink = { userToken ->
+                    navController.navigateToMeetingUserToken(
+                        userToken
+                    )
+                },
+                connectAsGuestPermalink = { guestToken, guestName ->
+                    navController.navigateToMeetingGuestPermalink(guestToken, guestName)
+
+                }
+            )
+        }
+        composable(route = GUEST_QR_SCANNER_ROUTE) {
+            ScannerScreen { guestToken ->
+                coroutineScope.launch(Dispatchers.Main) {
+                    navController.previousBackStackEntry?.savedStateHandle?.set(
+                        GUEST_TOKEN,
+                        guestToken
+                    )
+                    navController.popBackStack()
                 }
             }
+        }
 
-            composable(route = START_SETTINGS_ROUTE) {
-                SettingsScreen(onBack = {
-                    navController.navigateUp()
-                })
+        composable(route = START_SETTINGS_ROUTE) {
+            SettingsRout(onBack = {
+                navController.navigateUp()
+            })
 
-            }
+        }
 
-            composable(
-                route = "$MEETING_ROUT?$ACCESS_KEY={$ACCESS_KEY}&$GUEST_TOKEN={$GUEST_TOKEN}&$GUEST_NAME={$GUEST_NAME}" +
-                        "&$USER_TOKEN={$USER_TOKEN}&$GUEST_TOKEN_PERMALINK={$GUEST_TOKEN_PERMALINK}&$GUEST_NAME_PERMALINK={$GUEST_NAME_PERMALINK}",
-                arguments = listOf(
-                    navArgument(ACCESS_KEY) {
-                        nullable = true
-                        defaultValue = null
-                        type = NavType.StringType
-                    },
-                    navArgument(GUEST_TOKEN) {
-                        nullable = true
-                        defaultValue = null
-                        type = NavType.StringType
-                    },
-                    navArgument(GUEST_NAME) {
-                        nullable = true
-                        defaultValue = null
-                        type = NavType.StringType
-                    },
-                    navArgument(USER_TOKEN) {
-                        nullable = true
-                        defaultValue = null
-                        type = NavType.StringType
-                    },
-                    navArgument(GUEST_TOKEN_PERMALINK) {
-                        nullable = true
-                        defaultValue = null
-                        type = NavType.StringType
-                    },
-                    navArgument(GUEST_NAME_PERMALINK) {
-                        nullable = true
-                        defaultValue = null
-                        type = NavType.StringType
-                    }
-                )
-            ) {
-                MeetingScreen(onBack = {
-                    navController.navigateUp()
-                })
-            }
+        composable(
+            route = "$MEETING_ROUT?$ACCESS_KEY={$ACCESS_KEY}&$GUEST_TOKEN={$GUEST_TOKEN}&$GUEST_NAME={$GUEST_NAME}" +
+                    "&$USER_TOKEN={$USER_TOKEN}&$GUEST_TOKEN_PERMALINK={$GUEST_TOKEN_PERMALINK}&$GUEST_NAME_PERMALINK={$GUEST_NAME_PERMALINK}",
+            arguments = listOf(
+                navArgument(ACCESS_KEY) {
+                    nullable = true
+                    defaultValue = null
+                    type = NavType.StringType
+                },
+                navArgument(GUEST_TOKEN) {
+                    nullable = true
+                    defaultValue = null
+                    type = NavType.StringType
+                },
+                navArgument(GUEST_NAME) {
+                    nullable = true
+                    defaultValue = null
+                    type = NavType.StringType
+                },
+                navArgument(USER_TOKEN) {
+                    nullable = true
+                    defaultValue = null
+                    type = NavType.StringType
+                },
+                navArgument(GUEST_TOKEN_PERMALINK) {
+                    nullable = true
+                    defaultValue = null
+                    type = NavType.StringType
+                },
+                navArgument(GUEST_NAME_PERMALINK) {
+                    nullable = true
+                    defaultValue = null
+                    type = NavType.StringType
+                }
+            )
+        ) {
+            MeetingRout(
+                onBack = { navController.navigateUp() }
+            )
         }
     }
+
 }
 
 fun NavHostController.navigateSingleTopTo(route: String) {
