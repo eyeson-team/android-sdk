@@ -17,19 +17,16 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
 import androidx.compose.animation.Crossfade
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.detectDragGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
-import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.asPaddingValues
 import androidx.compose.foundation.layout.aspectRatio
-import androidx.compose.foundation.layout.calculateEndPadding
-import androidx.compose.foundation.layout.calculateStartPadding
-import androidx.compose.foundation.layout.consumeWindowInsets
 import androidx.compose.foundation.layout.displayCutout
 import androidx.compose.foundation.layout.displayCutoutPadding
 import androidx.compose.foundation.layout.fillMaxSize
@@ -92,6 +89,7 @@ import com.eyeson.android.R
 import com.eyeson.android.service.MeetingActiveService
 import com.eyeson.android.ui.components.Chat
 import com.eyeson.android.ui.components.KeepScreenOn
+import com.eyeson.android.ui.components.applyRoundedCornerPadding
 import com.eyeson.android.ui.components.findActivity
 import com.eyeson.android.ui.theme.DarkGray800
 import com.eyeson.android.ui.theme.EyesonDemoTheme
@@ -104,7 +102,6 @@ import com.eyeson.sdk.model.local.api.UserInfo
 import com.eyeson.sdk.webrtc.VideoRenderer
 import org.webrtc.EglBase
 import org.webrtc.RendererCommon
-import timber.log.Timber
 import java.util.Date
 import kotlin.math.roundToInt
 
@@ -447,27 +444,10 @@ fun MeetingScreen(
         }
 
     if (configuration.isLandscape()) {
-        val landscapeNavigationBarPadding =
-            WindowInsets.navigationBarsIgnoringVisibility.asPaddingValues()
-
-
-        val landscapeDisplayCutoutPadding = WindowInsets.displayCutout.asPaddingValues()
-
-        val layoutDirection = LocalLayoutDirection.current
-
-        val paddingValues = PaddingValues(
-            start = landscapeNavigationBarPadding.calculateStartPadding(layoutDirection),
-            end = landscapeNavigationBarPadding.calculateEndPadding(layoutDirection),
-            top = landscapeNavigationBarPadding.calculateTopPadding(),
-            bottom = 0.dp
-        )
-
         Row(
             modifier = modifier
                 .background(DarkGray800)
                 .displayCutoutPadding()
-                .padding(paddingValues)
-                .consumeWindowInsets(paddingValues)
 
         ) {
             VerticalMeetingControls(
@@ -479,15 +459,11 @@ fun MeetingScreen(
                 onMuteVideo = muteVideo,
                 microphoneMuted = !microphoneActive,
                 onMuteMicrophone = muteMicrophone,
-                modifier = Modifier.padding(
-                    start =
-                    if (landscapeNavigationBarPadding.calculateStartPadding(layoutDirection) != 0.dp
-                        || landscapeDisplayCutoutPadding.calculateStartPadding(layoutDirection) != 0.dp
-                    ) {
-                        0.dp
-                    } else {
-                        16.dp
-                    }
+                modifier = Modifier.applyRoundedCornerPadding(
+                    leftFraction = 0f,
+                    topFraction = 0.35f,
+                    rightFraction = 0f,
+                    bottomFraction = 0.35f
                 )
             )
 
@@ -508,14 +484,11 @@ fun MeetingScreen(
                 openChat = {
                     chatOpen = true
                 },
-                modifier = Modifier.padding(
-                    end = if (landscapeNavigationBarPadding.calculateEndPadding(layoutDirection) != 0.dp
-                        || landscapeDisplayCutoutPadding.calculateEndPadding(layoutDirection) != 0.dp
-                    ) {
-                        0.dp
-                    } else {
-                        16.dp
-                    }
+                modifier = Modifier.applyRoundedCornerPadding(
+                    leftFraction = 0f,
+                    topFraction = 0.35f,
+                    rightFraction = 0f,
+                    bottomFraction = 0.35f
                 )
             )
         }
@@ -555,7 +528,7 @@ fun MeetingScreen(
                     Modifier
                         .align(Alignment.Center),
                     Modifier
-                        .padding(end = 16.dp, bottom = 134.dp)
+                        .padding(end = 16.dp, bottom = 104.dp)
                         .size(80.dp, 120.dp)
                 )
 
@@ -569,7 +542,7 @@ fun MeetingScreen(
                     onMuteMicrophone = muteMicrophone,
                     onShowChat = { chatOpen = true },
                     modifier = Modifier
-                        .padding(bottom = 46.dp)
+                        .padding(bottom = 16.dp)
                         .align(Alignment.BottomEnd)
                         .zIndex(1f),
                 )
@@ -695,7 +668,23 @@ fun MeetingScreen(
             sendMessage = sendChatMessage,
             contentShape = chatShape,
             verticalContentRatio = vertical,
-            horizontalContentRatio = horizontal
+            horizontalContentRatio = horizontal,
+            inputTextModifier = if (!configuration.isLandscape()) {
+                Modifier
+                    .background(MaterialTheme.colorScheme.surface)
+                    .clickable(
+                        interactionSource = null,
+                        indication = null
+                    ) { /* NOOP */ }
+                    .applyRoundedCornerPadding(
+                        leftFraction = 0f,
+                        topFraction = 0.0f,
+                        rightFraction = 0f,
+                        bottomFraction = 0.35f
+                    )
+            } else {
+                Modifier
+            },
         )
     }
 }

@@ -90,6 +90,7 @@ fun Chat(
     onClose: () -> Unit,
     messages: List<ChatMessage>,
     modifier: Modifier = Modifier,
+    inputTextModifier: Modifier = Modifier,
     sendMessage: (String) -> Unit,
     title: String = stringResource(id = R.string.chat).uppercase(),
     scrimColor: Color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.40f),
@@ -176,14 +177,17 @@ fun Chat(
                                 }
                                 Spacer(modifier = Modifier.height(12.dp))
                                 HorizontalDivider(Modifier.background(color = contentBackgroundColor))
-                                UserInputText(
-                                    textFieldValue = textState,
-                                    onTextChanged = { textState = it },
-                                    onMessageSend = {
-                                        sendMessage(textState.text.trim())
-                                        textState = TextFieldValue()
-                                    }
-                                )
+                                Box(modifier = inputTextModifier) {
+                                    UserInputText(
+                                        textFieldValue = textState,
+                                        onTextChanged = { textState = it },
+                                        onMessageSend = {
+                                            sendMessage(textState.text.trim())
+                                            textState = TextFieldValue()
+                                        }
+                                    )
+                                }
+
 
                             }
                         }
