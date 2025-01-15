@@ -16,8 +16,8 @@ object Versions {
     const val webrtcAndroid = "1.0.1"
 
     // DI
-    const val hilt = "2.48"
-    const val hiltNavigationCompose = "1.0.0"
+    const val hilt = "2.55"
+    const val hiltNavigationCompose = "1.2.0"
 
     // UI and appcompat
     const val coreKtx = "1.7.0"

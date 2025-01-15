@@ -3,6 +3,7 @@ package com.eyeson.android
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Modifier
+import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavHostController
 import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
@@ -23,9 +24,11 @@ import com.eyeson.android.ui.meeting.MeetingRout
 import com.eyeson.android.ui.scanner.ScannerScreen
 import com.eyeson.android.ui.settings.SettingsRout
 import com.eyeson.android.ui.start.StartRout
+import com.eyeson.android.ui.start.StartViewModel
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import timber.log.Timber
+
 
 object EyesonDemoDestination {
     const val START_ROUTE = "start"
@@ -60,6 +63,10 @@ fun EyesonDemoNavHost(
     ) {
 
         composable(route = START_ROUTE) {
+            val viewModel = hiltViewModel<StartViewModel, StartViewModel.Factory>(
+                creationCallback = { factory -> factory.create(savedStateHandle = navController.currentBackStackEntry?.savedStateHandle) }
+            )
+
             StartRout(
                 onScanClicked = { navController.navigateSingleTopTo(GUEST_QR_SCANNER_ROUTE) },
                 onSettingsClicked = { navController.navigateSingleTopTo(START_SETTINGS_ROUTE) },
@@ -78,7 +85,8 @@ fun EyesonDemoNavHost(
                 connectAsGuestPermalink = { guestToken, guestName ->
                     navController.navigateToMeetingGuestPermalink(guestToken, guestName)
 
-                }
+                },
+                viewModel = viewModel
             )
         }
         composable(route = GUEST_QR_SCANNER_ROUTE) {
@@ -88,16 +96,18 @@ fun EyesonDemoNavHost(
                         GUEST_TOKEN,
                         guestToken
                     )
+
                     navController.popBackStack()
                 }
             }
         }
 
         composable(route = START_SETTINGS_ROUTE) {
-            SettingsRout(onBack = {
-                navController.navigateUp()
-            })
-
+            SettingsRout(
+                onBack = {
+                    navController.navigateUp()
+                }
+            )
         }
 
         composable(

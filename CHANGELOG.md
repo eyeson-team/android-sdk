@@ -9,6 +9,11 @@ The format is based on [Keep a Changelog] and this project adheres to
 - Dependency updates
   - Gradle 8.10.2
   - AGP 8.8.0
+  - hilt = 2.55
+  - hiltNavigationCompose = 1.2.0
+### Fixed
+- Guest link scan result was not handed back properly   
+
 ## [Released]
 ## [1.1.16] - 2024-12-20
 ### Added
