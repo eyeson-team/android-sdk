@@ -53,6 +53,13 @@ abstract class EyesonEventListener {
     open fun onChatMessageReceived(user: UserInfo, message: String, timestamp: Date) {}
     open fun onCustomMessageReceived(user: UserInfo, message: String, timestamp: Date) {}
 
+    open fun onCameraOpen(cameraName: String) {}
+    open fun onCameraFirstFrameAvailable() {}
+    open fun onCameraClosed() {}
+    open fun onCameraDisconnected() {}
+    open fun onCameraFrozen(error: String) {}
+    open fun onCameraError(error: String) {}
+
     open fun onCameraSwitchDone(isFrontCamera: Boolean) {}
     open fun onCameraSwitchError(error: String) {}
 }

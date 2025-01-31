@@ -5,16 +5,30 @@ The format is based on [Keep a Changelog] and this project adheres to
 [Semantic Versioning].  
 
 ## [Unreleased]
+
+## [Released]
+## [1.1.17] - 2025-01-31
+### Added
+- EyesonEventListener
+  - `onCameraOpen`
+  - `onCameraFirstFrameAvailable`
+  - `onCameraClosed`
+  - `onCameraDisconnected`
+  - `onCameraFrozen`
+  - `onCameraError`
+- EyesonMeeting
+  - `switchCameraTo`
+  - KDoc
 ### Changed
+- EyesonMeeting
+  - `setLocalVideoEnabled` now also enables/disables video transmitting
 - Dependency updates
   - Gradle 8.10.2
   - AGP 8.8.0
   - hilt = 2.55
   - hiltNavigationCompose = 1.2.0
 ### Fixed
-- Guest link scan result was not handed back properly   
-
-## [Released]
+- Guest link scan result was not handed back properly (Demo app)
 ## [1.1.16] - 2024-12-20
 ### Added
 - Edge to edge support

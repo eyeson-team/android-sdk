@@ -4,7 +4,11 @@ import android.app.Application
 import android.app.Notification
 import android.content.ClipData
 import android.content.Intent
+import android.hardware.camera2.CameraCharacteristics
+import android.hardware.camera2.CameraCharacteristics.LENS_FACING
+import android.hardware.camera2.CameraManager
 import androidx.annotation.OptIn
+import androidx.appcompat.app.AppCompatActivity.CAMERA_SERVICE
 import androidx.compose.runtime.mutableStateOf
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
@@ -284,6 +288,36 @@ class MeetingViewModel @Inject constructor(
             addEvent("onCustomMessageReceived: user $user; message $message; timestamp $timestamp")
         }
 
+        override fun onCameraOpen(cameraName: String) {
+            // NOTE: omitted to reduce clutter
+//            addEvent("onCameraOpen: cameraName $cameraName")
+            cameraDisconnected.value = false
+        }
+
+        override fun onCameraFirstFrameAvailable() {
+            // NOTE: omitted to reduce clutter
+//            addEvent("onCameraFirstFrameAvailable")
+        }
+
+        override fun onCameraClosed() {
+            // NOTE: omitted to reduce clutter
+//            addEvent("onCameraClosed")
+        }
+
+        override fun onCameraDisconnected() {
+            // NOTE: omitted to reduce clutter
+//            addEvent("onCameraDisconnected")
+            cameraDisconnected.value = true
+        }
+
+        override fun onCameraFrozen(error: String) {
+            addEvent("onCameraFrozen: error $error", true)
+        }
+
+        override fun onCameraError(error: String) {
+            addEvent("onCameraError: error $error", true)
+        }
+
         override fun onCameraSwitchDone(isFrontCamera: Boolean) {
             addEvent("onCameraSwitchDone: isFrontCamera $isFrontCamera")
         }
@@ -300,6 +334,9 @@ class MeetingViewModel @Inject constructor(
     private val audioManager by lazy { EyesonAudioManager(application) }
 
     private var lastCameraState = isVideoEnabled()
+
+    var cameraDisconnected = mutableStateOf<Boolean>(false)
+        private set
 
     private val _presentationActive = MutableStateFlow(false)
     val presentationActive: StateFlow<Boolean> = _presentationActive.asStateFlow()
@@ -350,6 +387,9 @@ class MeetingViewModel @Inject constructor(
         _localVideoPlaybackPlayId.value = null
     }
 
+    init {
+        listAvailableCameras()
+    }
 
     private fun getExoPlayer(onPlaybackEnd: () -> Unit): ExoPlayer {
         return ExoPlayer.Builder(application).build().apply {
@@ -530,9 +570,13 @@ class MeetingViewModel @Inject constructor(
     }
 
     fun toggleLocalVideo() {
-        lastCameraState = !isVideoEnabled()
-        _cameraActive.value = !isVideoEnabled()
-        eyesonMeeting.setVideoEnabled(!isVideoEnabled())
+        setLocalVideoEnabled(!isVideoEnabled())
+    }
+
+    fun setLocalVideoEnabled(enabled: Boolean) {
+        lastCameraState = enabled
+        _cameraActive.value = enabled
+        eyesonMeeting.setVideoEnabled(enabled)
     }
 
     private fun setLocalAudioEnabled(enabled: Boolean) {
@@ -678,6 +722,24 @@ class MeetingViewModel @Inject constructor(
         pausePayer(remoteExoPlayer)
         _remoteVideoPlaybackActive.value = false
     }
+
+
+    private fun listAvailableCameras() {
+        val cameraManager = application.getSystemService(CAMERA_SERVICE) as CameraManager
+        val availableCameras = cameraManager.cameraIdList.map {
+            val lensFacing = cameraManager.getCameraCharacteristics(it).get(LENS_FACING).run {
+                when (this) {
+                    CameraCharacteristics.LENS_FACING_BACK -> "back"
+                    CameraCharacteristics.LENS_FACING_FRONT -> "front"
+                    else -> "external"
+                }
+            }
+
+            mapOf(it to lensFacing)
+        }
+        Timber.d("Available cameras: $availableCameras")
+    }
+
 
     companion object {
         const val PERMALINK_GUEST_POLLING_INTERVAL_MILLIS = 5_000L

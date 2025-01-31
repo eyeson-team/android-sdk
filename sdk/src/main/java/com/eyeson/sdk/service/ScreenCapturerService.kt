@@ -7,6 +7,7 @@ import android.content.pm.ServiceInfo.FOREGROUND_SERVICE_TYPE_MEDIA_PROJECTION
 import android.os.Binder
 import android.os.Build
 import android.os.IBinder
+import com.eyeson.sdk.utils.Logger
 
 
 internal class ScreenCapturerService : Service() {

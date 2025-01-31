@@ -21,7 +21,6 @@ import android.util.DisplayMetrics
 import android.view.WindowManager
 import android.view.WindowMetrics
 import com.eyeson.sdk.BuildConfig.DEBUG
-import com.eyeson.sdk.di.NetworkModule
 import com.eyeson.sdk.model.api.TurnServerDto
 import com.eyeson.sdk.utils.Logger
 import com.eyeson.sdk.utils.WebRTCUtils.logSdp
@@ -70,7 +69,10 @@ import java.nio.ByteBuffer
 import java.nio.charset.StandardCharsets
 import java.text.DateFormat
 import java.text.SimpleDateFormat
-import java.util.*
+import java.util.Date
+import java.util.Locale
+import java.util.Timer
+import java.util.TimerTask
 import java.util.concurrent.Executors
 import java.util.concurrent.atomic.AtomicBoolean
 import java.util.regex.Pattern
@@ -90,7 +92,7 @@ internal class PeerConnectionClient(
     private val peerConnectionParameters: PeerConnectionParameters,
     private val events: PeerConnectionEvents,
     private val dataChannelEvents: DataChannelEvents,
-    private val experimentalFeatureStereo: Boolean = false
+    private val experimentalFeatureStereo: Boolean = false,
 ) {
     private val pcObserver = PCObserver()
     private val sdpObserver = SDPObserver()
@@ -192,7 +194,7 @@ internal class PeerConnectionClient(
         turnServers: List<TurnServerDto>,
         microphoneEnabledOnStart: Boolean = true,
         videoEnabledOnStart: Boolean = true,
-        peerConnectionReadyCallback: Runnable?
+        peerConnectionReadyCallback: Runnable?,
     ) {
         if (peerConnectionParameters.videoCallEnabled && videoCapturer == null) {
             Logger.w("Video call enabled but no video capturer provided.")
@@ -217,7 +219,7 @@ internal class PeerConnectionClient(
         turnServers: List<TurnServerDto>,
         microphoneEnabledOnStart: Boolean,
         videoEnabledOnStart: Boolean,
-        peerConnectionReadyCallback: Runnable?
+        peerConnectionReadyCallback: Runnable?,
     ) {
         this.localRender = localRender
         this.remoteSinks = remoteSinks
@@ -300,7 +302,7 @@ internal class PeerConnectionClient(
             }
 
             override fun onWebRtcAudioRecordStartError(
-                errorCode: JavaAudioDeviceModule.AudioRecordStartErrorCode, errorMessage: String
+                errorCode: JavaAudioDeviceModule.AudioRecordStartErrorCode, errorMessage: String,
             ) {
                 Logger.e("onWebRtcAudioRecordStartError: $errorCode. $errorMessage")
                 reportError(errorMessage)
@@ -318,7 +320,7 @@ internal class PeerConnectionClient(
             }
 
             override fun onWebRtcAudioTrackStartError(
-                errorCode: JavaAudioDeviceModule.AudioTrackStartErrorCode, errorMessage: String
+                errorCode: JavaAudioDeviceModule.AudioTrackStartErrorCode, errorMessage: String,
             ) {
                 Logger.e("onWebRtcAudioTrackStartError: $errorCode. $errorMessage")
                 reportError(errorMessage)
@@ -395,13 +397,12 @@ internal class PeerConnectionClient(
         }
     }
 
-    @Suppress("DEPRECATION")
     private fun createPeerConnectionInternal(
         stunServers: List<String>,
         turnServers: List<TurnServerDto>,
         peerConnectionReadyCallback: Runnable?,
         microphoneEnabledOnStart: Boolean,
-        videoEnabledOnStart: Boolean
+        videoEnabledOnStart: Boolean,
     ) {
         val iceServers = getIceServers(stunServers, turnServers)
         if (factory == null || isError || iceServers.isEmpty()) {
@@ -508,7 +509,7 @@ internal class PeerConnectionClient(
     @Suppress("DEPRECATION")
     private fun getIceServers(
         stunServers: List<String>,
-        turnServers: List<TurnServerDto>
+        turnServers: List<TurnServerDto>,
     ): List<IceServer> {
         val iceServers: MutableList<IceServer> = ArrayList()
         try {
@@ -731,29 +732,6 @@ internal class PeerConnectionClient(
         }
     }
 
-    fun stopVideoSource() {
-        executor.execute {
-            if (videoCapturer != null && !videoCapturerStopped) {
-                Logger.d("Stop video source.")
-                try {
-                    videoCapturer?.stopCapture()
-                } catch (e: InterruptedException) {
-                }
-                videoCapturerStopped = true
-            }
-        }
-    }
-
-    fun startVideoSource() {
-        executor.execute {
-            if (videoCapturer != null && videoCapturerStopped) {
-                Logger.d("Restart video source.")
-                videoCapturer?.startCapture(videoWidth, videoHeight, videoFps)
-                videoCapturerStopped = false
-            }
-        }
-    }
-
     fun setVideoMaxBitrate(maxBitrateKbps: Int?) {
         executor.execute {
             if (peerConnection == null || localVideoSender == null || isError) {
@@ -804,7 +782,7 @@ internal class PeerConnectionClient(
         videoEnabledOnStart: Boolean,
         customVideoWidth: Int? = null,
         customVideoHeight: Int? = null,
-        customFps: Int? = null
+        customFps: Int? = null,
     ): VideoTrack? {
         surfaceTextureHelper =
             SurfaceTextureHelper.create("CaptureThread", rootEglBase.eglBaseContext)
@@ -815,6 +793,7 @@ internal class PeerConnectionClient(
             customVideoWidth != null && customVideoHeight != null -> {
                 Pair(customVideoWidth, customVideoHeight)
             }
+
             capturer?.isScreencast == true -> {
                 val windowManager = appContext.getSystemService(WindowManager::class.java)
 
@@ -833,6 +812,7 @@ internal class PeerConnectionClient(
                 }
                 resolution
             }
+
             else -> {
                 Pair(videoWidth, videoHeight)
             }
@@ -855,7 +835,7 @@ internal class PeerConnectionClient(
         videoEnabledOnStart: Boolean,
         customVideoWidth: Int? = null,
         customVideoHeight: Int? = null,
-        customFps: Int? = null
+        customFps: Int? = null,
     ) {
         try {
             (videoCapturer as? ScreenCapturerAndroid)?.mediaProjection?.stop()
@@ -880,13 +860,60 @@ internal class PeerConnectionClient(
             customVideoWidth,
             customVideoHeight,
             customFps
-        )
+        )?.let {
+            videoCapturerStopped = false
+        }
 
         peerConnection?.senders?.forEach { sender ->
             if (sender.track() != null) {
                 val trackType = sender.track()?.kind()
                 if (trackType == VIDEO_TRACK_TYPE) {
                     sender?.setTrack(localVideoTrack, false)
+                }
+            }
+        }
+    }
+
+    fun startVideoSource() {
+        executor.execute {
+            when {
+                videoCapturer != null && !isScreencastActive() -> {
+                    videoCapturer?.startCapture(videoWidth, videoHeight, videoFps)
+                    videoCapturerStopped = false
+                }
+
+                isScreencastActive() -> {
+                    setLocalVideoTracksEnabled(true)
+                }
+            }
+        }
+    }
+
+    fun stopVideoSource() {
+        executor.execute {
+            when {
+                videoCapturer != null && !isScreencastActive() -> {
+                    try {
+                        videoCapturer?.stopCapture()
+                    } catch (_: InterruptedException) {
+                    }
+                    videoCapturerStopped = true
+                }
+
+                isScreencastActive() -> {
+                    setLocalVideoTracksEnabled(false)
+                }
+            }
+        }
+    }
+
+    private fun setLocalVideoTracksEnabled(enabled: Boolean) {
+        peerConnection?.senders?.forEach { sender ->
+            if (sender.track() != null) {
+                sender.track()?.id()
+                val trackType = sender.track()?.kind()
+                if (trackType == VIDEO_TRACK_TYPE) {
+                    sender.track()?.setEnabled(enabled)
                 }
             }
         }
@@ -925,7 +952,7 @@ internal class PeerConnectionClient(
         }
     }
 
-    private fun switchCameraInternal() {
+    private fun switchCameraInternal(cameraId: String? = null) {
         if (videoCapturer is CameraVideoCapturer) {
             if (!isVideoCallEnabled || isError) {
                 Logger.e("Failed to switch camera. Video: $isVideoCallEnabled. Error : $isError")
@@ -933,14 +960,23 @@ internal class PeerConnectionClient(
             }
             Logger.d("Switch camera")
             val cameraVideoCapturer = videoCapturer as CameraVideoCapturer
-            cameraVideoCapturer.switchCamera(switchEventsHandler)
+
+            if (cameraId == null) {
+                cameraVideoCapturer.switchCamera(switchEventsHandler)
+            } else {
+                cameraVideoCapturer.switchCamera(switchEventsHandler, cameraId)
+            }
         } else {
-            Logger.d("Will not switch camera, video caputurer is not a camera")
+            Logger.d("Will not switch camera, video capturer is not a camera")
         }
     }
 
     fun switchCamera() {
         executor.execute { switchCameraInternal() }
+    }
+
+    fun switchCameraTo(cameraId: String) {
+        executor.execute { switchCameraInternal(cameraId) }
     }
 
     fun changeCaptureFormat(width: Int, height: Int, framerate: Int) {
@@ -1048,7 +1084,7 @@ internal class PeerConnectionClient(
      */
     class DataChannelParameters(
         val ordered: Boolean, val maxRetransmitTimeMs: Int, val maxRetransmits: Int,
-        val protocol: String, val negotiated: Boolean, val id: Int
+        val protocol: String, val negotiated: Boolean, val id: Int,
     )
 
     /**
@@ -1077,7 +1113,7 @@ internal class PeerConnectionClient(
         val disableWebRtcAGCAndHPF: Boolean,
         val enableRtcEventLog: Boolean,
         val useLegacyAudioDevice: Boolean,
-        val dataChannelParameters: DataChannelParameters
+        val dataChannelParameters: DataChannelParameters,
     ) {
         constructor(ecoMode: Boolean, widescreen: Boolean) : this(
             videoCallEnabled = !ecoMode,
@@ -1134,12 +1170,15 @@ internal class PeerConnectionClient(
                     IceConnectionState.CONNECTED -> {
                         events.onIceConnected()
                     }
+
                     IceConnectionState.DISCONNECTED -> {
                         events.onIceDisconnected()
                     }
+
                     IceConnectionState.FAILED -> {
                         reportError("ICE connection failed.")
                     }
+
                     else -> {
                         // NOOP
                     }
@@ -1177,10 +1216,12 @@ internal class PeerConnectionClient(
                         }, ICE_GATHERING_TIMEOUT.toLong()
                     )
                 }
+
                 IceGatheringState.COMPLETE -> {
                     iceGatheringTimer.cancel()
                     onComplete()
                 }
+
                 else -> {
                     // NOOP
                 }
@@ -1194,12 +1235,15 @@ internal class PeerConnectionClient(
                     PeerConnectionState.CONNECTED -> {
                         events.onConnected()
                     }
+
                     PeerConnectionState.DISCONNECTED -> {
                         events.onDisconnected()
                     }
+
                     PeerConnectionState.FAILED -> {
                         reportError("DTLS connection failed.")
                     }
+
                     else -> {
                         // NOOP
                     }
@@ -1406,7 +1450,7 @@ internal class PeerConnectionClient(
         }
 
         private fun setStartBitrate(
-            codec: String, isVideoCodec: Boolean, sdpDescription: String, bitrateKbps: Int
+            codec: String, isVideoCodec: Boolean, sdpDescription: String, bitrateKbps: Int,
         ): String {
             val lines = sdpDescription.split("\r\n".toRegex()).toTypedArray()
             var rtpmapLineIndex = -1
@@ -1480,7 +1524,7 @@ internal class PeerConnectionClient(
         }
 
         private fun joinString(
-            s: Iterable<CharSequence?>, delimiter: String, delimiterAtEnd: Boolean
+            s: Iterable<CharSequence?>, delimiter: String, delimiterAtEnd: Boolean,
         ): String {
             val iter = s.iterator()
             if (!iter.hasNext()) {
@@ -1497,7 +1541,7 @@ internal class PeerConnectionClient(
         }
 
         private fun movePayloadTypesToFront(
-            preferredPayloadTypes: List<String?>, mLine: String
+            preferredPayloadTypes: List<String?>, mLine: String,
         ): String? {
             // The format of the media description line should be: m=<media> <port> <proto> <fmt> ...
             val origLineParts = listOf(*mLine.split(" ".toRegex()).toTypedArray())
@@ -1521,7 +1565,7 @@ internal class PeerConnectionClient(
         private fun preferCodec(
             sdpDescription: String,
             codec: String,
-            isAudio: Boolean
+            isAudio: Boolean,
         ): String {
             val lines = sdpDescription.split("\r\n".toRegex()).toTypedArray()
             val mLineIndex = findMediaDescriptionLine(isAudio, lines)
@@ -1554,7 +1598,7 @@ internal class PeerConnectionClient(
         private fun setCodecStereo(
             sdpDescription: String,
             codec: String,
-            on: Boolean
+            on: Boolean,
         ): String {
             val lines = sdpDescription.split("\r\n".toRegex()).toTypedArray()
             // a=rtpmap:<payload type> <encoding name>/<clock rate> [/<encoding parameters>]

@@ -118,6 +118,7 @@ fun MeetingRout(
     val sfu by viewModel.p2p.collectAsStateWithLifecycle()
     val cameraActive by viewModel.cameraActive.collectAsStateWithLifecycle()
     val microphoneActive by viewModel.microphoneActive.collectAsStateWithLifecycle()
+    val cameraDisconnected by viewModel.cameraDisconnected
 
     val remoteVideoRenderer = rememberVideoRendererWithLifecycle(viewModel.getEglContext()) {
         viewModel.setRemoteVideoTarget(it)
@@ -290,6 +291,19 @@ fun MeetingRout(
         }
     }
 
+    DisposableEffect(key1 = lifecycle, key2 = cameraDisconnected) {
+        val observer = LifecycleEventObserver { _, event ->
+            if (event == Lifecycle.Event.ON_RESUME && cameraDisconnected) {
+                viewModel.setLocalVideoEnabled(true)
+            }
+        }
+
+        lifecycle.addObserver(observer)
+        onDispose {
+            lifecycle.removeObserver(observer)
+        }
+    }
+
     MeetingScreen(
         meetingState = meetingState,
         onBack = onOnBack,
@@ -347,7 +361,7 @@ fun MeetingRout(
 }
 
 
-@OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun MeetingScreen(
     meetingState: MeetingState,

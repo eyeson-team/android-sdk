@@ -95,6 +95,13 @@ dependencies {
     implementation(composeBom)
     androidTestImplementation(composeBom)
 
+    // TODO user proper version files
+    implementation("androidx.camera:camera-core:1.4.1")
+    implementation("androidx.camera:camera-lifecycle:1.4.1")
+    implementation("androidx.camera:camera-camera2:1.4.1")
+    implementation("androidx.lifecycle:lifecycle-runtime-ktx:2.8.7")
+
+
     implementation(Libraries.androidxComposeMaterial)
     implementation(Libraries.androidxComposeUiToolingPreview)
     debugImplementation(Libraries.androidxComposeDebugUiTooling)

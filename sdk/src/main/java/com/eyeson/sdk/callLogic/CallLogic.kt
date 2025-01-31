@@ -16,6 +16,12 @@ import com.eyeson.sdk.model.datachannel.incoming.PingDto
 import com.eyeson.sdk.model.datachannel.outgoing.PongDto
 import com.eyeson.sdk.model.datachannel.outgoing.fromLocal
 import com.eyeson.sdk.model.local.base.LocalBaseCommand
+import com.eyeson.sdk.model.local.call.CameraClosed
+import com.eyeson.sdk.model.local.call.CameraDisconnected
+import com.eyeson.sdk.model.local.call.CameraError
+import com.eyeson.sdk.model.local.call.CameraFirstFrameAvailable
+import com.eyeson.sdk.model.local.call.CameraFrozen
+import com.eyeson.sdk.model.local.call.CameraOpen
 import com.eyeson.sdk.model.local.call.CameraSwitchDone
 import com.eyeson.sdk.model.local.call.CameraSwitchError
 import com.eyeson.sdk.model.local.call.MeetingJoined
@@ -36,6 +42,7 @@ import kotlinx.coroutines.launch
 import org.webrtc.Camera1Enumerator
 import org.webrtc.Camera2Enumerator
 import org.webrtc.CameraEnumerator
+import org.webrtc.CameraVideoCapturer
 import org.webrtc.EglBase
 import org.webrtc.IceCandidate
 import org.webrtc.PeerConnectionFactory
@@ -53,7 +60,7 @@ internal class CallLogic(
     private val audioOnly: Boolean,
     private val context: Context,
     private val rootEglBase: EglBase,
-    private val experimentalFeatureStereo: Boolean = false
+    private val experimentalFeatureStereo: Boolean = false,
 ) {
     private val callLogicScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
 
@@ -69,6 +76,7 @@ internal class CallLogic(
     private val connectionStatisticsRepository = ConnectionStatisticsRepository()
     private var screenCapturerService: ScreenCapturerService? = null
     private var screenCapturerServiceBound: Boolean = false
+    private var screenCapturerServiceConnection: ServiceConnection? = null
 
     internal class ProxyVideoSink : VideoSink {
         private var target: VideoSink? = null
@@ -137,6 +145,32 @@ internal class CallLogic(
         }
     }
 
+    private val cameraEventsHandler = object : CameraVideoCapturer.CameraEventsHandler {
+        override fun onCameraError(error: String?) {
+            emitEvent(CameraError(error))
+        }
+
+        override fun onCameraDisconnected() {
+            emitEvent(CameraDisconnected)
+        }
+
+        override fun onCameraFreezed(error: String?) {
+            emitEvent(CameraFrozen(error))
+        }
+
+        override fun onCameraOpening(cameraName: String?) {
+            emitEvent(CameraOpen(cameraName))
+        }
+
+        override fun onFirstFrameAvailable() {
+            emitEvent(CameraFirstFrameAvailable)
+        }
+
+        override fun onCameraClosed() {
+            emitEvent(CameraClosed)
+        }
+    }
+
     private val dataChannelEvents = object : PeerConnectionClient.DataChannelEvents {
         override fun onMessageReceived(message: String) {
             val adapter = moshi.adapter(DataChannelCommandDto::class.java)
@@ -158,6 +192,7 @@ internal class CallLogic(
                 val adapter = moshi.adapter(PongDto::class.java)
                 peerConnectionClient.sendDataChannelMessage(adapter.toJson(Pong().fromLocal()))
             }
+
             !is UnknownCommandDto -> {
                 emitEvent(command.toLocal())
             }
@@ -165,6 +200,11 @@ internal class CallLogic(
     }
 
     fun setLocalVideoEnabled(enable: Boolean) {
+        if (enable) {
+            peerConnectionClient.startVideoSource()
+        } else {
+            peerConnectionClient.stopVideoSource()
+        }
         peerConnectionClient.setLocalVideoEnabled(enable)
     }
 
@@ -193,7 +233,7 @@ internal class CallLogic(
         videoEnabledOnStart: Boolean,
         mediaProjectionPermissionResultData: Intent?,
         notificationId: Int?,
-        notification: Notification?
+        notification: Notification?,
     ) {
         val videoCapturer = when {
             mediaProjectionPermissionResultData != null && notificationId != null && notification != null -> {
@@ -224,9 +264,11 @@ internal class CallLogic(
                         }
                     })
             }
+
             !audioOnly -> {
                 createVideoCapturer(!frontCamera)
             }
+
             else -> {
                 null
             }
@@ -268,13 +310,13 @@ internal class CallLogic(
         asPresentation: Boolean,
         notificationId: Int,
         notification: Notification,
-        enablePresentation: () -> Unit
+        enablePresentation: () -> Unit,
     ): Boolean {
         if (screenCapturerServiceBound) {
             return false
         }
 
-        val connection: ServiceConnection = object : ServiceConnection {
+        screenCapturerServiceConnection = object : ServiceConnection {
             override fun onServiceConnected(className: ComponentName, service: IBinder) {
                 val binder = service as ScreenCapturerService.LocalBinder
                 screenCapturerService = binder.getService()
@@ -304,17 +346,20 @@ internal class CallLogic(
             override fun onServiceDisconnected(arg0: ComponentName) {
                 endScreenShareForeground()
             }
+        }.also {
+            val intent = Intent(context, ScreenCapturerService::class.java)
+            context.bindService(intent, it, Context.BIND_AUTO_CREATE)
         }
-
-        val intent = Intent(context, ScreenCapturerService::class.java)
-        context.bindService(intent, connection, Context.BIND_AUTO_CREATE)
 
         return true
     }
 
     private fun endScreenShareForeground() {
         screenCapturerService?.endForeground()
-        // TODO Unbind service
+        screenCapturerServiceConnection?.let {
+            context.unbindService(it)
+        }
+        screenCapturerServiceConnection = null
         screenCapturerService = null
         screenCapturerServiceBound = false
     }
@@ -332,13 +377,13 @@ internal class CallLogic(
         return peerConnectionClient.isScreencastActive()
     }
 
-
     private fun createVideoCapturer(preferBackCamera: Boolean): VideoCapturer? {
         val videoCapturer: VideoCapturer? = when {
             Camera2Enumerator.isSupported(context) -> {
                 Logger.d("Creating capturer using camera2 API.")
                 createCameraCapturer(Camera2Enumerator(context), preferBackCamera)
             }
+
             else -> {
                 Logger.d("Creating capturer using camera1 API.")
                 createCameraCapturer(
@@ -354,16 +399,17 @@ internal class CallLogic(
         return videoCapturer
     }
 
+
     private fun createCameraCapturer(
         enumerator: CameraEnumerator,
-        preferBackCamera: Boolean
+        preferBackCamera: Boolean,
     ): VideoCapturer? {
         val deviceNames = enumerator.deviceNames
         var preferredCapturer: VideoCapturer? = null
         // First, try to find front facing camera
         for (deviceName in deviceNames) {
             if (enumerator.isFrontFacing(deviceName)) {
-                val videoCapturer = enumerator.createCapturer(deviceName, null)
+                val videoCapturer = enumerator.createCapturer(deviceName, cameraEventsHandler)
 
                 if (videoCapturer != null) {
                     preferredCapturer = videoCapturer
@@ -379,7 +425,7 @@ internal class CallLogic(
         // Front facing camera not found, try something else
         for (deviceName in deviceNames) {
             if (!enumerator.isFrontFacing(deviceName)) {
-                val videoCapturer = enumerator.createCapturer(deviceName, null)
+                val videoCapturer = enumerator.createCapturer(deviceName, cameraEventsHandler)
 
                 if (videoCapturer != null) {
                     preferredCapturer = videoCapturer
@@ -449,6 +495,10 @@ internal class CallLogic(
 
     fun switchCamera() {
         peerConnectionClient.switchCamera()
+    }
+
+    fun switchCameraTo(cameraId: String) {
+        peerConnectionClient.switchCameraTo(cameraId)
     }
 
     fun isFrontCamera(): Boolean {

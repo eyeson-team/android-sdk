@@ -8,6 +8,7 @@ import com.eyeson.android.ui.theme.EyesonDemoTheme
 import com.eyeson.android.ui.view.connection.ConnectionFragment
 import dagger.hilt.android.AndroidEntryPoint
 
+
 @AndroidEntryPoint
 class MainActivity : AppCompatActivity() {
 
@@ -15,6 +16,7 @@ class MainActivity : AppCompatActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+
         if (compose) {
             enableEdgeToEdge()
 
