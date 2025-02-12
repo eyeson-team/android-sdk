@@ -7,6 +7,7 @@ import android.content.Intent
 import android.hardware.camera2.CameraCharacteristics
 import android.hardware.camera2.CameraCharacteristics.LENS_FACING
 import android.hardware.camera2.CameraManager
+import android.media.AudioManager
 import androidx.annotation.OptIn
 import androidx.appcompat.app.AppCompatActivity.CAMERA_SERVICE
 import androidx.compose.runtime.mutableStateOf
@@ -331,7 +332,22 @@ class MeetingViewModel @Inject constructor(
         EyesonMeeting(application = application)
     }
 
-    private val audioManager by lazy { EyesonAudioManager(application) }
+    private val audioManager by lazy {
+        EyesonAudioManager(application) {
+            when (it) {
+                AudioManager.AUDIOFOCUS_GAIN -> {
+                    setRemoteAudioEnabled(_remoteAudioActive.value)
+                }
+                AudioManager.AUDIOFOCUS_LOSS ->  {
+                    // Permanently lost audio focus. No further callbacks will be received.
+                    // Call [EyesonAudioManage.requestAudioFocus] to request focus again
+                }
+                AudioManager.AUDIOFOCUS_LOSS_TRANSIENT -> {
+                    eyesonMeeting.setRemoteAudioEnabled(false)
+                }
+            }
+        }
+    }
 
     private var lastCameraState = isVideoEnabled()
 
@@ -349,6 +365,9 @@ class MeetingViewModel @Inject constructor(
 
     private val _microphoneActive = MutableStateFlow(meetingSettings.micOnStar)
     val microphoneActive: StateFlow<Boolean> = _microphoneActive.asStateFlow()
+
+    private val _remoteAudioActive = MutableStateFlow(true)
+    val remoteAudioActive: StateFlow<Boolean> = _remoteAudioActive.asStateFlow()
 
     private val _chatMessages = MutableStateFlow<List<ChatMessage>>(emptyList())
     val chatMessages: StateFlow<List<ChatMessage>> = _chatMessages.asStateFlow()
@@ -586,6 +605,15 @@ class MeetingViewModel @Inject constructor(
 
     fun toggleLocalMicrophone() {
         setLocalAudioEnabled(!isMicrophoneEnabled())
+    }
+
+    fun setRemoteAudioEnabled(enabled: Boolean) {
+        _remoteAudioActive.value = enabled
+        eyesonMeeting.setRemoteAudioEnabled(enabled)
+    }
+
+    fun toggleRemoteAudio() {
+        setRemoteAudioEnabled(!_remoteAudioActive.value)
     }
 
     fun muteAll() {

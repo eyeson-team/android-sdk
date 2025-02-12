@@ -910,7 +910,6 @@ internal class PeerConnectionClient(
     private fun setLocalVideoTracksEnabled(enabled: Boolean) {
         peerConnection?.senders?.forEach { sender ->
             if (sender.track() != null) {
-                sender.track()?.id()
                 val trackType = sender.track()?.kind()
                 if (trackType == VIDEO_TRACK_TYPE) {
                     sender.track()?.setEnabled(enabled)
@@ -940,6 +939,15 @@ internal class PeerConnectionClient(
             }
         }
         return null
+    }
+
+    fun setAudioTracksEnabled(enable: Boolean) {
+        peerConnection?.receivers?.forEach { rtpReceiver ->
+            val track = rtpReceiver.track()
+            if (track?.kind() == AUDIO_TRACK_TYPE) {
+                track.setEnabled(enable)
+            }
+        }
     }
 
     private fun drainCandidates() {
@@ -1393,6 +1401,7 @@ internal class PeerConnectionClient(
         const val VIDEO_TRACK_ID = "ARDAMSv0"
         const val AUDIO_TRACK_ID = "ARDAMSa0"
         const val VIDEO_TRACK_TYPE = "video"
+        const val AUDIO_TRACK_TYPE = "audio"
         private const val TAG = "PCRTCClient"
         private const val VIDEO_CODEC_VP8 = "VP8"
         private const val VIDEO_CODEC_VP9 = "VP9"

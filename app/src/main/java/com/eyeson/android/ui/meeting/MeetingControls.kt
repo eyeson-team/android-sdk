@@ -46,8 +46,10 @@ fun HorizontalMeetingControls(
     onMuteVideo: () -> Unit,
     microphoneMuted: Boolean,
     onMuteMicrophone: () -> Unit,
-    modifier: Modifier = Modifier,
     onShowChat: () -> Unit,
+    audioMuted: Boolean,
+    onMuteAudio: () -> Unit,
+    modifier: Modifier = Modifier,
     iconTint: Color = MaterialTheme.colorScheme.onSurface,
 ) {
     Surface(
@@ -91,6 +93,19 @@ fun HorizontalMeetingControls(
                     )
                 }
 
+                val (descriptionAudio, iconAudio) = if (audioMuted) {
+                    Pair(R.string.unmute_audio, R.drawable.volume_off_24)
+                } else {
+                    Pair(R.string.mute_audio, R.drawable.volume_up_24)
+                }
+
+                IconButton(onClick = onMuteAudio) {
+                    Icon(
+                        painter = painterResource(id = iconAudio),
+                        stringResource(id = descriptionAudio),
+                    )
+                }
+
                 IconButton(onClick = onShowChat) {
                     Icon(
                         painter = painterResource(id = R.drawable.baseline_chat_24),
@@ -113,15 +128,15 @@ fun VerticalMeetingControls(
     onMuteVideo: () -> Unit,
     microphoneMuted: Boolean,
     onMuteMicrophone: () -> Unit,
+    audioMuted: Boolean,
+    onMuteAudio: () -> Unit,
     modifier: Modifier = Modifier,
     iconTint: Color = Color.White,
     rippleConfig: RippleConfiguration = RippleConfiguration(color = MaterialTheme.colorScheme.inverseOnSurface),
 ) {
     Column(modifier = modifier) {
         CompositionLocalProvider(LocalRippleConfiguration provides rippleConfig) {
-
             Box(modifier = Modifier.weight(1f)) {
-
                 IconButton(onClick = onBack) {
                     Icon(
                         imageVector = Icons.AutoMirrored.Filled.ArrowBack,
@@ -168,6 +183,21 @@ fun VerticalMeetingControls(
                     tint = iconTint
                 )
             }
+
+            val (descriptionAudio, iconAudio) = if (audioMuted) {
+                Pair(R.string.unmute_audio, R.drawable.volume_off_24)
+            } else {
+                Pair(R.string.mute_audio, R.drawable.volume_up_24)
+            }
+
+            IconButton(onClick = onMuteAudio) {
+                Icon(
+                    painter = painterResource(id = iconAudio),
+                    stringResource(id = descriptionAudio),
+                    tint = iconTint
+                )
+            }
+
         }
     }
 }
@@ -214,6 +244,7 @@ fun HorizontalMeetingControlsPreview() {
 
     var videoMuted by remember { mutableStateOf(false) }
     var microphoneMuted by remember { mutableStateOf(false) }
+    var audioMuted by remember { mutableStateOf(false) }
 
     EyesonDemoTheme {
         HorizontalMeetingControls(
@@ -224,6 +255,8 @@ fun HorizontalMeetingControlsPreview() {
             onMuteVideo = { videoMuted = !videoMuted },
             microphoneMuted = microphoneMuted,
             onMuteMicrophone = { microphoneMuted = !microphoneMuted },
+            audioMuted = audioMuted,
+            onMuteAudio = { audioMuted = !audioMuted },
             onShowChat = { /*NOOP*/ }
         )
     }
@@ -236,9 +269,9 @@ fun VerticalMeetingControlsPreview() {
 
     var videoMuted by remember { mutableStateOf(false) }
     var microphoneMuted by remember { mutableStateOf(false) }
+    var audioMuted by remember { mutableStateOf(false) }
 
     EyesonDemoTheme {
-
         Box(
             modifier = Modifier
                 .background(color = DarkGray800)
@@ -252,7 +285,9 @@ fun VerticalMeetingControlsPreview() {
                 videoMuted = videoMuted,
                 onMuteVideo = { videoMuted = !videoMuted },
                 microphoneMuted = microphoneMuted,
-                onMuteMicrophone = { microphoneMuted = !microphoneMuted }
+                onMuteMicrophone = { microphoneMuted = !microphoneMuted },
+                audioMuted = audioMuted,
+                onMuteAudio = { audioMuted = !audioMuted },
             )
         }
     }

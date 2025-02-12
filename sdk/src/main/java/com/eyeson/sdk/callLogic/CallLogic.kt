@@ -216,6 +216,10 @@ internal class CallLogic(
         return peerConnectionClient.enableAudio
     }
 
+    fun setRemoteAudioEnabled(enable: Boolean) {
+        peerConnectionClient.setAudioTracksEnabled(enable)
+    }
+
     private val peerConnectionClient: PeerConnectionClient by lazy {
         PeerConnectionClient(
             context,

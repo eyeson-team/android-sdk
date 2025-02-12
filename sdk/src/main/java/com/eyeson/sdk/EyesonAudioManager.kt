@@ -33,7 +33,19 @@ import com.eyeson.sdk.EyesonAudioManager.AudioDevice.WiredHeadset
 import com.eyeson.sdk.utils.Logger
 import com.eyeson.sdk.webrtc.AppRTCBluetoothManager
 
-class EyesonAudioManager constructor(
+/**
+ * Manages audio device selection and routing.
+ *
+ * This class handles switching between different audio devices (e.g., speakerphone,
+ * headset, earpiece, Bluetooth) and managing audio focus.
+ *
+ * @param apprtcContext The application context.
+ * @param devicePriority An ordered list of preferred audio devices. The order dictates
+ *                       the selection preference. Defaults to [Bluetooth, WiredHeadset,
+ *                       SpeakerPhone, Earpiece].
+ * @param audioFocusChangeListener [OnAudioFocusChangeListener] Listener for audio focus changes.
+ */
+class EyesonAudioManager(
     private val apprtcContext: Context,
     devicePriority: List<AudioDevice> = listOf(
         Bluetooth,
@@ -41,8 +53,12 @@ class EyesonAudioManager constructor(
         SpeakerPhone,
         Earpiece
     ),
-    private val audioFocusChangeListener: OnAudioFocusChangeListener = OnAudioFocusChangeListener {}
+    private val audioFocusChangeListener: OnAudioFocusChangeListener = OnAudioFocusChangeListener {},
 ) {
+    /**
+     *  A list of preferred audio device priorities (e.g., "bluetooth", "wired", "speaker").
+     *  The order determines the selection preference. Duplicates are ignored.
+     */
     var devicePriority = devicePriority.distinct()
         set(value) {
             field = value.distinct()
@@ -53,18 +69,18 @@ class EyesonAudioManager constructor(
      * AudioDevice is the names of possible audio devices that we currently support.
      */
     sealed class AudioDevice {
-        object SpeakerPhone : AudioDevice()
-        object WiredHeadset : AudioDevice()
-        object Earpiece : AudioDevice()
-        object Bluetooth : AudioDevice()
-        object None : AudioDevice()
+        data object SpeakerPhone : AudioDevice()
+        data object WiredHeadset : AudioDevice()
+        data object Earpiece : AudioDevice()
+        data object Bluetooth : AudioDevice()
+        data object None : AudioDevice()
     }
 
     interface AudioManagerEvents {
         // Callback fired once audio device is changed or list of available audio devices changed.
         fun onAudioDeviceChanged(
             selectedAudioDevice: AudioDevice,
-            availableAudioDevices: Set<AudioDevice>
+            availableAudioDevices: Set<AudioDevice>,
         )
     }
 
@@ -116,11 +132,23 @@ class EyesonAudioManager constructor(
         }
     }
 
-    fun start(audioManagerEvents: AudioManagerEvents) {
-        Logger.d("start")
+    /**
+     * Starts the audio manager. Initializes audio settings, requests audio focus, and starts monitoring audio devices.
+     *
+     * @param audioManagerEvents Callback for audio manager events.
+     *
+     * The function returns the result of the audio focus request, which can be one of:
+     *   - [AudioManager.AUDIOFOCUS_REQUEST_GRANTED]: The request was granted immediately.
+     *   - [AudioManager.AUDIOFOCUS_REQUEST_FAILED]: The request failed.
+     *   - [AudioManager.AUDIOFOCUS_REQUEST_DELAYED]: The request is delayed. Android API >= 26
+     *   - [EYESON_AUDIO_MANAGER_ALREADY_RUNNING] If the AudioManager is already running.
+     *
+     * @return The result of the audio focus request.
+     */
+    fun start(audioManagerEvents: AudioManagerEvents): Int {
         if (amState == AudioManagerState.RUNNING) {
             Logger.e("AudioManager is already active", true)
-            return
+            return EYESON_AUDIO_MANAGER_ALREADY_RUNNING
         }
         this.audioManagerEvents = audioManagerEvents
         amState = AudioManagerState.RUNNING
@@ -130,7 +158,7 @@ class EyesonAudioManager constructor(
         savedIsMicrophoneMute = audioManager.isMicrophoneMute
         hasWiredHeadset = hasWiredHeadset()
 
-        requestAudioFocus()
+        val requestAudioFocusResult = requestAudioFocus()
         audioManager.isMicrophoneMute = false
         audioManager.mode = AudioManager.MODE_IN_COMMUNICATION
 
@@ -147,33 +175,51 @@ class EyesonAudioManager constructor(
             IntentFilter(Intent.ACTION_HEADSET_PLUG)
         )
         Logger.d("AudioManager started")
+
+        return requestAudioFocusResult
     }
 
-    private fun requestAudioFocus() {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+
+    /**
+     * Requests audio focus for voice communication.
+     *
+     * The function returns the result of the audio focus request, which can be one of:
+     *   - [AudioManager.AUDIOFOCUS_REQUEST_GRANTED]: The request was granted immediately.
+     *   - [AudioManager.AUDIOFOCUS_REQUEST_FAILED]: The request failed.
+     *   - [AudioManager.AUDIOFOCUS_REQUEST_DELAYED]: The request is delayed. Android API >= 26
+     *
+     * @return The result of the audio focus request.
+     */
+    fun requestAudioFocus(): Int {
+        return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             val playbackAttributes = AudioAttributes.Builder()
                 .setUsage(AudioAttributes.USAGE_VOICE_COMMUNICATION)
                 .setContentType(AudioAttributes.CONTENT_TYPE_SPEECH)
                 .build()
 
-            audioFocusRequest = AudioFocusRequest.Builder(AudioManager.AUDIOFOCUS_GAIN)
+            audioFocusRequest = AudioFocusRequest.Builder(AudioManager.AUDIOFOCUS_GAIN_TRANSIENT)
                 .setAudioAttributes(playbackAttributes)
                 .setAcceptsDelayedFocusGain(true)
                 .setOnAudioFocusChangeListener(audioFocusChangeListener)
                 .build()
 
-            audioFocusRequest?.let { audioManager.requestAudioFocus(it) }
+            audioFocusRequest?.let {
+                audioManager.requestAudioFocus(it)
+            } ?: AudioManager.AUDIOFOCUS_REQUEST_FAILED
         } else {
             @Suppress("DEPRECATION")
             audioManager.requestAudioFocus(
                 audioFocusChangeListener,
-                AudioManager.STREAM_VOICE_CALL, AudioManager.AUDIOFOCUS_GAIN_TRANSIENT
+                AudioManager.STREAM_VOICE_CALL,
+                AudioManager.AUDIOFOCUS_GAIN_TRANSIENT
             )
         }
     }
 
+    /**
+     * Stops the AudioManager, releasing resources and restoring the audio state.
+     */
     fun stop() {
-        Logger.d("stop")
         if (amState != AudioManagerState.RUNNING) {
             Logger.e("Trying to stop AudioManager in incorrect state: $amState", true)
             return
@@ -208,15 +254,19 @@ class EyesonAudioManager constructor(
             SpeakerPhone -> {
                 true
             }
+
             Earpiece -> {
                 false
             }
+
             WiredHeadset -> {
                 false
             }
+
             Bluetooth -> {
                 false
             }
+
             else -> {
                 Logger.e("Invalid audio device selection")
                 audioManager.isSpeakerphoneOn
@@ -225,7 +275,11 @@ class EyesonAudioManager constructor(
         selectedAudioDevice = device
     }
 
-    /** Changes selection of the currently active audio device.  */
+    /**
+     * Select specified audio device.
+     *
+     * @param device The [AudioDevice] to select. Must be in the [audioDevices] list.
+     */
     fun selectAudioDevice(device: AudioDevice) {
         if (!audioDevices.contains(device)) {
             Logger.e("Can not select $device from available $audioDevices", true)
@@ -234,10 +288,20 @@ class EyesonAudioManager constructor(
         updateAudioDeviceState()
     }
 
+    /**
+     * Returns the set of available audio devices.
+     *
+     * @return A Set of [AudioDevice] representing the currently available audio devices.
+     */
     fun getAudioDevices(): Set<AudioDevice> {
         return audioDevices
     }
 
+    /**
+     * Gets the currently selected audio device.
+     *
+     * @return The selected [AudioDevice].
+     */
     fun getSelectedAudioDevice(): AudioDevice {
         return selectedAudioDevice
     }
@@ -294,16 +358,19 @@ class EyesonAudioManager constructor(
                         newAudioDevices.add(0, Bluetooth)
                     }
                 }
+
                 WiredHeadset -> {
                     if (hasWiredHeadset) {
                         newAudioDevices.add(0, WiredHeadset)
                     }
                 }
+
                 Earpiece -> {
                     if (hasEarpiece() && !hasWiredHeadset) {
                         newAudioDevices.add(0, Earpiece)
                     }
                 }
+
                 else -> {
                     newAudioDevices.add(0, SpeakerPhone)
                 }
@@ -335,6 +402,7 @@ class EyesonAudioManager constructor(
                 bluetoothManager.stopScoAudio()
                 bluetoothManager.updateDevice()
             }
+
             needBluetoothAudioStart -> {
                 // Attempt to start Bluetooth SCO audio (takes a few second to start).
                 if (!bluetoothManager.startScoAudio()) {
@@ -367,5 +435,9 @@ class EyesonAudioManager constructor(
             userSelectedAudioDevice =
                 devicePriority.first { it == SpeakerPhone || it == Earpiece }
         }
+    }
+
+    companion object {
+        const val EYESON_AUDIO_MANAGER_ALREADY_RUNNING = -7
     }
 }

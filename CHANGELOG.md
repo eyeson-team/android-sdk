@@ -7,6 +7,19 @@ The format is based on [Keep a Changelog] and this project adheres to
 ## [Unreleased]
 
 ## [Released]
+## [1.1.18] - 2025-02-12
+### Added
+- EyesonMeeting
+  - `setRemoteAudioEnabled`
+- EyesonAudioManager
+  - KDoc
+- Demo App
+  - Handling audio focus transient loss/gain 
+### Changed
+- EyesonAudioManager
+  - `start` function signature
+  - `requestAudioFocus` function signature
+
 ## [1.1.17] - 2025-01-31
 ### Added
 - EyesonEventListener

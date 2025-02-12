@@ -869,6 +869,15 @@ class EyesonMeeting(
     }
 
     /**
+     * Enables or disables the remote audio stream.
+     *
+     * @param enable `true` to enable the remote audio stream, `false` to disable it.
+     */
+    fun setRemoteAudioEnabled(enable: Boolean) {
+        callLogic?.setRemoteAudioEnabled(enable)
+    }
+
+    /**
      * Sends a chat message to the Eyeson meeting.
      *
      * This function asynchronously sends a chat message to the active Eyeson meeting.

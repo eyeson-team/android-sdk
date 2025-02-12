@@ -88,6 +88,8 @@
     <string name="mute_microphone">Mute microphone</string>
     <string name="unmute_microphone">Unmute microphone</string>
     <string name="show_chat">Show chat</string>
+    <string name="mute_audio">Mute audio</string>
+    <string name="unmute_audio">Unmute audio</string>
 
     <!-- Chat -->
     <string name="avatar">Avatar</string>

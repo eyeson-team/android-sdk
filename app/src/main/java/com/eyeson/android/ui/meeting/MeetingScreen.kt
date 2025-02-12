@@ -22,7 +22,6 @@ import androidx.compose.foundation.gestures.detectDragGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.displayCutoutPadding
@@ -119,6 +118,7 @@ fun MeetingRout(
     val cameraActive by viewModel.cameraActive.collectAsStateWithLifecycle()
     val microphoneActive by viewModel.microphoneActive.collectAsStateWithLifecycle()
     val cameraDisconnected by viewModel.cameraDisconnected
+    val remoteAudioActive by viewModel.remoteAudioActive.collectAsStateWithLifecycle()
 
     val remoteVideoRenderer = rememberVideoRendererWithLifecycle(viewModel.getEglContext()) {
         viewModel.setRemoteVideoTarget(it)
@@ -265,11 +265,7 @@ fun MeetingRout(
                         && meetingState is MeetingState.Connected -> {
                     val intent = Intent(context, MeetingActiveService::class.java)
 
-                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-                        ContextCompat.startForegroundService(context, intent)
-                    } else {
-                        context.startService(intent)
-                    }
+                    ContextCompat.startForegroundService(context, intent)
                 }
 
                 event == Lifecycle.Event.ON_RESUME || event == Lifecycle.Event.ON_DESTROY -> {
@@ -327,9 +323,11 @@ fun MeetingRout(
         audioDevices = audioDevices,
         userInMeeting = userInMeeting,
         wideScreen = viewModel.isWideScreen(),
-        muteMicrophone = { viewModel.toggleLocalMicrophone() },
+        toggleMicrophoneActive = { viewModel.toggleLocalMicrophone() },
         muteVideo = { viewModel.toggleLocalVideo() },
         switchCamera = { viewModel.switchCamera() },
+        remoteAudioActive = remoteAudioActive,
+        toggleRemoteAudioActive = { viewModel.toggleRemoteAudio() },
         changeScreenShareActive = {
             if (screenShareActive) {
                 viewModel.stopScreenShare()
@@ -386,9 +384,11 @@ fun MeetingScreen(
     audioDevices: List<AudioDevice>,
     userInMeeting: List<UserInfo>,
     wideScreen: Boolean,
-    muteMicrophone: () -> Unit,
+    toggleMicrophoneActive: () -> Unit,
     muteVideo: () -> Unit,
     switchCamera: () -> Unit,
+    remoteAudioActive: Boolean,
+    toggleRemoteAudioActive: () -> Unit,
     changeScreenShareActive: () -> Unit,
     startFullScreenPresentation: () -> Unit,
     stopFullScreenPresentation: () -> Unit,
@@ -467,7 +467,9 @@ fun MeetingScreen(
                 videoMuted = cameraActive,
                 onMuteVideo = muteVideo,
                 microphoneMuted = !microphoneActive,
-                onMuteMicrophone = muteMicrophone,
+                onMuteMicrophone = toggleMicrophoneActive,
+                audioMuted = !remoteAudioActive,
+                onMuteAudio = toggleRemoteAudioActive,
                 modifier = Modifier.applyRoundedCornerPadding(
                     leftFraction = 0f,
                     topFraction = 0.35f,
@@ -548,7 +550,9 @@ fun MeetingScreen(
                     videoMuted = cameraActive,
                     onMuteVideo = muteVideo,
                     microphoneMuted = !microphoneActive,
-                    onMuteMicrophone = muteMicrophone,
+                    onMuteMicrophone = toggleMicrophoneActive,
+                    audioMuted = !remoteAudioActive,
+                    onMuteAudio = toggleRemoteAudioActive,
                     onShowChat = { chatOpen = true },
                     modifier = Modifier
                         .padding(bottom = 16.dp)
@@ -1051,9 +1055,11 @@ fun SettingsScreenPreview() {
             audioDevices = emptyList(),
             userInMeeting = emptyList(),
             wideScreen = true,
-            muteMicrophone = {/*NOOP*/ },
+            toggleMicrophoneActive = {/*NOOP*/ },
             muteVideo = {/*NOOP*/ },
             switchCamera = {/*NOOP*/ },
+            remoteAudioActive = true,
+            toggleRemoteAudioActive = {/*NOOP*/ },
             changeScreenShareActive = {/*NOOP*/ },
             startFullScreenPresentation = {/*NOOP*/ },
             stopFullScreenPresentation = {/*NOOP*/ },
