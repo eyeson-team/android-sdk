@@ -40,7 +40,7 @@ object Versions {
     const val androidxComposeDebugUiTooling = "androidx.compose.ui:ui-tooling"
     const val androidxActivityCompose = "1.5.1"
     const val androidxLifecycleViewModelCompose = "2.5.1"
-    const val androidxNavigationCompose = "2.5.3"
+    const val androidxNavigationCompose = "2.8.7"
     const val constraintLayoutCompose = "1.0.1"
 
     const val accompanist = "0.36.0"

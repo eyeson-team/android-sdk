@@ -61,7 +61,7 @@ class VideoRenderer(context: Context, attrs: AttributeSet? = null) :
         sharedContext: EglBase.Context?,
         rendererEvents: RendererEvents? = null,
         configAttributes: IntArray? = EglBase.CONFIG_PLAIN,
-        drawer: GlDrawer? = GlRectDrawer()
+        drawer: GlDrawer? = GlRectDrawer(),
     ) {
         ThreadUtils.checkIsOnMainThread()
         this.rendererEvents = rendererEvents
@@ -90,7 +90,7 @@ class VideoRenderer(context: Context, attrs: AttributeSet? = null) :
      * @param drawer   Custom drawer to use for this frame listener.
      */
     fun addFrameListener(
-        listener: EglRenderer.FrameListener?, scale: Float, drawerParam: GlDrawer?
+        listener: EglRenderer.FrameListener?, scale: Float, drawerParam: GlDrawer?,
     ) {
         eglRenderer.addFrameListener(listener, scale, drawerParam)
     }
@@ -137,7 +137,7 @@ class VideoRenderer(context: Context, attrs: AttributeSet? = null) :
 
     fun setScalingType(
         scalingTypeMatchOrientation: ScalingType?,
-        scalingTypeMismatchOrientation: ScalingType?
+        scalingTypeMismatchOrientation: ScalingType?,
     ) {
         ThreadUtils.checkIsOnMainThread()
         videoLayoutMeasure.setScalingType(
@@ -200,15 +200,11 @@ class VideoRenderer(context: Context, attrs: AttributeSet? = null) :
     }
 
     override fun onFirstFrameRendered() {
-        if (rendererEvents != null) {
-            rendererEvents!!.onFirstFrameRendered()
-        }
+        rendererEvents?.onFirstFrameRendered()
     }
 
     override fun onFrameResolutionChanged(videoWidth: Int, videoHeight: Int, rotation: Int) {
-        if (rendererEvents != null) {
-            rendererEvents!!.onFrameResolutionChanged(videoWidth, videoHeight, rotation)
-        }
+        rendererEvents?.onFrameResolutionChanged(videoWidth, videoHeight, rotation)
         val rotatedWidth = if (rotation == 0 || rotation == 180) videoWidth else videoHeight
         val rotatedHeight = if (rotation == 0 || rotation == 180) videoHeight else videoWidth
         // run immediately if possible for ui thread tests

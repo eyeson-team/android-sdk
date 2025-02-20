@@ -4,6 +4,8 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Modifier
 import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.lifecycle.Lifecycle
+import androidx.navigation.NavController
 import androidx.navigation.NavHostController
 import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
@@ -146,9 +148,7 @@ fun EyesonDemoNavHost(
                 }
             )
         ) {
-            MeetingRout(
-                onBack = { navController.navigateUp() }
-            )
+            MeetingRout(onBack = { navController.navigateUp() })
         }
     }
 

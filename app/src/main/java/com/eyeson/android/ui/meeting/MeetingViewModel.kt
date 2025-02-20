@@ -317,6 +317,7 @@ class MeetingViewModel @Inject constructor(
 
         override fun onCameraError(error: String) {
             addEvent("onCameraError: error $error", true)
+            cameraDisconnected.value = true
         }
 
         override fun onCameraSwitchDone(isFrontCamera: Boolean) {

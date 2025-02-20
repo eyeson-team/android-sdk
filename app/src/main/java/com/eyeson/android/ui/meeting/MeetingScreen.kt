@@ -6,7 +6,6 @@ import android.app.NotificationManager
 import android.content.ClipData
 import android.content.ClipboardManager
 import android.content.Context
-import android.content.Intent
 import android.content.res.Configuration
 import android.media.projection.MediaProjectionManager
 import android.os.Build
@@ -67,7 +66,6 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.compose.ui.zIndex
 import androidx.core.app.NotificationCompat
-import androidx.core.content.ContextCompat
 import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.WindowInsetsControllerCompat
@@ -136,12 +134,6 @@ fun MeetingRout(
     val window = context.findActivity().window
     val windowInsetsController =
         WindowCompat.getInsetsController(window, window.decorView)
-    LaunchedEffect(Unit) {
-        windowInsetsController.systemBarsBehavior =
-            WindowInsetsControllerCompat.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
-
-        windowInsetsController.hide(WindowInsetsCompat.Type.systemBars())
-    }
 
     val onOnBack = {
         viewModel.disconnect()
@@ -149,6 +141,8 @@ fun MeetingRout(
             viewModel.stopScreenShare()
         }
         windowInsetsController.show(WindowInsetsCompat.Type.systemBars())
+        MeetingActiveService.stop(context)
+
         onBack()
     }
     BackHandler {
@@ -259,19 +253,19 @@ fun MeetingRout(
     DisposableEffect(key1 = lifecycle) {
         val observer = LifecycleEventObserver { _, event ->
             when {
-                event.targetState == Lifecycle.State.STARTED
-                        && event == Lifecycle.Event.ON_PAUSE
-                        && !context.findActivity().isChangingConfigurations
-                        && meetingState is MeetingState.Connected -> {
-                    val intent = Intent(context, MeetingActiveService::class.java)
+                event.targetState == Lifecycle.State.CREATED -> {
 
-                    ContextCompat.startForegroundService(context, intent)
+                    MeetingActiveService.start(context)
+                }
+
+                event == Lifecycle.Event.ON_START -> {
+                    windowInsetsController.systemBarsBehavior =
+                        WindowInsetsControllerCompat.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
+
+                    windowInsetsController.hide(WindowInsetsCompat.Type.systemBars())
                 }
 
                 event == Lifecycle.Event.ON_RESUME || event == Lifecycle.Event.ON_DESTROY -> {
-                    val intent = Intent(context, MeetingActiveService::class.java)
-                    context.stopService(intent)
-
                     viewModel.setRemoteVideoTarget(remoteVideoRenderer)
 
                     if (event == Lifecycle.Event.ON_DESTROY && context.findActivity().isFinishing) {
@@ -979,6 +973,7 @@ private fun generateScreenShareNotification(context: Context): Notification {
         .setContentText(context.getText(R.string.your_screen_is_currently_being_recorded))
         .setContentTitle(context.getText(R.string.screen_capture))
         .setPriority(NotificationCompat.PRIORITY_DEFAULT)
+        .setForegroundServiceBehavior(NotificationCompat.FOREGROUND_SERVICE_IMMEDIATE)
         .setSmallIcon(R.drawable.cast_24)
         .setCategory(Notification.CATEGORY_SERVICE)
         .build()

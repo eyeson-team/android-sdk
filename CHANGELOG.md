@@ -5,6 +5,11 @@ The format is based on [Keep a Changelog] and this project adheres to
 [Semantic Versioning].  
 
 ## [Unreleased]
+### Changed
+- Demo app
+  - MeetingActiveService start/stop
+- Dependency updates
+  - NavigationCompose `2.8.7`
 
 ## [Released]
 ## [1.1.18] - 2025-02-12

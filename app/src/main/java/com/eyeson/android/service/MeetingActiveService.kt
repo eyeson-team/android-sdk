@@ -14,6 +14,7 @@ import androidx.core.app.NotificationCompat
 import androidx.core.app.ServiceCompat
 import com.eyeson.android.MainActivity
 import com.eyeson.android.R
+import timber.log.Timber
 
 class MeetingActiveService : Service() {
 
@@ -23,20 +24,41 @@ class MeetingActiveService : Service() {
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
-        createNotificationChannel()
-        val foregroundServiceType = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
-            ServiceInfo.FOREGROUND_SERVICE_TYPE_CAMERA or ServiceInfo.FOREGROUND_SERVICE_TYPE_MICROPHONE
-        } else {
-            0
-        }
-        ServiceCompat.startForeground(this, 1, generateInCallNotification(this), foregroundServiceType)
+        return when (intent?.action) {
+            ACTION_START -> {
+                createNotificationChannel()
+                val foregroundServiceType = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+                    ServiceInfo.FOREGROUND_SERVICE_TYPE_CAMERA or
+                            ServiceInfo.FOREGROUND_SERVICE_TYPE_MICROPHONE or
+                            ServiceInfo.FOREGROUND_SERVICE_TYPE_PHONE_CALL
+                } else {
+                    0
+                }
+                ServiceCompat.startForeground(
+                    this,
+                    1,
+                    generateInCallNotification(this),
+                    foregroundServiceType
+                )
 
-        return START_STICKY
+                START_STICKY
+            }
+
+            ACTION_STOP -> {
+                shutdown()
+                START_STICKY
+            }
+
+            else -> {
+                START_NOT_STICKY
+            }
+        }
     }
 
     override fun onTaskRemoved(rootIntent: Intent?) {
-        stopSelf()
+        shutdown()
     }
+
 
     private fun createNotificationChannel() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
@@ -64,14 +86,41 @@ class MeetingActiveService : Service() {
             .setContentText(context.getText(R.string.click_to_resume))
             .setContentTitle(context.getText(R.string.active_call))
             .setPriority(NotificationCompat.PRIORITY_DEFAULT)
+            .setForegroundServiceBehavior(NotificationCompat.FOREGROUND_SERVICE_IMMEDIATE)
             .setSmallIcon(R.drawable.video_call_24)
             .setContentIntent(pendingIntent)
-            .setAutoCancel(true)
+            .setAutoCancel(false)
             .build()
+    }
+
+    private fun shutdown() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
+            stopForeground(STOP_FOREGROUND_REMOVE)
+        } else {
+            @Suppress("DEPRECATION")
+            stopForeground(true)
+        }
+        stopSelf()
     }
 
     companion object {
         const val IN_CALL_CHANNEL_ID = "17"
         const val IN_CALL_CHANNEL_NAME = "In call"
+
+        private const val ACTION_START = "start"
+        private const val ACTION_STOP = "stop"
+
+
+        fun start(context: Context) {
+            context.startService(
+                Intent(context, MeetingActiveService::class.java).setAction(ACTION_START)
+            )
+        }
+
+        fun stop(context: Context) {
+            context.startService(
+                Intent(context, MeetingActiveService::class.java).setAction(ACTION_STOP)
+            )
+        }
     }
 }
