@@ -15,11 +15,12 @@ internal data class MeetingDto(
     @Json(name = "broadcasts") var broadcasts: List<BroadcastDto>,
     @Json(name = "snapshots") var snapshots: List<SnapshotDto>,
     @Json(name = "signaling") var signaling: SignalingDto,
-    @Json(name = "options") var options: MeetingOptionsDto
+    @Json(name = "options") var options: MeetingOptionsDto,
+    @Json(name = "playbacks") var playbacks: List<PlaybackDto>,
 ) {
     @JsonClass(generateAdapter = true)
     data class Links(
-        @Json(name = "guest_join") var guestJoin: String,
-        @Json(name = "websocket") var websocket: String
+        @Json(name = "guest_join") var guestJoin: String?,
+        @Json(name = "websocket") var websocket: String,
     )
 }

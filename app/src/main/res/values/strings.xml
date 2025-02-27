@@ -80,6 +80,7 @@
     <string name="you_muted_all_other_participants">You muted all other participants!</string>
 
     <string name="connecting">Connecting…</string>
+    <string name="recording_abbreviation">rec</string>
 
     <!-- Meeting controls -->
     <string name="switch_camera">Switch camera</string>

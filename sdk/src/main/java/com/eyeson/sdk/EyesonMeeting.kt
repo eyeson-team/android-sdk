@@ -1,14 +1,12 @@
 package com.eyeson.sdk
 
 import android.Manifest
-import android.app.Activity
 import android.app.Application
 import android.app.Notification
 import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.hardware.camera2.CameraManager
-import android.os.Bundle
 import androidx.core.content.ContextCompat
 import com.eyeson.sdk.callLogic.CallLogic
 import com.eyeson.sdk.events.CallRejectionReason
@@ -20,7 +18,9 @@ import com.eyeson.sdk.events.PresentationResponse
 import com.eyeson.sdk.exceptions.internal.FaultyInfoException
 import com.eyeson.sdk.model.api.MeetingDto
 import com.eyeson.sdk.model.local.api.MeetingInfo
+import com.eyeson.sdk.model.local.api.MeetingInfoInitial
 import com.eyeson.sdk.model.local.api.PermalinkMeetingInfo
+import com.eyeson.sdk.model.local.api.PlaybackInitial
 import com.eyeson.sdk.model.local.api.UserInfo
 import com.eyeson.sdk.model.local.base.LocalBaseCommand
 import com.eyeson.sdk.model.local.call.CameraClosed
@@ -352,18 +352,34 @@ class EyesonMeeting(
             }
             meeting = meetingInfo
 
-            when (val meetingInfoParsed = getMeetingInfo()) {
-                null -> {
-                    terminateCallWithError()
-                    return@launch
-                }
-
-                else -> {
-                    eventListener?.onMeetingJoining(
-                        meetingInfoParsed
+            val meetingInfoInitial = MeetingInfoInitial(
+                accessKey = meetingInfo.accessKey,
+                id = meetingInfo.room.id,
+                name = meetingInfo.room.name,
+                startedAt = meetingInfo.room.startedAt,
+                user = meetingInfo.user.toLocal(Date()),
+                locked = meetingInfo.locked,
+                guestToken = meetingInfo.room.guestToken,
+                guestLink = meetingInfo.links.guestJoin,
+                activeRecording = meetingInfo.recording?.toLocal(),
+                activeBroadcasts = BroadcastUpdateDto("", meetingInfo.broadcasts).toLocal(),
+                snapshots = SnapshotUpdateDto("", meetingInfo.snapshots).toLocal(),
+                meetingOptions = meetingInfo.options.toLocal(),
+                playbacks = meetingInfo.playbacks.map {
+                    PlaybackInitial(
+                        url = it.url,
+                        name = it.name,
+                        playId = it.playId,
+                        replacementId = it.replacementId,
+                        audio = it.audio ?: false,
+                        loopCount = it.loopCount ?: 0
                     )
                 }
-            }
+            )
+
+            eventListener?.onMeetingJoining(
+                meetingInfoInitial
+            )
 
             webSocketCommunicator = WebSocketCommunicator(meetingInfo).apply {
                 connect()
@@ -718,22 +734,57 @@ class EyesonMeeting(
 
      * @return [MeetingInfo] containing the meeting details, or null if no meeting is active.
      */
-    fun getMeetingInfo(): MeetingInfo? {
-        return meeting?.let { meetingInfo ->
-            MeetingInfo(
-                accessKey = meetingInfo.accessKey,
-                name = meetingInfo.room.name,
-                startedAt = meetingInfo.room.startedAt,
-                user = meetingInfo.user.toLocal(Date()),
-                locked = meetingInfo.locked,
-                guestToken = meetingInfo.room.guestToken,
-                guestLink = meetingInfo.links.guestJoin,
-                activeRecording = meetingInfo.recording?.toLocal(),
-                activeBroadcasts = BroadcastUpdateDto("", meetingInfo.broadcasts).toLocal(),
-                snapshots = SnapshotUpdateDto("", meetingInfo.snapshots).toLocal(),
-                meetingOptions = meetingInfo.options.toLocal()
-            )
+    suspend fun getMeetingInfo(): MeetingInfo? {
+
+        val meetingInfo = try {
+            restCommunicator.getMeetingInfo(meeting?.accessKey ?: return null)
+        } catch (e: Exception) {
+            if (e is CancellationException) {
+                throw e
+            } else {
+                return null
+            }
         }
+
+        return MeetingInfo(
+            accessKey = meetingInfo.accessKey,
+            id = meetingInfo.room.id,
+            name = meetingInfo.room.name,
+            startedAt = meetingInfo.room.startedAt,
+            user = meetingInfo.user.toLocal(Date()),
+            locked = meetingInfo.locked,
+            guestToken = meetingInfo.room.guestToken,
+            guestLink = meetingInfo.links.guestJoin,
+            activeRecording = meetingInfo.recording?.toLocal(),
+            activeBroadcasts = BroadcastUpdateDto("", meetingInfo.broadcasts).toLocal(),
+            snapshots = SnapshotUpdateDto("", meetingInfo.snapshots).toLocal(),
+            meetingOptions = meetingInfo.options.toLocal(),
+            playbacks = meetingInfo.playbacks.map {
+                val infoNeededFor = meetingInfo.playbacks.filterNot { playback ->
+                    playback.replacementId != null && userInMeeting.containsKey(playback.replacementId) || userInMeeting.values.any { userInfo -> userInfo.id == playback.replacementId }
+                }.mapNotNull { playback ->
+                    playback.replacementId
+                }
+
+                if (infoNeededFor.isNotEmpty()) {
+                    withContext(nameLookupScope.coroutineContext) {
+                        fetchUserInfo(meetingInfo, infoNeededFor)
+                    }
+                }
+
+                val userInfo =
+                    userInMeeting.values.firstOrNull { userInfo -> userInfo.id == it.replacementId }
+
+                Playback(
+                    url = it.url,
+                    name = it.name,
+                    playId = it.playId,
+                    replacedUser = userInfo,
+                    audio = it.audio ?: false,
+                    loopCount = it.loopCount ?: 0
+                )
+            }
+        )
     }
 
     /**
@@ -1104,7 +1155,7 @@ class EyesonMeeting(
 
             is MeetingJoined -> {
                 webSocketCommunicator?.setLocalVideoEnabled(videoOnStart)
-                eventListener?.onMeetingJoined(getMeetingInfo() ?: return)
+                eventListener?.onMeetingJoined()
             }
 
             is CameraSwitchDone -> {

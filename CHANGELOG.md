@@ -5,13 +5,27 @@ The format is based on [Keep a Changelog] and this project adheres to
 [Semantic Versioning].  
 
 ## [Unreleased]
+## [Released]
+## [1.1.19] - 2025-02-27
+### Added
+- MeetingInfo
+  - `id`
+  - `playbacks`
+- MeetingInfoInitial
 ### Changed
 - Demo app
   - MeetingActiveService start/stop
 - Dependency updates
   - NavigationCompose `2.8.7`
+- MeetingInfo
+  - `guestToken` now nullable
+  - `guestLink` now nullable
+- EyesonEventListener
+  - `onMeetingJoining` changed parameter to `MeetingInfoInitial`
+  - `onMeetingJoined` removed meeting info parameter
+- EyesonMeeting
+  - `getMeetingInfo` changed to suspend function
 
-## [Released]
 ## [1.1.18] - 2025-02-12
 ### Added
 - EyesonMeeting

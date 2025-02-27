@@ -11,7 +11,6 @@ import com.eyeson.sdk.model.local.sepp.CallAccepted
 import com.eyeson.sdk.model.local.sepp.CallResume
 import com.eyeson.sdk.model.local.sepp.CallStart
 import com.eyeson.sdk.model.local.sepp.CallTerminate
-import com.eyeson.sdk.model.local.sepp.DesktopStreaming
 import com.eyeson.sdk.model.local.sepp.MuteVideo
 import com.eyeson.sdk.model.local.ws.ReconnectSignaling
 import com.eyeson.sdk.model.local.ws.WsFailure
@@ -20,7 +19,6 @@ import com.eyeson.sdk.model.meeting.outgoing.MuteAllDto
 import com.eyeson.sdk.model.sepp.outgoing.CallResumeDto
 import com.eyeson.sdk.model.sepp.outgoing.CallStartDto
 import com.eyeson.sdk.model.sepp.outgoing.CallTerminateDto
-import com.eyeson.sdk.model.sepp.outgoing.DesktopStreamingDto
 import com.eyeson.sdk.model.sepp.outgoing.MuteVideoDto
 import com.eyeson.sdk.model.sepp.outgoing.fromLocal
 import com.eyeson.sdk.utils.collectIn
@@ -35,7 +33,7 @@ import kotlinx.coroutines.launch
 import java.util.concurrent.atomic.AtomicBoolean
 
 internal class WebSocketCommunicator(
-    @Volatile private var meeting: MeetingDto
+    @Volatile private var meeting: MeetingDto,
 ) {
     private val communicatorScope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
     private val moshi = NetworkModule.moshi

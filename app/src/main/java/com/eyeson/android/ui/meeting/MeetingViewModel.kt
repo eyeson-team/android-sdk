@@ -41,7 +41,7 @@ import com.eyeson.sdk.events.EyesonEventListener
 import com.eyeson.sdk.events.MediaPlaybackResponse
 import com.eyeson.sdk.events.NeededPermissions
 import com.eyeson.sdk.events.PresentationResponse
-import com.eyeson.sdk.model.local.api.MeetingInfo
+import com.eyeson.sdk.model.local.api.MeetingInfoInitial
 import com.eyeson.sdk.model.local.api.MeetingOptions
 import com.eyeson.sdk.model.local.api.PermalinkMeetingInfo
 import com.eyeson.sdk.model.local.api.UserInfo
@@ -94,28 +94,22 @@ class MeetingViewModel @Inject constructor(
             addEvent("onPermissionsNeeded: neededPermissions $neededPermissions")
         }
 
-        override fun onMeetingJoining(meetingInfo: MeetingInfo) {
+        override fun onMeetingJoining(meetingInfo: MeetingInfoInitial) {
             with(meetingInfo) {
                 addEvent(
                     "onMeetingJoining: accessKey: $accessKey;  name $name; startedAt $startedAt; user $user; " +
                             "locked $locked; guestToke $guestToken; guestLink $guestLink; activeRecording " +
                             "$activeRecording; activeBroadcasts $activeBroadcasts; snapshots $snapshots;" +
-                            " meetingOptions $meetingOptions"
+                            " meetingOptions $meetingOptions, playbacks $playbacks"
                 )
             }
-            meetingState.value = MeetingState.Connecting(meetingInfo)
+            meetingState.value = MeetingState.Connecting
+            _recordingActive.value = meetingInfo.activeRecording != null
         }
 
-        override fun onMeetingJoined(meetingInfo: MeetingInfo) {
-            with(meetingInfo) {
-                addEvent(
-                    "onMeetingJoined:" + "accessKey: $accessKey;  name $name; startedAt $startedAt; user $user; " +
-                            "locked $locked; guestToke $guestToken; guestLink $guestLink; activeRecording " +
-                            "$activeRecording; activeBroadcasts $activeBroadcasts; snapshots $snapshots;" +
-                            " meetingOptions $meetingOptions"
-                )
-            }
-            meetingState.value = MeetingState.Connected(meetingInfo)
+        override fun onMeetingJoined() {
+            addEvent("onMeetingJoined")
+            meetingState.value = MeetingState.Connected
             lastCameraState = isVideoEnabled()
             _cameraActive.value = isVideoEnabled()
         }
@@ -241,6 +235,7 @@ class MeetingViewModel @Inject constructor(
 
         override fun onRecordingUpdate(recording: Recording) {
             addEvent("onRecordingUpdate: recording $recording")
+            _recordingActive.value = recording.duration == null
         }
 
         override fun onSnapshotUpdate(snapshots: SnapshotUpdate) {
@@ -339,10 +334,12 @@ class MeetingViewModel @Inject constructor(
                 AudioManager.AUDIOFOCUS_GAIN -> {
                     setRemoteAudioEnabled(_remoteAudioActive.value)
                 }
-                AudioManager.AUDIOFOCUS_LOSS ->  {
+
+                AudioManager.AUDIOFOCUS_LOSS -> {
                     // Permanently lost audio focus. No further callbacks will be received.
                     // Call [EyesonAudioManage.requestAudioFocus] to request focus again
                 }
+
                 AudioManager.AUDIOFOCUS_LOSS_TRANSIENT -> {
                     eyesonMeeting.setRemoteAudioEnabled(false)
                 }
@@ -389,6 +386,7 @@ class MeetingViewModel @Inject constructor(
     val recordingActive: StateFlow<Boolean> = _recordingActive.asStateFlow()
 
     private fun addEvent(text: String, error: Boolean = false) {
+        Timber.d("addEvent: $text")
         _events.value = emptyList<EventEntry>() + EventEntry(text, Date(), error) + _events.value
     }
 
@@ -777,8 +775,8 @@ class MeetingViewModel @Inject constructor(
 
 sealed interface MeetingState {
     data object Initial : MeetingState
-    data class Connecting(val meetingInfo: MeetingInfo) : MeetingState
-    data class Connected(val meetingInfo: MeetingInfo) : MeetingState
+    data object Connecting : MeetingState
+    data object Connected : MeetingState
     data object Disconnected : MeetingState
     data class ConnectionFailed(val reason: CallRejectionReason) : MeetingState
     data class ConnectionTerminated(val reason: CallTerminationReason) : MeetingState

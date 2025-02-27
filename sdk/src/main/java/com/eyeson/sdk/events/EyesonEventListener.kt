@@ -1,6 +1,6 @@
 package com.eyeson.sdk.events
 
-import com.eyeson.sdk.model.local.api.MeetingInfo
+import com.eyeson.sdk.model.local.api.MeetingInfoInitial
 import com.eyeson.sdk.model.local.api.MeetingOptions
 import com.eyeson.sdk.model.local.api.UserInfo
 import com.eyeson.sdk.model.local.call.ConnectionStatistic
@@ -13,8 +13,8 @@ import java.util.Date
 
 abstract class EyesonEventListener {
     open fun onPermissionsNeeded(neededPermissions: List<NeededPermissions>) {}
-    open fun onMeetingJoining(meetingInfo: MeetingInfo) {}
-    open fun onMeetingJoined(meetingInfo: MeetingInfo) {}
+    open fun onMeetingJoining(meetingInfo: MeetingInfoInitial) {}
+    open fun onMeetingJoined() {}
     open fun onMeetingJoinFailed(callRejectionReason: CallRejectionReason) {}
     open fun onMeetingTerminated(callTerminationReason: CallTerminationReason) {}
     open fun onMeetingLocked(locked: Boolean) {}
@@ -25,13 +25,13 @@ abstract class EyesonEventListener {
     open fun onMediaPlayback(playing: List<Playback>) {}
     open fun onMediaPlaybackStartResponse(
         playId: String?,
-        mediaPlaybackResponse: MediaPlaybackResponse
+        mediaPlaybackResponse: MediaPlaybackResponse,
     ) {
     }
 
     open fun onMediaPlaybackStopResponse(
         playId: String,
-        mediaPlaybackResponse: MediaPlaybackResponse
+        mediaPlaybackResponse: MediaPlaybackResponse,
     ) {
     }
 

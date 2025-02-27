@@ -81,6 +81,7 @@ import com.eyeson.android.R
 import com.eyeson.android.service.MeetingActiveService
 import com.eyeson.android.ui.components.Chat
 import com.eyeson.android.ui.components.KeepScreenOn
+import com.eyeson.android.ui.components.RecordingIndicator
 import com.eyeson.android.ui.components.applyRoundedCornerPadding
 import com.eyeson.android.ui.components.findActivity
 import com.eyeson.android.ui.theme.DarkGray800
@@ -88,13 +89,10 @@ import com.eyeson.android.ui.theme.EyesonDemoTheme
 import com.eyeson.android.ui.theme.OverlayMenuHorizontalShape
 import com.eyeson.android.ui.theme.OverlayMenuVerticalShape
 import com.eyeson.sdk.events.CallTerminationReason
-import com.eyeson.sdk.model.local.api.MeetingInfo
-import com.eyeson.sdk.model.local.api.MeetingOptions
 import com.eyeson.sdk.model.local.api.UserInfo
 import com.eyeson.sdk.webrtc.VideoRenderer
 import org.webrtc.EglBase
 import org.webrtc.RendererCommon
-import java.util.Date
 import kotlin.math.roundToInt
 
 
@@ -130,6 +128,7 @@ fun MeetingRout(
     val chatMessages by viewModel.chatMessages.collectAsStateWithLifecycle()
     val audioDevices by viewModel.audioDevices.collectAsStateWithLifecycle()
     val userInMeeting by viewModel.userInMeeting.collectAsStateWithLifecycle()
+    val recordingActive by viewModel.recordingActive.collectAsStateWithLifecycle()
 
     val window = context.findActivity().window
     val windowInsetsController =
@@ -347,6 +346,7 @@ fun MeetingRout(
         sendChatMessage = { viewModel.sendChatMessage(it) },
         getEventsClip = { viewModel.getEventsClip() },
         clearLog = { viewModel.clearLog() },
+        recordingActive = recordingActive,
         modifier = modifier,
 
         )
@@ -392,6 +392,7 @@ fun MeetingScreen(
     sendChatMessage: (String) -> Unit,
     getEventsClip: () -> ClipData,
     clearLog: () -> Unit,
+    recordingActive: Boolean,
     modifier: Modifier = Modifier,
 ) {
 
@@ -446,98 +447,16 @@ fun MeetingScreen(
             )
         }
 
-    if (configuration.isLandscape()) {
-        Row(
-            modifier = modifier
-                .background(DarkGray800)
-                .displayCutoutPadding()
-
-        ) {
-            VerticalMeetingControls(
-                onBack = onBack,
-                audioOnly = audioOnly,
-                cameraChangeable = !presentationActive,
-                onSwitchCamera = switchCamera,
-                videoMuted = cameraActive,
-                onMuteVideo = muteVideo,
-                microphoneMuted = !microphoneActive,
-                onMuteMicrophone = toggleMicrophoneActive,
-                audioMuted = !remoteAudioActive,
-                onMuteAudio = toggleRemoteAudioActive,
-                modifier = Modifier.applyRoundedCornerPadding(
-                    leftFraction = 0f,
-                    topFraction = 0.35f,
-                    rightFraction = 0f,
-                    bottomFraction = 0.35f
-                )
-            )
-
-            meetingContent(
-                Modifier.weight(1f),
-                Modifier
-                    .padding(end = 16.dp, bottom = 16.dp)
-                    .size(120.dp, 80.dp)
-                    .fillMaxSize()
-                    .zIndex(1f)
-            )
-
-            VerticalMeetingSettings(
-                openSetting = {
-                    whatIsOpen = SETTINGS_DEFAULT
-                    open = true
-                },
-                openChat = {
-                    chatOpen = true
-                },
-                modifier = Modifier.applyRoundedCornerPadding(
-                    leftFraction = 0f,
-                    topFraction = 0.35f,
-                    rightFraction = 0f,
-                    bottomFraction = 0.35f
-                )
-            )
-        }
-    } else {
-        Column(modifier = modifier.displayCutoutPadding()) {
-            TopAppBar(
-                title = { /* NOOP */ },
-                navigationIcon = {
-                    IconButton(onClick = onBack) {
-                        Icon(
-                            imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                            stringResource(id = R.string.label_go_back),
-                            tint = MaterialTheme.colorScheme.onSurface
-                        )
-                    }
-                },
-                actions = {
-                    IconButton(onClick = {
-                        whatIsOpen = SETTINGS_DEFAULT
-                        open = true
-                    }) {
-                        Icon(
-                            imageVector = Icons.Filled.MoreVert,
-                            stringResource(id = R.string.label_settings),
-                            tint = MaterialTheme.colorScheme.onSurface
-                        )
-                    }
-                },
-                modifier = Modifier.zIndex(1f)
-            )
-            Box(
-                modifier = Modifier
-                    .fillMaxSize()
+    Box {
+        if (configuration.isLandscape()) {
+            Row(
+                modifier = modifier
                     .background(DarkGray800)
-            ) {
-                meetingContent(
-                    Modifier
-                        .align(Alignment.Center),
-                    Modifier
-                        .padding(end = 16.dp, bottom = 104.dp)
-                        .size(80.dp, 120.dp)
-                )
+                    .displayCutoutPadding()
 
-                HorizontalMeetingControls(
+            ) {
+                VerticalMeetingControls(
+                    onBack = onBack,
                     audioOnly = audioOnly,
                     cameraChangeable = !presentationActive,
                     onSwitchCamera = switchCamera,
@@ -547,13 +466,114 @@ fun MeetingScreen(
                     onMuteMicrophone = toggleMicrophoneActive,
                     audioMuted = !remoteAudioActive,
                     onMuteAudio = toggleRemoteAudioActive,
-                    onShowChat = { chatOpen = true },
-                    modifier = Modifier
-                        .padding(bottom = 16.dp)
-                        .align(Alignment.BottomEnd)
-                        .zIndex(1f),
+                    modifier = Modifier.applyRoundedCornerPadding(
+                        leftFraction = 0f,
+                        topFraction = 0.35f,
+                        rightFraction = 0f,
+                        bottomFraction = 0.35f
+                    )
+                )
+
+                meetingContent(
+                    Modifier.weight(1f),
+                    Modifier
+                        .padding(end = 16.dp, bottom = 16.dp)
+                        .size(120.dp, 80.dp)
+                        .fillMaxSize()
+                        .zIndex(1f)
+                )
+
+                VerticalMeetingSettings(
+                    openSetting = {
+                        whatIsOpen = SETTINGS_DEFAULT
+                        open = true
+                    },
+                    openChat = {
+                        chatOpen = true
+                    },
+                    modifier = Modifier.applyRoundedCornerPadding(
+                        leftFraction = 0f,
+                        topFraction = 0.35f,
+                        rightFraction = 0f,
+                        bottomFraction = 0.35f
+                    )
                 )
             }
+
+            if (meetingState is MeetingState.Connected && recordingActive) {
+                RecordingIndicator(
+                    modifier = Modifier
+                        .align(Alignment.TopCenter)
+                        .padding(top = 8.dp)
+                )
+            }
+        } else {
+            Column(modifier = modifier.displayCutoutPadding()) {
+                TopAppBar(
+                    title = { /* NOOP */ },
+                    navigationIcon = {
+                        IconButton(onClick = onBack) {
+                            Icon(
+                                imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                                stringResource(id = R.string.label_go_back),
+                                tint = MaterialTheme.colorScheme.onSurface
+                            )
+                        }
+                    },
+                    actions = {
+                        IconButton(onClick = {
+                            whatIsOpen = SETTINGS_DEFAULT
+                            open = true
+                        }) {
+                            Icon(
+                                imageVector = Icons.Filled.MoreVert,
+                                stringResource(id = R.string.label_settings),
+                                tint = MaterialTheme.colorScheme.onSurface
+                            )
+                        }
+                    },
+                    modifier = Modifier.zIndex(1f)
+                )
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .background(DarkGray800)
+                ) {
+                    meetingContent(
+                        Modifier
+                            .align(Alignment.Center),
+                        Modifier
+                            .padding(end = 16.dp, bottom = 104.dp)
+                            .size(80.dp, 120.dp)
+                    )
+
+                    if (meetingState is MeetingState.Connected && recordingActive) {
+                        RecordingIndicator(
+                            modifier = Modifier
+                                .align(Alignment.TopStart)
+                                .padding(top = 8.dp, start = 8.dp)
+                        )
+                    }
+
+                    HorizontalMeetingControls(
+                        audioOnly = audioOnly,
+                        cameraChangeable = !presentationActive,
+                        onSwitchCamera = switchCamera,
+                        videoMuted = cameraActive,
+                        onMuteVideo = muteVideo,
+                        microphoneMuted = !microphoneActive,
+                        onMuteMicrophone = toggleMicrophoneActive,
+                        audioMuted = !remoteAudioActive,
+                        onMuteAudio = toggleRemoteAudioActive,
+                        onShowChat = { chatOpen = true },
+                        modifier = Modifier
+                            .padding(bottom = 16.dp)
+                            .align(Alignment.BottomEnd)
+                            .zIndex(1f),
+                    )
+                }
+            }
+
         }
     }
 
@@ -986,47 +1006,7 @@ private fun generateScreenShareNotification(context: Context): Notification {
 fun SettingsScreenPreview() {
 
     val context = LocalContext.current
-    val meetingState = MeetingState.Connected(
-        MeetingInfo(
-            accessKey = "accessKey",
-            name = "name",
-            startedAt = Date(),
-            user = UserInfo(
-                id = "userId",
-                name = "userName",
-                avatar = "userAvatar",
-                guest = false,
-                joinedAt = Date()
-            ),
-            locked = false,
-            guestToken = "guestToken",
-            guestLink = "guestLink",
-            activeRecording = null,
-            activeBroadcasts = null,
-            snapshots = null,
-            MeetingOptions(
-                backgroundColor = "#121212",
-                broadcastAvailable = true,
-                customFields = emptyMap(),
-                exitUrl = null,
-                kickAvailable = true,
-                layout = "auto",
-                layoutAvailable = false,
-                layoutMap = emptyList(),
-                layoutName = null,
-                layoutUsers = emptyList(),
-                lockAvailable = true,
-                reactionAvailable = true,
-                recordingAvailable = true,
-                sfuMode = "ptp",
-                showLabel = true,
-                showNames = true,
-                suggestGuestNames = false,
-                voiceActivation = true,
-                widescreen = true
-            )
-        )
-    )
+    val meetingState = MeetingState.Connected
     EyesonDemoTheme {
         MeetingScreen(
             meetingState = meetingState,
@@ -1063,6 +1043,7 @@ fun SettingsScreenPreview() {
             muteAll = {/*NOOP*/ },
             sendChatMessage = {/*NOOP*/ },
             getEventsClip = { ClipData.newPlainText("Eyeson SDK event log", "") },
+            recordingActive = true,
             clearLog = {/*NOOP*/ },
         )
     }

@@ -1,5 +1,6 @@
 package com.eyeson.android.ui.theme
 
+import androidx.compose.material3.ColorScheme
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
@@ -27,3 +28,15 @@ fun EyesonDemoTheme(content: @Composable () -> Unit) {
         content = content
     )
 }
+
+val ColorScheme.recordingIndicator: Color
+    get() = Red700
+
+
+val ColorScheme.recordingBackground: Color
+    get() = Color.Black.copy(alpha = 0.2f)
+
+
+val ColorScheme.onScrim: Color
+    get() = Gray400
+

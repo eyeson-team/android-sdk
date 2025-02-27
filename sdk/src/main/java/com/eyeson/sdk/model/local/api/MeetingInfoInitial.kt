@@ -1,12 +1,11 @@
 package com.eyeson.sdk.model.local.api
 
 import com.eyeson.sdk.model.local.meeting.BroadcastUpdate
-import com.eyeson.sdk.model.local.meeting.Playback
 import com.eyeson.sdk.model.local.meeting.Recording
 import com.eyeson.sdk.model.local.meeting.SnapshotUpdate
 import java.util.Date
 
-data class MeetingInfo(
+data class MeetingInfoInitial(
     val accessKey: String,
     val id: String,
     val name: String,
@@ -19,5 +18,5 @@ data class MeetingInfo(
     val activeBroadcasts: BroadcastUpdate?,
     val snapshots: SnapshotUpdate?,
     val meetingOptions: MeetingOptions,
-    val playbacks: List<Playback>,
+    val playbacks: List<PlaybackInitial>,
 )

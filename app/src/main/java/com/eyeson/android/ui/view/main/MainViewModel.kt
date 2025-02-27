@@ -12,6 +12,7 @@ import com.eyeson.sdk.events.CallRejectionReason
 import com.eyeson.sdk.events.CallTerminationReason
 import com.eyeson.sdk.events.EyesonEventListener
 import com.eyeson.sdk.model.local.api.MeetingInfo
+import com.eyeson.sdk.model.local.api.MeetingInfoInitial
 import com.eyeson.sdk.model.local.api.UserInfo
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -34,7 +35,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     private var presentationActive = false
 
     private val eventListener = object : EyesonEventListener() {
-        override fun onMeetingJoined(meetingInfo: MeetingInfo) {
+        override fun onMeetingJoined() {
             inCall = true
             lastCameraState = isVideoEnabled()
         }

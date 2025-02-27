@@ -10,6 +10,6 @@ internal data class RoomDto(
     @Json(name = "name") var name: String,
     @Json(name = "ready") var ready: Boolean,
     @Json(name = "started_at") val startedAt: Date,
-    @Json(name = "guest_token") var guestToken: String
+    @Json(name = "guest_token") var guestToken: String?
 )
 
