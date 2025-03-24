@@ -1123,8 +1123,8 @@ internal class PeerConnectionClient(
         val useLegacyAudioDevice: Boolean,
         val dataChannelParameters: DataChannelParameters,
     ) {
-        constructor(ecoMode: Boolean, widescreen: Boolean) : this(
-            videoCallEnabled = !ecoMode,
+        constructor(audioOnly: Boolean, widescreen: Boolean) : this(
+            videoCallEnabled = !audioOnly,
             loopback = false,
             tracing = false,
             videoWidth = 640,

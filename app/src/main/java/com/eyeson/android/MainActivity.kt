@@ -17,9 +17,9 @@ class MainActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-        if (compose) {
-            enableEdgeToEdge()
+        enableEdgeToEdge()
 
+        if (compose) {
             setContent {
                 EyesonDemoTheme {
                     EyesonDemoNavHost()
@@ -29,7 +29,6 @@ class MainActivity : AppCompatActivity() {
             /*
             * Basic example that shows how to use eyeson SDK in the view world.
             */
-
             setContentView(R.layout.main_activity)
             if (savedInstanceState == null) {
                 supportFragmentManager.beginTransaction()
@@ -37,6 +36,5 @@ class MainActivity : AppCompatActivity() {
                     .commitNow()
             }
         }
-
     }
 }

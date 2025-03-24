@@ -224,7 +224,10 @@ internal class CallLogic(
         PeerConnectionClient(
             context,
             rootEglBase,
-            PeerConnectionClient.PeerConnectionParameters(audioOnly, meeting.options.widescreen),
+            PeerConnectionClient.PeerConnectionParameters(
+                audioOnly = audioOnly,
+                widescreen = meeting.options.widescreen
+            ),
             peerConnectionEvents,
             dataChannelEvents,
             experimentalFeatureStereo

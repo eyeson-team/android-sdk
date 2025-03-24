@@ -1,20 +1,17 @@
 plugins {
-    id("com.android.application")
-    id("kotlin-android")
-    kotlin("kapt")
-    id(Plugins.hilt)
-    id(Plugins.compose)
+    alias(libs.plugins.eyeson.application)
+    alias(libs.plugins.hilt)
+    alias(libs.plugins.compose)
+    alias(libs.plugins.kapt)
+    alias(libs.plugins.ksp)
 }
 
 android {
-    compileSdk = Versions.compileSdk
 
     defaultConfig {
         applicationId = "com.eyeson.android"
-        minSdk = Versions.minSdk
-        targetSdk = Versions.targetSdk
-        versionCode = Versions.versionCode
-        versionName = Versions.versionName
+        versionCode = EyesonConstants.DEMO_APP_VERSION
+        versionName = EyesonConstants.VERSION
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
@@ -38,24 +35,11 @@ android {
         }
     }
 
-    compileOptions {
-        sourceCompatibility = JavaVersion.VERSION_17
-        targetCompatibility = JavaVersion.VERSION_17
-        isCoreLibraryDesugaringEnabled = true
-    }
-    kotlinOptions {
-        jvmTarget = "17"
-    }
-
     buildFeatures {
         viewBinding = true
         dataBinding = true
         compose = true
         buildConfig = true
-    }
-
-    composeOptions {
-        kotlinCompilerExtensionVersion = Versions.composeCompiler
     }
 
     kapt {
@@ -73,61 +57,54 @@ if (project.file("flavor-configurations.gradle").exists()) {
 dependencies {
     implementation(project(":sdk"))
 
-    coreLibraryDesugaring(Libraries.desugarJdkLibsNio)
+    coreLibraryDesugaring(libs.android.desugarJdkLibsNio)
 
-    implementation(Libraries.hiltAndroid)
-    kapt(LibrariesKapt.hiltAndroidCompiler)
-    implementation(Libraries.hiltNavigationCompose)
+    implementation(libs.hilt.android)
+    ksp(libs.hilt.compiler)
+    implementation(libs.androidx.hilt.navigation.compose)
 
-    implementation(Libraries.timber)
-    implementation(Libraries.coreKtx)
-    implementation(Libraries.appcompat)
-//    implementation(Libraries.material)
-    implementation(Libraries.constraintLayout)
-    implementation(Libraries.lifecycleViewModelKtx)
-    implementation(Libraries.lifecycleViewModelCompose)
-    implementation(Libraries.lifecycleRuntimeCompose)
-    implementation(Libraries.lifecycleRuntimeKtx)
-    implementation(Libraries.fragmentKtx)
-    implementation(Libraries.googleAndroidMaterial)
+    implementation(libs.timber)
+    implementation(libs.androidx.core.ktx)
+    implementation(libs.androidx.appcompat)
+    implementation(libs.androidx.constraintLayout)
+    implementation(libs.androidx.lifecycle.viewmodel)
+    implementation(libs.androidx.lifecycle.viewmodel.compose)
+    implementation(libs.androidx.lifecycle.runtime.compose)
+    implementation(libs.androidx.lifecycle.runtime.ktx)
+    implementation(libs.androidx.fragment)
+    implementation(libs.android.material)
 
-    val composeBom = platform(Libraries.androidxComposeBom)
-    implementation(composeBom)
-    androidTestImplementation(composeBom)
+    implementation(platform(libs.androidx.compose.bom))
+    androidTestImplementation(platform(libs.androidx.compose.bom))
 
-    // TODO user proper version files
-    implementation("androidx.camera:camera-core:1.4.1")
-    implementation("androidx.camera:camera-lifecycle:1.4.1")
-    implementation("androidx.camera:camera-camera2:1.4.1")
-    implementation("androidx.lifecycle:lifecycle-runtime-ktx:2.8.7")
+    implementation(libs.androidx.camera.core)
+    implementation(libs.androidx.camera.lifecycle)
+    implementation(libs.androidx.camera.camera2)
+    implementation(libs.androidx.lifecycle.runtime.ktx)
 
 
-    implementation(Libraries.androidxComposeMaterial)
-    implementation(Libraries.androidxComposeUiToolingPreview)
-    debugImplementation(Libraries.androidxComposeDebugUiTooling)
-    implementation(Libraries.androidxActivityCompose)
-    implementation(Libraries.androidxLifecycleViewModelCompose)
-    implementation(Libraries.androidxNavigationCompose)
-    implementation(Libraries.accompanistSystemUiController)
-    implementation(Libraries.accompanistPermissions)
-    implementation(Libraries.constraintLayoutCompose)
+    implementation(libs.androidx.compose.material3)
+    implementation(libs.androidx.compose.ui.tooling.preview)
+    debugImplementation(libs.androidx.compose.ui.tooling)
+    implementation(libs.androidx.activity.compose)
+    implementation(libs.androidx.lifecycle.viewmodel.compose)
+    implementation(libs.androidx.navigation.compose)
+    implementation(libs.accompanist.systemUiController)
+    implementation(libs.accompanist.permissions)
+    implementation(libs.androidx.annotation)
+    implementation(libs.androidx.datastore.preferences)
 
-    implementation(Libraries.legacySupportV4)
-    implementation(Libraries.recyclerview)
-    implementation(Libraries.annotation)
-    implementation(Libraries.datastorePreference)
+    implementation(libs.qrScanner)
+    implementation(libs.okhttp)
+    implementation(libs.okhttp.tls)
+    implementation(libs.okhttp.tls)
+    implementation(libs.okhttp.logging)
+    implementation(libs.coil.compose)
 
-    implementation(Libraries.qrScanner)
-    implementation(Libraries.okhttp)
-    implementation(Libraries.okhttpTls)
-    implementation(Libraries.okhttpLoggingInterceptor)
-    implementation(Libraries.coil)
-    implementation(Libraries.coilCompose)
+    implementation(libs.androidx.media3.exoplayer)
+    implementation(libs.androidx.media3.ui)
 
-    implementation(Libraries.media3Exoplayer)
-    implementation(Libraries.media3Ui)
-
-    testImplementation(Libraries.jUnit)
-    androidTestImplementation(Libraries.jUnitTest)
-    androidTestImplementation(Libraries.espressoCore)
+    testImplementation(libs.jUnit)
+    androidTestImplementation(libs.androidx.test.ext)
+    androidTestImplementation(libs.androidx.test.espresso.core)
 }

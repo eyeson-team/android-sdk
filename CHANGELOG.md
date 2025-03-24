@@ -6,6 +6,35 @@ The format is based on [Keep a Changelog] and this project adheres to
 
 ## [Unreleased]
 ## [Released]
+## [1.2.0] - 2025-03-24
+### Added
+- version catalog `libs.versions.toml`
+- build-logic
+  - config convention plugins
+  - constants
+### Changed
+- Dependency updates
+  - Gradle `8.9.0`
+  - CoroutinesAndroid `1.8.1`
+  - AndroidxLifecycle `2.8.7`
+  - AndroidMaterial `1.13.0-alpha11`
+  - AndroidxAnnotation `1.9.1`
+  - AndroidxAppcompat `1.7.0`
+  - AndroidxComposeBom `2025.03.00`
+  - AndroidxCore `1.15.0`
+  - AndroidxEspresso `3.6.1`
+  - AndroidxFragment `1.8.6`
+  - AndroidxNavigation `2.8.9`
+  - AndroidxTestExt `1.2.1`
+  - Coil `2.7.0`
+  - ConstraintLayout `2.2.1`
+  - DatastorePreference `1.1.3`
+  - DesugarJdkLibsNio `2.1.5`
+  - Media3 `1.5.1`
+- Demo app
+  - Apply insets in View example
+### Removed
+-  buildSrc directory
 ## [1.1.19] - 2025-02-27
 ### Added
 - MeetingInfo

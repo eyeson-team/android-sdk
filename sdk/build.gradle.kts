@@ -1,31 +1,25 @@
 plugins {
-    id("com.android.library")
-    id("kotlin-android")
+    alias(libs.plugins.eyeson.library)
+    alias(libs.plugins.ksp)
     id("maven-publish")
-    id(Plugins.ksp)
 }
 
-group = Versions.groupId
-version = Versions.versionName
+group = EyesonConstants.GROUP_ID
+version = EyesonConstants.VERSION
 
 android {
-    compileSdk = Versions.compileSdk
-
     defaultConfig {
-        minSdk = Versions.minSdk
-
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         consumerProguardFiles("consumer-rules.pro")
 
-        buildConfigField("String", "SDK_VERSION", "\"${Versions.versionName}\"")
+        buildConfigField("String", "SDK_VERSION", "\"${version}\"")
     }
 
     buildTypes {
         release {
             isMinifyEnabled = false
             proguardFiles(
-                getDefaultProguardFile("proguard-android-optimize.txt"),
-                "proguard-rules.pro"
+                getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro"
             )
         }
     }
@@ -46,17 +40,7 @@ android {
         }
     }
 
-    compileOptions {
-        sourceCompatibility = JavaVersion.VERSION_17
-        targetCompatibility = JavaVersion.VERSION_17
-    }
-    kotlinOptions {
-        jvmTarget = "17"
-    }
-
     buildFeatures {
-        viewBinding = true
-        dataBinding = true
         buildConfig = true
     }
 
@@ -68,23 +52,22 @@ if (project.file("flavor-configurations.gradle").exists()) {
 }
 
 dependencies {
-    api(Libraries.webrtcAndroid)
+    api(libs.eyeson.webrtc.android)
 
-    implementation(Libraries.coreKtx)
-    implementation(Libraries.appcompat)
+    implementation(libs.kotlinx.coroutines.android)
+    implementation(libs.androidx.core.ktx)
+    implementation(libs.okhttp)
+    implementation(libs.okhttp.tls)
+    implementation(libs.okhttp.logging)
+    implementation(libs.retrofit)
+    implementation(libs.retrofit.converter.moshi)
+    implementation(libs.moshi)
+    implementation(libs.moshi.adapters)
+    ksp(libs.moshi.kotlin.codegen)
 
-    implementation(Libraries.okhttp)
-    implementation(Libraries.okhttpTls)
-    implementation(Libraries.retrofit)
-    implementation(Libraries.okhttpLoggingInterceptor)
-    implementation(Libraries.retrofitMoshiConverter)
-    implementation(Libraries.moshi)
-    implementation(Libraries.moshiAdapters)
-    ksp(LibrariesKapt.moshiKotlinCodegen)
-
-    testImplementation(Libraries.jUnit)
-    androidTestImplementation(Libraries.jUnitTest)
-    androidTestImplementation(Libraries.espressoCore)
+    testImplementation(libs.jUnit)
+    androidTestImplementation(libs.androidx.test.ext)
+    androidTestImplementation(libs.androidx.test.espresso.core)
 }
 
 afterEvaluate {
@@ -92,9 +75,9 @@ afterEvaluate {
         publications {
             create<MavenPublication>("sdk") {
                 from(components["productionRelease"])
-                groupId = Versions.groupId
+                groupId = EyesonConstants.GROUP_ID
                 artifactId = "sdk"
-                version = Versions.versionName
+                version = EyesonConstants.VERSION
             }
         }
     }
