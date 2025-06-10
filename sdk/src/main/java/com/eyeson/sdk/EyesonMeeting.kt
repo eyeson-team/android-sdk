@@ -3,7 +3,6 @@ package com.eyeson.sdk
 import android.Manifest
 import android.app.Application
 import android.app.Notification
-import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.hardware.camera2.CameraManager
@@ -64,6 +63,10 @@ import com.eyeson.sdk.model.meeting.incoming.BroadcastUpdateDto
 import com.eyeson.sdk.model.meeting.incoming.SnapshotUpdateDto
 import com.eyeson.sdk.network.RestCommunicator
 import com.eyeson.sdk.network.WebSocketCommunicator
+import com.eyeson.sdk.options.AudioOptions
+import com.eyeson.sdk.options.ScreenShareOptions
+import com.eyeson.sdk.options.VideoOptions
+import com.eyeson.sdk.options.VideoResolution
 import com.eyeson.sdk.utils.Logger
 import com.eyeson.sdk.utils.collectIn
 import kotlinx.coroutines.CancellationException
@@ -90,13 +93,13 @@ import java.util.concurrent.atomic.AtomicBoolean
  * interact with meeting participants and the meeting environment.
  *
  * @param application The Android Application instance. Used for context and resource access.
- * @param experimentalFeatureStereo **Experimental.** A boolean indicating whether to enable experimental stereo audio features.
- *  This feature is under development and may not be stable. Use with caution. Defaults to `false`.
  * @param customApiUrl An optional custom API URL to override the default eyeson API endpoint.
  */
 class EyesonMeeting(
     private val application: Application,
-    private val experimentalFeatureStereo: Boolean = false,
+    private var audioOptions: AudioOptions = AudioOptions(),
+    private var videoOptions: VideoOptions = VideoOptions(),
+    private var screenShareOptions: ScreenShareOptions = ScreenShareOptions(),
     customApiUrl: String? = null,
 ) {
     private var eventListener: EyesonEventListener? = null
@@ -127,6 +130,31 @@ class EyesonMeeting(
         if (customApiUrl != null) {
             API_URL = customApiUrl
         }
+    }
+
+    fun updateVideoOptions(
+        videoResolution: VideoResolution = videoOptions.videoResolution,
+        videoFps: Int = videoOptions.videoFps,
+        videoMaxBitrate: Int = videoOptions.videoMaxBitrate,
+    ) {
+        videoOptions = videoOptions.copy(
+            videoResolution = videoResolution,
+            videoFps = videoFps,
+            videoMaxBitrate = videoMaxBitrate
+        )
+        callLogic?.videoOptions = videoOptions
+    }
+
+
+    fun updateScreenShareOptions(
+        screenShareFps: Int = screenShareOptions.screenShareFps,
+        screenShareResolution: VideoResolution = screenShareOptions.screenShareResolution,
+    ) {
+        screenShareOptions = screenShareOptions.copy(
+            screenShareFps = screenShareFps,
+            screenShareResolution = screenShareResolution
+        )
+        callLogic?.screenShareOptions = screenShareOptions
     }
 
     /**
@@ -161,7 +189,6 @@ class EyesonMeeting(
      *
      * @param accessKey The access key for the Eyeson meeting.
      * @param frontCamera `true` if the front camera should be used; `false` for the rear camera.
-     * @param audioOnly `true` if the meeting should be audio-only (no video); `false` to enable video.
      * @param local A [VideoSink] to display the local video feed. Can be `null` if local video is not needed.
      * @param remote A [VideoSink] to display the remote video feed. Can be `null` if remote video is not needed.
      * @param eventListener An [EyesonEventListener] to receive events related to the meeting, such as connection status, participant changes, etc.
@@ -175,7 +202,6 @@ class EyesonMeeting(
     fun join(
         accessKey: String,
         frontCamera: Boolean,
-        audioOnly: Boolean,
         local: VideoSink?,
         remote: VideoSink?,
         eventListener: EyesonEventListener,
@@ -187,7 +213,6 @@ class EyesonMeeting(
         joinMeeting(
             { restCommunicator.getMeetingInfo(accessKey) },
             frontCamera,
-            audioOnly,
             local,
             remote,
             microphoneEnabledOnStart,
@@ -207,7 +232,6 @@ class EyesonMeeting(
      * @param id An optional identifier for the guest user. Can be null if no specific ID is needed.
      * @param avatar An optional URL to an avatar image for the guest user. Can be null if no avatar is desired.
      * @param frontCamera `true` if the front camera should be used; `false` for the rear camera.
-     * @param audioOnly `true` if the meeting should be audio-only (no video); `false` to enable video.
      * @param local A [VideoSink] to display the local video feed. Can be `null` if local video is not needed.
      * @param remote A [VideoSink] to display the remote video feed. Can be `null` if remote video is not needed.
      * @param eventListener An [EyesonEventListener] to receive events related to the meeting, such as connection status, participant changes, etc.
@@ -223,7 +247,6 @@ class EyesonMeeting(
         id: String?,
         avatar: String?,
         frontCamera: Boolean,
-        audioOnly: Boolean,
         local: VideoSink?,
         remote: VideoSink?,
         eventListener: EyesonEventListener,
@@ -242,7 +265,6 @@ class EyesonMeeting(
                 )
             },
             frontCamera,
-            audioOnly,
             local,
             remote,
             microphoneEnabledOnStart,
@@ -259,7 +281,6 @@ class EyesonMeeting(
      * @param userToken The user token required for authentication with the Eyeson service.
      *                  This token is obtained from the Eyeson API.
      * @param frontCamera `true` if the front camera should be used; `false` for the rear camera.
-     * @param audioOnly `true` if the meeting should be audio-only (no video); `false` to enable video.
      * @param local A [VideoSink] to display the local video feed. Can be `null` if local video is not needed.
      * @param remote A [VideoSink] to display the remote video feed. Can be `null` if remote video is not needed.
      * @param eventListener An [EyesonEventListener] to receive events related to the meeting, such as connection status, participant changes, etc.
@@ -272,7 +293,6 @@ class EyesonMeeting(
     fun connectPermalink(
         userToken: String,
         frontCamera: Boolean,
-        audioOnly: Boolean,
         local: VideoSink?,
         remote: VideoSink?,
         eventListener: EyesonEventListener,
@@ -284,7 +304,6 @@ class EyesonMeeting(
         joinMeeting(
             { restCommunicator.startPermalinkMeeting(userToken) },
             frontCamera,
-            audioOnly,
             local,
             remote,
             microphoneEnabledOnStart,
@@ -312,7 +331,6 @@ class EyesonMeeting(
     private fun joinMeeting(
         meetingInfoRequest: suspend () -> MeetingDto,
         frontCamera: Boolean,
-        audiOnly: Boolean,
         local: VideoSink?,
         remote: VideoSink?,
         microphoneEnabledOnStart: Boolean = true,
@@ -322,7 +340,7 @@ class EyesonMeeting(
         if (joined.getAndSet(true)) {
             return
         }
-        val neededPermissions = checkForNeededPermissions(audiOnly, application)
+        val neededPermissions = checkForNeededPermissions()
         if (neededPermissions.isNotEmpty()) {
             eventListener?.onPermissionsNeeded(neededPermissions)
             return
@@ -387,7 +405,6 @@ class EyesonMeeting(
                 events.collectIn(eyesonMeetingScope) { command ->
                     handleWebSocketEvents(
                         command,
-                        audiOnly,
                         frontCamera,
                         local,
                         remote,
@@ -417,10 +434,10 @@ class EyesonMeeting(
         asPresentation: Boolean,
     ): Boolean {
         return callLogic?.startScreenShare(
-            screenShareInfo.mediaProjectionPermissionResultData,
-            asPresentation,
-            screenShareInfo.notificationId,
-            screenShareInfo.notification
+            mediaProjectionPermissionResultData = screenShareInfo.mediaProjectionPermissionResultData,
+            notificationId = screenShareInfo.notificationId,
+            notification = screenShareInfo.notification,
+            asPresentation = asPresentation,
         ) {
             if (asPresentation) {
                 setVideoAsPresentation()
@@ -481,7 +498,6 @@ class EyesonMeeting(
 
     private suspend fun handleWebSocketEvents(
         command: LocalBaseCommand,
-        audiOnly: Boolean,
         frontCamera: Boolean,
         local: VideoSink?,
         remote: VideoSink?,
@@ -490,7 +506,7 @@ class EyesonMeeting(
         when (command) {
             is StartCallLocal -> {
                 meeting = command.meeting
-                startCall(command.meeting, audiOnly, frontCamera, local, remote, screenShareInfo)
+                startCall(command.meeting, frontCamera, local, remote, screenShareInfo)
             }
 
             is ResumeCallLocal -> {
@@ -1083,20 +1099,25 @@ class EyesonMeeting(
         return meeting?.user?.toLocal(Date())
     }
 
+
+    fun scaleResolutionDownBy(factor: Double?) {
+        callLogic?.scaleResolutionDownBy(factor)
+    }
+
     private fun startCall(
         meeting: MeetingDto,
-        audiOnly: Boolean,
         frontCamera: Boolean,
         local: VideoSink?,
         remote: VideoSink?,
         screenShareInfo: ScreenShareInfo?,
     ) {
         callLogic = CallLogic(
-            meeting,
-            audiOnly,
-            application,
-            rootEglBase,
-            experimentalFeatureStereo
+            meeting = meeting,
+            context = application,
+            rootEglBase = rootEglBase,
+            audioOptions = audioOptions,
+            videoOptions = videoOptions,
+            screenShareOptions = screenShareOptions
         ).apply {
             setLocalVideoTarget(local)
             setRemoteVideoTarget(remote)
@@ -1245,27 +1266,20 @@ class EyesonMeeting(
         return id
     }
 
-    private fun checkForNeededPermissions(
-        audiOnly: Boolean,
-        context: Context,
-    ): List<NeededPermissions> {
-        val neededPermissions = mutableListOf<NeededPermissions>()
+    private fun checkForNeededPermissions(): List<NeededPermissions> {
+        return buildList {
+            if (ContextCompat.checkSelfPermission(application, Manifest.permission.RECORD_AUDIO)
+                == PackageManager.PERMISSION_DENIED
+            ) {
+                add(NeededPermissions.RECORD_AUDIO)
+            }
 
-        if (ContextCompat.checkSelfPermission(context, Manifest.permission.RECORD_AUDIO)
-            == PackageManager.PERMISSION_DENIED
-        ) {
-            neededPermissions.add(NeededPermissions.RECORD_AUDIO)
+            if (ContextCompat.checkSelfPermission(application, Manifest.permission.CAMERA)
+                == PackageManager.PERMISSION_DENIED
+            ) {
+                add(NeededPermissions.CAMERA)
+            }
         }
-
-        if (!audiOnly
-            && ContextCompat.checkSelfPermission(
-                context,
-                Manifest.permission.CAMERA
-            ) == PackageManager.PERMISSION_DENIED
-        ) {
-            neededPermissions.add(NeededPermissions.CAMERA)
-        }
-        return neededPermissions
     }
 
     companion object {

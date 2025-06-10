@@ -5,6 +5,12 @@ The format is based on [Keep a Changelog] and this project adheres to
 [Semantic Versioning].  
 
 ## [Unreleased]
+### Changed
+- EyesonMeeting signature changes
+  - `EyesonMeeting`
+  - `startScreenShare`  
+- Dependency updates
+  - Gradle `8.10.0`
 ## [Released]
 ## [1.2.0] - 2025-03-24
 ### Added

@@ -51,6 +51,7 @@ import com.eyeson.sdk.model.local.meeting.Playback
 import com.eyeson.sdk.model.local.meeting.PresentationUpdate
 import com.eyeson.sdk.model.local.meeting.Recording
 import com.eyeson.sdk.model.local.meeting.SnapshotUpdate
+import com.eyeson.sdk.options.ScreenShareOptions
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
@@ -458,7 +459,6 @@ class MeetingViewModel @Inject constructor(
                 eyesonMeeting.join(
                     accessKey = checkNotNull(savedStateHandle.get<String>(ACCESS_KEY)),
                     frontCamera = !meetingSettings.rearCamOnStart,
-                    audioOnly = meetingSettings.audioOnly,
                     local = local,
                     remote = remote,
                     eventListener = eventListener,
@@ -475,7 +475,6 @@ class MeetingViewModel @Inject constructor(
                     id = null,
                     avatar = null,
                     frontCamera = !meetingSettings.rearCamOnStart,
-                    audioOnly = meetingSettings.audioOnly,
                     local = local,
                     remote = remote,
                     eventListener = eventListener,
@@ -489,7 +488,6 @@ class MeetingViewModel @Inject constructor(
                 eyesonMeeting.connectPermalink(
                     userToken = checkNotNull(savedStateHandle.get<String>(USER_TOKEN)),
                     frontCamera = !meetingSettings.rearCamOnStart,
-                    audioOnly = meetingSettings.audioOnly,
                     local = local,
                     remote = remote,
                     eventListener = eventListener,
@@ -528,7 +526,6 @@ class MeetingViewModel @Inject constructor(
                         id = null,
                         avatar = null,
                         frontCamera = !meetingSettings.rearCamOnStart,
-                        audioOnly = meetingSettings.audioOnly,
                         local = local,
                         remote = remote,
                         eventListener = eventListener,
@@ -677,7 +674,7 @@ class MeetingViewModel @Inject constructor(
                 notificationId,
                 notification
             ),
-            screenCaptureAsPresentation
+            asPresentation = screenCaptureAsPresentation
         )
 
         _screenShareActive.value = true

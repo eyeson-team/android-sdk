@@ -97,7 +97,6 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                 join(
                     accessKey = accessKey,
                     frontCamera = true,
-                    audioOnly = false,
                     local = local,
                     remote = remote,
                     eventListener = eventListener,
