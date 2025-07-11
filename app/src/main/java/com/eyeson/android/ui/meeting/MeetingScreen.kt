@@ -833,20 +833,22 @@ private fun VideoViews(
             )
         }
 
-        Box(modifier = modifierLocalView
-            .align(Alignment.BottomEnd)
-            .offset { IntOffset(offsetX.roundToInt(), offsetY.roundToInt()) }
-            .pointerInput(Unit) {
-                detectDragGestures { change, dragAmount ->
-                    change.consume()
-                    offsetX += dragAmount.x
-                    offsetY += dragAmount.y
-                }
-            }) {
+        Box(
+            modifier = modifierLocalView
+                .align(Alignment.BottomEnd)
+                .offset { IntOffset(offsetX.roundToInt(), offsetY.roundToInt()) }
+                .pointerInput(Unit) {
+                    detectDragGestures { change, dragAmount ->
+                        change.consume()
+                        offsetX += dragAmount.x
+                        offsetY += dragAmount.y
+                    }
+                }) {
 
             if (localExoPlayer == null) {
                 val localTarget = if (showLocal) {
-                    AndroidView(modifier = Modifier.fillMaxSize(),
+                    AndroidView(
+                        modifier = Modifier.fillMaxSize(),
                         factory = { localVideoRenderer })
 
                     localVideoRenderer

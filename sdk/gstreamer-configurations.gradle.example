@@ -1,0 +1,10 @@
+/**
+* GStreamer Android Configurations
+* This file is used to set up the GStreamer Android configurations for a Gradle project.
+*
+* Copy this file to gstreamer-configurations.gradle and point to the unpacked 
+* GStreamer Android binaries. The copy of this file must *NOT* be checked into
+* Version Control Systems.
+*
+*/
+project.extensions.extraProperties.set("gstAndroidRoot", "/path/to/gst-android-1.26")

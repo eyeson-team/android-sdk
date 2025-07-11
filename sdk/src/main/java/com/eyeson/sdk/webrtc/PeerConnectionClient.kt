@@ -24,6 +24,7 @@ import com.eyeson.sdk.BuildConfig.DEBUG
 import com.eyeson.sdk.model.api.TurnServerDto
 import com.eyeson.sdk.utils.Logger
 import com.eyeson.sdk.utils.WebRTCUtils.logSdp
+import org.freedesktop.gstreamer.GStreamer
 import org.webrtc.AudioSource
 import org.webrtc.AudioTrack
 import org.webrtc.CameraVideoCapturer
@@ -76,7 +77,6 @@ import java.util.TimerTask
 import java.util.concurrent.Executors
 import java.util.concurrent.atomic.AtomicBoolean
 import java.util.regex.Pattern
-
 
 /**
  * Peer connection client implementation.
@@ -471,6 +471,8 @@ internal class PeerConnectionClient(
         }
 
         if (isVideoCallEnabled) {
+            // TODO: Add proper initialization
+            videoCapturer = ByteBufferVideoCapturer()
             peerConnection?.addTrack(
                 createVideoTrack(videoCapturer, videoEnabledOnStart),
                 mediaStreamLabels
@@ -573,22 +575,26 @@ internal class PeerConnectionClient(
         audioSource?.dispose()
         audioSource = null
 
-        Logger.d("Stopping capture.")
         try {
             videoCapturer?.stopCapture()
         } catch (e: InterruptedException) {
             throw RuntimeException(e)
         }
+
         videoCapturerStopped = true
         videoCapturer?.dispose()
+
+        if (videoCapturer !is ByteBufferVideoCapturer) {
+            surfaceTextureHelper?.dispose()
+            surfaceTextureHelper = null
+        }
+
         videoCapturer = null
 
         Logger.d("Closing video source.")
         videoSource?.dispose()
         videoSource = null
 
-        surfaceTextureHelper?.dispose()
-        surfaceTextureHelper = null
 
         localRender = null
         remoteSinks = null
@@ -602,6 +608,10 @@ internal class PeerConnectionClient(
             rootEglBase.release()
         } catch (e: Exception) {
             Logger.d("rootEglBase double free")
+        }
+
+        if (isPipelineRunning) {
+            stopPipeline()
         }
 
         PeerConnectionFactory.stopInternalTracingCapture()
@@ -818,11 +828,28 @@ internal class PeerConnectionClient(
             }
         }
 
-        capturer?.startCapture(
-            captureResolution.first,
-            captureResolution.second,
-            customFps ?: videoFps
-        )
+        if (capturer is ByteBufferVideoCapturer) {
+//          NOTE: For demo (emulator) usage only. RTSP-Stream on local host machine
+            startPipeline("rtsp://10.0.2.2:8554/test", object : FrameCallback {
+                override fun onFrame(
+                    width: Int,
+                    height: Int,
+                    y: ByteArray,
+                    u: ByteArray,
+                    v: ByteArray,
+                ) {
+                    capturer.onFrameFromNative(width, height, y, u, v)
+                }
+
+            })
+        } else {
+            capturer?.startCapture(
+                captureResolution.first,
+                captureResolution.second,
+                customFps ?: videoFps
+            )
+        }
+
         localVideoTrack = factory?.createVideoTrack(VIDEO_TRACK_ID, videoSource)
         renderLocalVideo = videoEnabledOnStart
         localVideoTrack?.setEnabled(videoEnabledOnStart)
@@ -842,9 +869,12 @@ internal class PeerConnectionClient(
             videoSource?.dispose()
             videoCapturer?.stopCapture()
 
-            surfaceTextureHelper?.stopListening()
-            surfaceTextureHelper?.dispose()
-            surfaceTextureHelper = null
+            if (videoCapturer !is ByteBufferVideoCapturer) {
+                surfaceTextureHelper?.stopListening()
+                surfaceTextureHelper?.dispose()
+                surfaceTextureHelper = null
+            }
+
         } catch (e: InterruptedException) {
             throw RuntimeException(e)
         }
@@ -1395,6 +1425,54 @@ internal class PeerConnectionClient(
 
     private fun String.containsPing(): Boolean {
         return contains(TYPE_PING)
+    }
+
+
+    object Gstreamer {
+
+        private var nativeLibLoaded = false
+
+        fun initNativeLib(context: Context) {
+            if (!nativeLibLoaded) {
+                System.loadLibrary("gstreamer_android")
+                System.loadLibrary("native-lib")
+                nativeLibLoaded = true
+                Logger.i("Native library loaded")
+
+                try {
+                    GStreamer.init(context)
+                } catch (e: Exception) {
+                    Logger.e("GStreamer.init Exception $e;")
+                }
+            }
+        }
+    }
+
+    private external fun nativeInitPipeline(rtspUrl: String, frameHandler: Any)
+    private external fun nativeStopPipeline()
+
+    private var isPipelineRunning = false
+
+
+    interface FrameCallback {
+        fun onFrame(width: Int, height: Int, y: ByteArray, u: ByteArray, v: ByteArray)
+    }
+
+    fun startPipeline(
+        rtspUrl: String,
+        frameCallback: FrameCallback,
+    ) {
+        Gstreamer.initNativeLib(appContext)
+        isPipelineRunning = true
+        nativeInitPipeline(rtspUrl, frameCallback)
+    }
+
+    fun stopPipeline() {
+        if (isPipelineRunning) {
+            nativeStopPipeline()
+
+            isPipelineRunning = false
+        }
     }
 
     companion object {
