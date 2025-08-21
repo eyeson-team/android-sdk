@@ -19,3 +19,4 @@ dependencyResolutionManagement {
 rootProject.name = "Eyeson Android SDK"
 include(":app")
 include(":sdk")
+include(":gstreamercapture")

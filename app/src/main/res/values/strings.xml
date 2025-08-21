@@ -65,6 +65,10 @@
     <string name="instead_of_own_video">Instead of own video</string>
     <string name="as_additional_user">As additional user</string>
 
+    <string name="rtsp_as_camera">RTSP as Camera</string>
+    <string name="rtsp_url_hint">RTSP URL</string>
+    <string name="replace_local_video">replace local video</string>
+
     <string name="event_log">Event log</string>
 
     <!-- Meeting -->

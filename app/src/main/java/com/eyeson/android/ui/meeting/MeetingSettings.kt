@@ -6,7 +6,6 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -50,6 +49,9 @@ fun MeetingSettings(
     showVideoPlayback: () -> Unit,
     isVideoPlaying: Boolean,
     stopVideoPlayback: () -> Unit,
+    showReplaceWithRtspStream:() -> Unit,
+    rtspReplacementActive: Boolean,
+    stopRtspReplacement: () -> Unit,
     muteAll: () -> Unit,
     showAudioSettings: () -> Unit,
     showEventLog: () -> Unit,
@@ -71,7 +73,7 @@ fun MeetingSettings(
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .requiredHeightIn(max = (maxHeight.value * verticalContentRatio).dp)
+                    .requiredHeightIn(max = (this.maxHeight.value * verticalContentRatio).dp)
                     .verticalScroll(rememberScrollState())
                     .padding(start = 16.dp)
 
@@ -106,6 +108,20 @@ fun MeetingSettings(
                         stopVideoPlayback
                     } else {
                         showVideoPlayback
+                    }
+                )
+
+                SettingsTextButton(
+                    title = stringResource(id = R.string.rtsp_as_camera),
+                    buttonText = if (rtspReplacementActive) {
+                        stringResource(id = R.string.stop)
+                    } else {
+                        stringResource(id = R.string.select)
+                    },
+                    onClick = if (rtspReplacementActive) {
+                        stopRtspReplacement
+                    } else {
+                        showReplaceWithRtspStream
                     }
                 )
 
@@ -154,7 +170,7 @@ fun AudioSettings(
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .requiredHeightIn(max = (maxHeight.value * verticalContentRatio).dp)
+                    .requiredHeightIn(max = (this.maxHeight.value * verticalContentRatio).dp)
                     .verticalScroll(rememberScrollState())
                     .padding(start = 16.dp)
             ) {
@@ -198,7 +214,7 @@ fun EventLog(
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .requiredHeightIn(max = (maxHeight.value * verticalContentRatio).dp)
+                    .requiredHeightIn(max = (this.maxHeight.value * verticalContentRatio).dp)
             ) {
                 LazyColumn(
                     modifier = Modifier
@@ -282,7 +298,7 @@ fun VideoPlayback(
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .requiredHeightIn(max = (maxHeight.value * verticalContentRatio).dp)
+                    .requiredHeightIn(max = (this.maxHeight.value * verticalContentRatio).dp)
                     .verticalScroll(rememberScrollState())
                     .padding(start = 16.dp)
             ) {
@@ -331,3 +347,63 @@ fun VideoPlayback(
         }
     }
 }
+
+@Composable
+fun RtspPlayback(
+    visible: Boolean,
+    onClose: () -> Unit,
+    mediaUrl: String,
+    onMediaUrlChange: (String) -> Unit,
+    onReplaceLocalVideo: () -> Unit,
+    modifier: Modifier = Modifier,
+    @FloatRange(from = 0.0, to = 1.0) horizontalContentRatio: Float = 1.0f,
+    @FloatRange(from = 0.0, to = 1.0) verticalContentRatio: Float = 1.0f,
+    contentShape: Shape = MaterialTheme.shapes.large,
+) {
+    OverlayMenu(
+        visible = visible,
+        title = stringResource(id = R.string.rtsp_as_camera).uppercase(),
+        onClose = onClose,
+        showDivider = true,
+        horizontalContentRatio = horizontalContentRatio,
+        contentShape = contentShape,
+        insertEdgeToEdgePadding = true,
+        modifier = modifier
+    ) {
+        BoxWithConstraints {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .requiredHeightIn(max = (this.maxHeight.value * verticalContentRatio).dp)
+                    .verticalScroll(rememberScrollState())
+                    .padding(start = 16.dp)
+            ) {
+                EyesonDemoTextField(
+                    onValueChange = { onMediaUrlChange(it) },
+                    label = stringResource(id = R.string.rtsp_url_hint).uppercase(),
+                    value = mediaUrl,
+                    modifier = Modifier
+                        .padding(top = 16.dp, end = 16.dp)
+                )
+
+                Button(
+                    onClick = {
+                        onReplaceLocalVideo()
+                    },
+                    contentPadding = PaddingValues(top = 12.dp, bottom = 12.dp),
+                    enabled = mediaUrl.isNotBlank(),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .background(Color.White)
+                        .padding(16.dp)
+                        .padding(end = 16.dp)
+                ) {
+                    Text(
+                        text = stringResource(id = R.string.replace_local_video).uppercase()
+                    )
+                }
+            }
+        }
+    }
+}
+

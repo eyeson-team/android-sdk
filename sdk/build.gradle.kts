@@ -8,11 +8,6 @@ group = EyesonConstants.GROUP_ID
 version = EyesonConstants.VERSION
 
 
-if (project.file("gstreamer-configurations.gradle").exists()) {
-    apply(from = "gstreamer-configurations.gradle")
-}
-
-
 android {
     defaultConfig {
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
@@ -20,29 +15,7 @@ android {
 
         buildConfigField("String", "SDK_VERSION", "\"${version}\"")
 
-        externalNativeBuild {
-            cmake {
-                val gstRoot: String? = if (project.hasProperty("gstAndroidRoot")) {
-                    project.property("gstAndroidRoot") as String
-                } else {
-                    System.getenv("GSTREAMER_ROOT_ANDROID")
-                }
 
-                if (gstRoot == null) {
-                    throw GradleException("GSTREAMER_ROOT_ANDROID must be set, or \"gstAndroidRoot\" must be defined in your gradle.properties in the top level directory of the unpacked universal GStreamer Android binaries")
-                }
-
-                arguments += listOf(
-                    "-DANDROID_STL=c++_shared",
-                    "-DGSTREAMER_ROOT_ANDROID=$gstRoot",
-                    "-GNinja"
-                )
-
-                targets += listOf("native-lib")
-
-                abiFilters += listOf("armeabi-v7a", "arm64-v8a", "x86", "x86_64")
-            }
-        }
     }
 
     buildTypes {
@@ -70,12 +43,7 @@ android {
         }
     }
 
-    externalNativeBuild {
-        cmake {
-            path = file("jni/CMakeLists.txt")
-        }
-    }
-    ndkVersion = "25.2.9519653"
+
 
     buildFeatures {
         buildConfig = true

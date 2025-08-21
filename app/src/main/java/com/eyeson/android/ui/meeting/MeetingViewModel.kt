@@ -41,6 +41,7 @@ import com.eyeson.sdk.events.EyesonEventListener
 import com.eyeson.sdk.events.MediaPlaybackResponse
 import com.eyeson.sdk.events.NeededPermissions
 import com.eyeson.sdk.events.PresentationResponse
+import com.eyeson.sdk.gstreamercapturer.replaceCapturerWithMediaStream
 import com.eyeson.sdk.model.local.api.MeetingInfoInitial
 import com.eyeson.sdk.model.local.api.MeetingOptions
 import com.eyeson.sdk.model.local.api.PermalinkMeetingInfo
@@ -384,6 +385,9 @@ class MeetingViewModel @Inject constructor(
 
     private val _recordingActive = MutableStateFlow(false)
     val recordingActive: StateFlow<Boolean> = _recordingActive.asStateFlow()
+
+    private val _rtspReplacementActive = MutableStateFlow(false)
+    val rtspReplacementActive: StateFlow<Boolean> = _rtspReplacementActive.asStateFlow()
 
     private fun addEvent(text: String, error: Boolean = false) {
         Timber.d("addEvent: $text")
@@ -750,6 +754,15 @@ class MeetingViewModel @Inject constructor(
         _remoteVideoPlaybackActive.value = false
     }
 
+    fun replaceLocalVideoWithRtspStream(mediaUrl: String) {
+        eyesonMeeting.replaceCapturerWithMediaStream(mediaUrl)
+        _rtspReplacementActive.value = true
+    }
+
+    fun stopRtspReplacement() {
+        _rtspReplacementActive.value = false
+        eyesonMeeting.replaceCurrentCapturerWithVideoCapturer(true)
+    }
 
     private fun listAvailableCameras() {
         val cameraManager = application.getSystemService(CAMERA_SERVICE) as CameraManager

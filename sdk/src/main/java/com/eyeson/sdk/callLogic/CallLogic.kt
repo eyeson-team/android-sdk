@@ -26,6 +26,7 @@ import com.eyeson.sdk.model.local.call.CameraSwitchDone
 import com.eyeson.sdk.model.local.call.CameraSwitchError
 import com.eyeson.sdk.model.local.call.MeetingJoined
 import com.eyeson.sdk.model.local.datachannel.Pong
+import com.eyeson.sdk.model.local.sepp.CallResumed
 import com.eyeson.sdk.model.local.sepp.CallStart
 import com.eyeson.sdk.model.local.sepp.CallTerminated
 import com.eyeson.sdk.service.ScreenCapturerService
@@ -263,7 +264,8 @@ internal class CallLogic(
                 val intent = Intent(context, ScreenCapturerService::class.java)
                 context.bindService(intent, connection, Context.BIND_AUTO_CREATE)
 
-                ScreenCapturerAndroid(mediaProjectionPermissionResultData,
+                ScreenCapturerAndroid(
+                    mediaProjectionPermissionResultData,
                     object : MediaProjection.Callback() {
                         override fun onStop() {
                             Logger.d("ScreenCapturer stopped")
@@ -329,7 +331,8 @@ internal class CallLogic(
                 screenCapturerService = binder.getService()
                 screenCapturerService?.startForegroundWithNotification(notificationId, notification)
 
-                val screenCapturer = ScreenCapturerAndroid(mediaProjectionPermissionResultData,
+                val screenCapturer = ScreenCapturerAndroid(
+                    mediaProjectionPermissionResultData,
                     object : MediaProjection.Callback() {
                         override fun onStop() {
                             Logger.d("ScreenCapturer stopped")
@@ -374,14 +377,27 @@ internal class CallLogic(
     fun stopScreenShare(resumeLocalVideo: Boolean) {
         endScreenShareForeground()
 
-        peerConnectionClient.replaceVideoCapturer(
-            createVideoCapturer(!cameraIsFrontFacing.get()),
-            resumeLocalVideo
-        )
+        replaceCurrentCapturerWithVideoCapturer(resumeLocalVideo)
     }
 
     fun isScreenShareActive(): Boolean {
         return peerConnectionClient.isScreencastActive()
+    }
+
+    fun replaceCapturerWith(capturer: VideoCapturer) {
+        if (isScreenShareActive()) {
+            endScreenShareForeground()
+        }
+        peerConnectionClient.replaceVideoCapturer(
+            capturer, true
+        )
+    }
+
+    fun replaceCurrentCapturerWithVideoCapturer(videoResumed: Boolean) {
+        peerConnectionClient.replaceVideoCapturer(
+            createVideoCapturer(!cameraIsFrontFacing.get()),
+            videoResumed
+        )
     }
 
     private fun createVideoCapturer(preferBackCamera: Boolean): VideoCapturer? {

@@ -56,6 +56,7 @@ if (project.file("flavor-configurations.gradle").exists()) {
 
 dependencies {
     implementation(project(":sdk"))
+    implementation(project(":gstreamercapture"))
 
     coreLibraryDesugaring(libs.android.desugarJdkLibsNio)
 

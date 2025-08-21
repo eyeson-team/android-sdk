@@ -78,6 +78,7 @@ import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
 import org.webrtc.EglBase
 import org.webrtc.SessionDescription
+import org.webrtc.VideoCapturer
 import org.webrtc.VideoSink
 import java.util.Date
 import java.util.concurrent.Executors
@@ -1081,6 +1082,16 @@ class EyesonMeeting(
      */
     fun getUserInfo(): UserInfo? {
         return meeting?.user?.toLocal(Date())
+    }
+
+
+    fun replaceVideoCapturer(capturer: VideoCapturer) {
+        callLogic?.replaceCapturerWith(capturer)
+    }
+
+    // TODO: maybe unify stopScreenShare and this to properly shut down all possible running services/tasks
+    fun replaceCurrentCapturerWithVideoCapturer(videoResumed: Boolean) {
+        callLogic?.replaceCurrentCapturerWithVideoCapturer(videoResumed)
     }
 
     private fun startCall(

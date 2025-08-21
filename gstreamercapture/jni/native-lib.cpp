@@ -174,7 +174,7 @@ JNIEXPORT jint JNICALL JNI_OnLoad(JavaVM *vm, void *) {
 
 extern "C"
 JNIEXPORT void JNICALL
-Java_com_eyeson_sdk_webrtc_PeerConnectionClient_nativeInitPipeline(JNIEnv *env, jobject,
+Java_com_eyeson_sdk_gstreamercapturer_ByteBufferVideoCapturer_nativeInitPipeline(JNIEnv *env, jobject,
                                                                    jstring jurl, jobject callback) {
     const char *url = env->GetStringUTFChars(jurl, nullptr);
     pipeline_url = url;
@@ -193,7 +193,7 @@ Java_com_eyeson_sdk_webrtc_PeerConnectionClient_nativeInitPipeline(JNIEnv *env, 
 
 extern "C"
 JNIEXPORT void JNICALL
-Java_com_eyeson_sdk_webrtc_PeerConnectionClient_nativeStopPipeline(JNIEnv *env, jobject) {
+Java_com_eyeson_sdk_gstreamercapturer_ByteBufferVideoCapturer_nativeStopPipeline(JNIEnv *env, jobject) {
     if (isPipelineRunning.load()) {
         if (main_loop) {
             g_main_loop_quit(main_loop);

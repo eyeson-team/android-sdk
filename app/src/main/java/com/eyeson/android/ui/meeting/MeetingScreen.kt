@@ -130,6 +130,8 @@ fun MeetingRout(
     val userInMeeting by viewModel.userInMeeting.collectAsStateWithLifecycle()
     val recordingActive by viewModel.recordingActive.collectAsStateWithLifecycle()
 
+    val rtspReplacementActive by viewModel.rtspReplacementActive.collectAsStateWithLifecycle()
+
     val window = context.findActivity().window
     val windowInsetsController =
         WindowCompat.getInsetsController(window, window.decorView)
@@ -342,6 +344,12 @@ fun MeetingRout(
             viewModel.startVideoPlayback(url, replaceOwnVideo, audio)
         },
         stopVideoPlayback = { viewModel.stopVideoPlayback() },
+
+        rtspReplacementActive = rtspReplacementActive,
+        replaceLocalVideoWithRtspStream = { viewModel.replaceLocalVideoWithRtspStream(it) },
+        stopRtspReplacement = { viewModel.stopRtspReplacement() },
+
+
         muteAll = { viewModel.muteAll() },
         sendChatMessage = { viewModel.sendChatMessage(it) },
         getEventsClip = { viewModel.getEventsClip() },
@@ -388,6 +396,9 @@ fun MeetingScreen(
     stopFullScreenPresentation: () -> Unit,
     startVideoPlayback: (String, Boolean, Boolean) -> Unit,
     stopVideoPlayback: () -> Unit,
+    rtspReplacementActive: Boolean,
+    replaceLocalVideoWithRtspStream: (String) -> Unit,
+    stopRtspReplacement: () -> Unit,
     muteAll: () -> Unit,
     sendChatMessage: (String) -> Unit,
     getEventsClip: () -> ClipData,
@@ -410,6 +421,9 @@ fun MeetingScreen(
     }
     var replaceOwnVideo by rememberSaveable {
         mutableStateOf(true)
+    }
+    var rtspUrl by rememberSaveable {
+        mutableStateOf(RTSP_URL)
     }
 
     val context = LocalContext.current
@@ -645,6 +659,26 @@ fun MeetingScreen(
                 )
             }
 
+            SETTINGS_RTSP_REPLACEMENT -> {
+                RtspPlayback(
+                    visible = open,
+                    onClose = {
+                        whatIsOpen = SETTINGS_DEFAULT
+                        open = false
+                    },
+                    mediaUrl = rtspUrl,
+                    onMediaUrlChange = { rtspUrl = it },
+                    onReplaceLocalVideo = {
+                        replaceLocalVideoWithRtspStream(rtspUrl)
+                        whatIsOpen = SETTINGS_DEFAULT
+                        open = false
+                    },
+                    horizontalContentRatio = horizontal,
+                    verticalContentRatio = vertical,
+                    contentShape = overlayMenuShape,
+                )
+            }
+
             else -> {
                 MeetingSettings(
                     visible = open,
@@ -662,6 +696,11 @@ fun MeetingScreen(
                     },
                     isVideoPlaying = videoPlaybackSelectable != null,
                     stopVideoPlayback = stopVideoPlayback,
+                    showReplaceWithRtspStream = {
+                        whatIsOpen = SETTINGS_RTSP_REPLACEMENT
+                    },
+                    rtspReplacementActive = rtspReplacementActive,
+                    stopRtspReplacement = stopRtspReplacement,
                     muteAll = {
                         muteAll()
                         Toast.makeText(
@@ -1042,6 +1081,9 @@ fun SettingsScreenPreview() {
             stopFullScreenPresentation = {/*NOOP*/ },
             startVideoPlayback = { _, _, _ -> /*NOOP*/ },
             stopVideoPlayback = {/*NOOP*/ },
+            rtspReplacementActive = false,
+            replaceLocalVideoWithRtspStream = {/*NOOP*/ },
+            stopRtspReplacement = {/*NOOP*/ },
             muteAll = {/*NOOP*/ },
             sendChatMessage = {/*NOOP*/ },
             getEventsClip = { ClipData.newPlainText("Eyeson SDK event log", "") },
@@ -1055,6 +1097,7 @@ private const val SETTINGS_DEFAULT = 0
 private const val SETTINGS_AUDIO = 1
 private const val SETTINGS_EVENT_LOG = 2
 private const val SETTINGS_VIDEO_PLAYBACK = 3
+private const val SETTINGS_RTSP_REPLACEMENT = 4
 
 private const val SCREEN_SHARE_NOTIFICATION_ID = 42
 private const val SCREEN_SHARE_CHANNEL_ID = "7"
@@ -1063,3 +1106,5 @@ private const val SCREEN_SHARE_CHANNEL_NAME = "Screen share active"
 
 private const val DEMO_VIDEO_URL =
     "https://s3.eu-west-1.amazonaws.com/eyeson.team.mediainject/eyeson-1950.webm"
+
+private const val RTSP_URL = "rtsp://10.0.2.2:8554/test"
