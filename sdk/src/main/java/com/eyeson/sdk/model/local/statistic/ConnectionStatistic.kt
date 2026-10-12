@@ -1,15 +1,13 @@
-package com.eyeson.sdk.model.local.call
+package com.eyeson.sdk.model.local.statistic
 
-import com.eyeson.sdk.model.local.base.LocalBaseCommand
-
-data class ConnectionStatistic(
+public data class ConnectionStatistic(
     val timestampInMicros: Long,
     val audioOut: EntrySent,
     val videoOut: EntrySent,
     val audioIn: EntryReceived,
     val videoIn: EntryReceived
-) : LocalBaseCommand {
-    data class EntrySent(
+) {
+    public data class EntrySent(
         val jitterInSeconds: Double,
         val bytesSentDelta: Long,
         val packetsSentDelta: Long,
@@ -17,7 +15,7 @@ data class ConnectionStatistic(
         val roundTripTimeInSeconds: Double
     )
 
-    data class EntryReceived(
+    public data class EntryReceived(
         val jitterInSeconds: Double,
         val bytesReceivedDelta: Long,
         val packetsReceivedDelta: Long,

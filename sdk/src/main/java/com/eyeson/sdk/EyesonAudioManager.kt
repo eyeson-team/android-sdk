@@ -45,7 +45,7 @@ import com.eyeson.sdk.webrtc.AppRTCBluetoothManager
  *                       SpeakerPhone, Earpiece].
  * @param audioFocusChangeListener [OnAudioFocusChangeListener] Listener for audio focus changes.
  */
-class EyesonAudioManager(
+public class EyesonAudioManager(
     private val apprtcContext: Context,
     devicePriority: List<AudioDevice> = listOf(
         Bluetooth,
@@ -59,7 +59,7 @@ class EyesonAudioManager(
      *  A list of preferred audio device priorities (e.g., "bluetooth", "wired", "speaker").
      *  The order determines the selection preference. Duplicates are ignored.
      */
-    var devicePriority = devicePriority.distinct()
+    public var devicePriority: List<AudioDevice> = devicePriority.distinct()
         set(value) {
             field = value.distinct()
             updateAudioDeviceState()
@@ -68,17 +68,17 @@ class EyesonAudioManager(
     /**
      * AudioDevice is the names of possible audio devices that we currently support.
      */
-    sealed class AudioDevice {
-        data object SpeakerPhone : AudioDevice()
-        data object WiredHeadset : AudioDevice()
-        data object Earpiece : AudioDevice()
-        data object Bluetooth : AudioDevice()
-        data object None : AudioDevice()
+    public sealed class AudioDevice {
+        public data object SpeakerPhone : AudioDevice()
+        public data object WiredHeadset : AudioDevice()
+        public data object Earpiece : AudioDevice()
+        public data object Bluetooth : AudioDevice()
+        public data object None : AudioDevice()
     }
 
-    interface AudioManagerEvents {
+    public interface AudioManagerEvents {
         // Callback fired once audio device is changed or list of available audio devices changed.
-        fun onAudioDeviceChanged(
+        public fun onAudioDeviceChanged(
             selectedAudioDevice: AudioDevice,
             availableAudioDevices: Set<AudioDevice>,
         )
@@ -145,7 +145,7 @@ class EyesonAudioManager(
      *
      * @return The result of the audio focus request.
      */
-    fun start(audioManagerEvents: AudioManagerEvents): Int {
+    public fun start(audioManagerEvents: AudioManagerEvents): Int {
         if (amState == AudioManagerState.RUNNING) {
             Logger.e("AudioManager is already active", true)
             return EYESON_AUDIO_MANAGER_ALREADY_RUNNING
@@ -190,7 +190,7 @@ class EyesonAudioManager(
      *
      * @return The result of the audio focus request.
      */
-    fun requestAudioFocus(): Int {
+    public fun requestAudioFocus(): Int {
         return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             val playbackAttributes = AudioAttributes.Builder()
                 .setUsage(AudioAttributes.USAGE_VOICE_COMMUNICATION)
@@ -219,7 +219,7 @@ class EyesonAudioManager(
     /**
      * Stops the AudioManager, releasing resources and restoring the audio state.
      */
-    fun stop() {
+    public fun stop() {
         if (amState != AudioManagerState.RUNNING) {
             Logger.e("Trying to stop AudioManager in incorrect state: $amState", true)
             return
@@ -280,7 +280,7 @@ class EyesonAudioManager(
      *
      * @param device The [AudioDevice] to select. Must be in the [audioDevices] list.
      */
-    fun selectAudioDevice(device: AudioDevice) {
+    public fun selectAudioDevice(device: AudioDevice) {
         if (!audioDevices.contains(device)) {
             Logger.e("Can not select $device from available $audioDevices", true)
         }
@@ -293,7 +293,7 @@ class EyesonAudioManager(
      *
      * @return A Set of [AudioDevice] representing the currently available audio devices.
      */
-    fun getAudioDevices(): Set<AudioDevice> {
+    public fun getAudioDevices(): Set<AudioDevice> {
         return audioDevices
     }
 
@@ -302,7 +302,7 @@ class EyesonAudioManager(
      *
      * @return The selected [AudioDevice].
      */
-    fun getSelectedAudioDevice(): AudioDevice {
+    public fun getSelectedAudioDevice(): AudioDevice {
         return selectedAudioDevice
     }
 
@@ -437,7 +437,7 @@ class EyesonAudioManager(
         }
     }
 
-    companion object {
-        const val EYESON_AUDIO_MANAGER_ALREADY_RUNNING = -7
+    public companion object {
+        public const val EYESON_AUDIO_MANAGER_ALREADY_RUNNING: Int = -7
     }
 }

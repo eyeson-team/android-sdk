@@ -1,9 +1,8 @@
 package com.eyeson.sdk.callLogic
 
-import com.eyeson.sdk.model.local.call.ConnectionStatistic
-import com.eyeson.sdk.model.local.call.ConnectionStatistic.EntryReceived
-import com.eyeson.sdk.model.local.call.ConnectionStatistic.EntrySent
-import com.eyeson.sdk.utils.Logger
+import com.eyeson.sdk.model.local.call.ConnectionStatisticLocal
+import com.eyeson.sdk.model.local.call.ConnectionStatisticLocal.EntryReceived
+import com.eyeson.sdk.model.local.call.ConnectionStatisticLocal.EntrySent
 import org.webrtc.RTCStatsReport
 import java.math.BigInteger
 
@@ -80,7 +79,7 @@ internal class ConnectionStatisticsRepository {
         rtcStatistics = rtcStatistics.take(STATISTIC_SIZE).toMutableList()
     }
 
-    fun getStatsInfo(): ConnectionStatistic? {
+    fun getStatsInfo(): ConnectionStatisticLocal? {
         if (rtcStatistics.size < 2) {
             return null
         }
@@ -89,7 +88,7 @@ internal class ConnectionStatisticsRepository {
         val previous = rtcStatistics[1]
 
 
-        return ConnectionStatistic(
+        return ConnectionStatisticLocal(
             current.timestampInMicros,
             EntrySent(
                 current.jitterAudioSent,

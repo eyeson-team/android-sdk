@@ -5,7 +5,7 @@ import com.eyeson.sdk.model.api.MeetingDto
 import com.eyeson.sdk.model.local.base.LocalBaseCommand
 import com.eyeson.sdk.model.local.call.ResumeCallLocal
 import com.eyeson.sdk.model.local.call.StartCallLocal
-import com.eyeson.sdk.model.local.meeting.MuteLocalAudio
+import com.eyeson.sdk.model.local.meeting.MuteLocalAudioLocal
 import com.eyeson.sdk.model.local.meeting.RoomReady
 import com.eyeson.sdk.model.local.sepp.CallAccepted
 import com.eyeson.sdk.model.local.sepp.CallResume
@@ -131,7 +131,7 @@ internal class WebSocketCommunicator(
                 }
             }
 
-            is MuteLocalAudio -> {
+            is MuteLocalAudioLocal -> {
                 if (command.byUser.id != meeting.user.id) {
                     emitEvent(command)
                 }

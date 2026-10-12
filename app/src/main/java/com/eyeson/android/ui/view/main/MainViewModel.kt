@@ -3,27 +3,23 @@ package com.eyeson.android.ui.view.main
 import android.app.Application
 import android.app.Notification
 import android.content.Intent
-import android.util.Log
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.eyeson.sdk.EyesonAudioManager
 import com.eyeson.sdk.EyesonMeeting
-import com.eyeson.sdk.events.CallRejectionReason
-import com.eyeson.sdk.events.CallTerminationReason
-import com.eyeson.sdk.events.EyesonEventListener
-import com.eyeson.sdk.model.local.api.MeetingInfo
-import com.eyeson.sdk.model.local.api.MeetingInfoInitial
-import com.eyeson.sdk.model.local.api.UserInfo
+import com.eyeson.sdk.events.MeetingJoinFailed
+import com.eyeson.sdk.events.MeetingTerminated
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
-import org.webrtc.EglBase
 import org.webrtc.VideoSink
 import timber.log.Timber
 
 class MainViewModel(application: Application) : AndroidViewModel(application) {
 
-    private var eyesonMeeting: EyesonMeeting? = null
+    // One instance per view model: an EyesonMeeting holds one meeting at a time and can join
+    // again after leave()
+    private val eyesonMeeting: EyesonMeeting by lazy { EyesonMeeting(application = getApplication()) }
     private var audioManager: EyesonAudioManager? = null
 
     private val _callTerminated = MutableStateFlow(false)
@@ -31,41 +27,32 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
 
     var inCall = false
 
-    private var lastCameraState = isVideoEnabled()
-    private var presentationActive = false
+    init {
+        viewModelScope.launch {
+            eyesonMeeting.events.collect { event ->
+                when (event) {
+                    is MeetingJoinFailed -> {
+                        Timber.d("Join failed: ${event.callRejectionReason}")
+                        onMeetingEnded()
+                    }
 
-    private val eventListener = object : EyesonEventListener() {
-        override fun onMeetingJoined() {
-            inCall = true
-            lastCameraState = isVideoEnabled()
-        }
+                    is MeetingTerminated -> {
+                        Timber.d("Meeting terminated: ${event.callTerminationReason}")
+                        onMeetingEnded()
+                    }
 
-        override fun onMeetingJoinFailed(callRejectionReason: CallRejectionReason) {
-            _callTerminated.value = true
-        }
-
-        override fun onMeetingTerminated(callTerminationReason: CallTerminationReason) {
-            inCall = false
-            Timber.d("KICK: _callTerminated.value = true")
-            _callTerminated.value = true
-        }
-
-        override fun onVideoSourceUpdate(
-            visibleUsers: List<UserInfo>,
-            presenter: UserInfo?
-        ) {
-            if (!presentationActive && presenter?.id != null && presenter.id != eyesonMeeting?.getUserInfo()?.id) {
-                presentationActive = true
-                lastCameraState = isVideoEnabled()
-                eyesonMeeting?.setVideoEnabled(false)
-
-            }
-            if (presentationActive && presenter == null) {
-                presentationActive = false
-                eyesonMeeting?.setVideoEnabled(lastCameraState)
-                lastCameraState = isVideoEnabled()
+                    else -> Unit
+                }
             }
         }
+    }
+
+    // The SDK has already left at this point, so only the local state has to follow.
+    private fun onMeetingEnded() {
+        audioManager?.stop()
+        audioManager = null
+        inCall = false
+        _callTerminated.value = true
     }
 
     fun connect(
@@ -90,23 +77,31 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
             null
         }
 
-        viewModelScope.launch {
-            eyesonMeeting = EyesonMeeting(
-                application = getApplication()
-            ).apply {
-                join(
-                    accessKey = accessKey,
-                    frontCamera = true,
-                    audioOnly = false,
-                    local = local,
-                    remote = remote,
-                    eventListener = eventListener,
-                    microphoneEnabledOnStart = true,
-                    videoEnabledOnStart = true,
-                    screenShareInfo = screenShareInfo
-                )
+        val joinResult = eyesonMeeting.join(
+            accessKey = accessKey,
+            frontCamera = true,
+            local = local,
+            remote = remote,
+            microphoneEnabledOnStart = true,
+            videoEnabledOnStart = true,
+            screenShareInfo = screenShareInfo
+        )
+
+        when (joinResult) {
+            EyesonMeeting.JoinResult.Joining -> {
+                // Set here and not on MeetingJoined: while joining, a re-created view has to
+                // re-attach its renderers rather than start a second join.
+                inCall = true
+                startAudioManager()
             }
-            startAudioManager()
+
+            is EyesonMeeting.JoinResult.MissingPermissions -> {
+                Timber.d("Join not started; missing permissions: ${joinResult.permissions}")
+            }
+
+            EyesonMeeting.JoinResult.AlreadyJoined -> {
+                Timber.d("Join not started; already in a meeting")
+            }
         }
     }
 
@@ -114,26 +109,22 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         audioManager?.stop()
         audioManager = null
 
-        eyesonMeeting?.leave()
+        eyesonMeeting.leave()
         inCall = false
     }
 
-    fun getEglContext(): EglBase.Context? {
-        return eyesonMeeting?.getEglContext()
-    }
-
     fun clearTarget() {
-        eyesonMeeting?.setLocalVideoTarget(null)
-        eyesonMeeting?.setRemoteVideoTarget(null)
+        eyesonMeeting.setLocalVideoTarget(null)
+        eyesonMeeting.setRemoteVideoTarget(null)
     }
 
     fun setTargets(local: VideoSink?, remote: VideoSink?) {
-        eyesonMeeting?.setLocalVideoTarget(local)
-        eyesonMeeting?.setRemoteVideoTarget(remote)
+        eyesonMeeting.setLocalVideoTarget(local)
+        eyesonMeeting.setRemoteVideoTarget(remote)
     }
 
     fun isVideoEnabled(): Boolean {
-        return eyesonMeeting?.isVideoEnabled() ?: false
+        return eyesonMeeting.isVideoEnabled()
     }
 
     private fun startAudioManager() {

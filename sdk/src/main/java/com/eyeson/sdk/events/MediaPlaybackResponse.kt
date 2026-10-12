@@ -1,6 +1,10 @@
 package com.eyeson.sdk.events
 
-enum class MediaPlaybackResponse(val responseCode: Int) {
+public enum class MediaPlaybackResponse(public val responseCode: Int) {
+    /**
+     * The request got no response, e.g. because of a network failure, or one with a status code
+     * not listed here.
+     */
     UNSPECIFIED(-7),
     OK(200),
     CREATED(201),
@@ -9,15 +13,15 @@ enum class MediaPlaybackResponse(val responseCode: Int) {
     GONE(410),
     ERROR(500);
 
-    companion object {
+    public companion object {
         private val mapping = entries.associateBy(MediaPlaybackResponse::responseCode)
-        fun fromResponseCode(code: Int) = mapping[code] ?: UNSPECIFIED
-        fun isSuccessful(code: Int): Boolean {
+        public fun fromResponseCode(code: Int): MediaPlaybackResponse = mapping[code] ?: UNSPECIFIED
+        public fun isSuccessful(code: Int): Boolean {
             return code == OK.responseCode || code == CREATED.responseCode
         }
     }
 
-    fun isSuccessful(): Boolean {
+    public fun isSuccessful(): Boolean {
         return MediaPlaybackResponse.isSuccessful(responseCode)
     }
 }

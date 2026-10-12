@@ -3,7 +3,7 @@ package com.eyeson.sdk.model.meeting.incoming
 
 import com.eyeson.sdk.model.api.PresentationDto
 import com.eyeson.sdk.model.local.api.UserInfo
-import com.eyeson.sdk.model.local.meeting.PresentationUpdate
+import com.eyeson.sdk.model.local.meeting.PresentationUpdateLocal
 import com.eyeson.sdk.model.meeting.base.MeetingBaseMessageDto
 import com.squareup.moshi.Json
 import com.squareup.moshi.JsonClass
@@ -13,8 +13,8 @@ internal data class PresentationUpdateDto(
     @Json(name = "type") override val type: String,
     @Json(name = "presentation") val presentation: PresentationDto?
 ) : MeetingBaseMessageDto {
-    override fun toLocal(): PresentationUpdate {
-        return PresentationUpdate(
+    override fun toLocal(): PresentationUpdateLocal {
+        return PresentationUpdateLocal(
             user = presentation?.user?.let { user ->
                 UserInfo(
                     id = user.id,

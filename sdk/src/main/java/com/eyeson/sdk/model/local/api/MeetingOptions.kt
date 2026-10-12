@@ -1,6 +1,6 @@
 package com.eyeson.sdk.model.local.api
 
-data class MeetingOptions(
+public data class MeetingOptions(
     val backgroundColor: String,
     val broadcastAvailable: Boolean,
     val customFields: Map<String, String>,
@@ -21,7 +21,7 @@ data class MeetingOptions(
     val voiceActivation: Boolean,
     val widescreen: Boolean,
 ) {
-    data class LayoutMapEntry(val x: Int, val y: Int, val width: Int, val height: Int)
+    public data class LayoutMapEntry(val x: Int, val y: Int, val width: Int, val height: Int)
 }
 
 

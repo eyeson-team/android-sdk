@@ -1,10 +1,11 @@
 [versions]
 accompanist = "0.36.0"
 androidMaterial = "1.13.0-alpha11"
+androidxActivityCompose = "1.9.0"
 androidxAnnotation = "1.9.1"
 androidxAppcompat = "1.7.0"
 androidxCamera = "1.4.1"
-androidxComposeBom = "2025.03.00"
+androidxComposeBom = "2025.09.00"
 androidxCore = "1.15.0"
 androidxEspresso = "3.6.1"
 androidxFragment = "1.8.6"
@@ -17,7 +18,7 @@ constraintLayout = "2.2.1"
 datastorePreference = "1.1.3"
 desugarJdkLibsNio = "2.1.5"
 eyesonWebrtcAndroid = "1.0.1"
-gradle = "8.9.0"
+gradle = "8.12.2"
 hilt = "2.55"
 jUnit = "4.13.2"
 kotlin = "2.0.20"
@@ -26,6 +27,7 @@ ksp = "2.0.20-1.0.25"
 media3 = "1.5.1"
 moshi = "1.14.0"
 okhttp = "4.12.0"
+robolectric = "4.14.1"
 qrScanner = "2.1.2"
 retrofit = "2.9.0"
 timber = "5.0.1"
@@ -35,7 +37,7 @@ accompanist-permissions = { group = "com.google.accompanist", name = "accompanis
 accompanist-systemUiController = { group = "com.google.accompanist", name = "accompanist-systemuicontroller", version.ref = "accompanist" }
 android-desugarJdkLibsNio = { group = "com.android.tools", name = "desugar_jdk_libs_nio", version.ref = "desugarJdkLibsNio" }
 android-material = { group = "com.google.android.material", name = "material", version.ref = "androidMaterial" }
-androidx-activity-compose = "androidx.activity:activity-compose:${Versions.androidxActivityCompose}"
+androidx-activity-compose = { group = "androidx.activity", name = "activity-compose", version.ref = "androidxActivityCompose" }
 androidx-annotation = { group = "androidx.annotation", name = "annotation", version.ref = "androidxAnnotation" }
 androidx-appcompat = { group = "androidx.appcompat", name = "appcompat", version.ref = "androidxAppcompat" }
 androidx-camera-camera2 = { module = "androidx.camera:camera-camera2", version.ref = "androidxCamera" }
@@ -73,8 +75,10 @@ moshi-kotlin-codegen = { group = "com.squareup.moshi", name = "moshi-kotlin-code
 okhttp = { group = "com.squareup.okhttp3", name = "okhttp", version.ref = "okhttp" }
 okhttp-logging = { group = "com.squareup.okhttp3", name = "logging-interceptor", version.ref = "okhttp" }
 okhttp-tls = { group = "com.squareup.okhttp3", name = "okhttp-tls", version.ref = "okhttp" }
+okhttp-mockwebserver = { group = "com.squareup.okhttp3", name = "mockwebserver", version.ref = "okhttp" }
 qrScanner = { group = "com.github.yuriy-budiyev", name = "code-scanner", version.ref = "qrScanner" }
 retrofit = { group = "com.squareup.retrofit2", name = "retrofit", version.ref = "retrofit" }
+robolectric = { group = "org.robolectric", name = "robolectric", version.ref = "robolectric" }
 retrofit-converter-moshi = { group = "com.squareup.retrofit2", name = "converter-moshi", version.ref = "retrofit" }
 timber = { group = "com.jakewharton.timber", name = "timber", version.ref = "timber" }
 
@@ -92,5 +96,4 @@ ksp = { id = "com.google.devtools.ksp", version.ref = "ksp" }
 
 # Plugins defined by this project
 eyeson-application = { id = "com.eyeson.application" }
-eyeson-hilt = { id = "com.eyeson.hilt" }
 eyeson-library = { id = "com.eyeson.library" }

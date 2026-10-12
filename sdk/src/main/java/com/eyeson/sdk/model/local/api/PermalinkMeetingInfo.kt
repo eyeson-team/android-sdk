@@ -2,7 +2,7 @@ package com.eyeson.sdk.model.local.api
 
 import java.util.Date
 
-data class PermalinkMeetingInfo(
+public data class PermalinkMeetingInfo(
     val id: String,
     val createdAt: String,
     val guestToken: String,
@@ -11,11 +11,11 @@ data class PermalinkMeetingInfo(
     val team: Team,
     val options: MeetingOptions,
 ) {
-    data class Team(
+    public data class Team(
         val name: String,
     )
 
-    data class Room(
+    public data class Room(
         val id: String,
         val name: String,
         val startedAt: Date?,

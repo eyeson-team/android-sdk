@@ -4,14 +4,9 @@ import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.datastore.preferences.core.edit
-import androidx.lifecycle.viewModelScope
-import com.eyeson.android.ui.settings.SettingsUiState
 import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.SharingStarted
-import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.map
-import kotlinx.coroutines.flow.stateIn
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -63,7 +58,7 @@ class SettingsRepository @Inject constructor(private val dataStore: DataStore<Pr
 
     val meetingSettings: Flow<MeetingSettings> =
         combine(
-            micOnStart,
+            this@SettingsRepository.micOnStart,
             audioOnly,
             videoOnStart,
             rearCamOnStart,
@@ -79,7 +74,7 @@ class SettingsRepository @Inject constructor(private val dataStore: DataStore<Pr
         }
 
     data class MeetingSettings(
-        val micOnStar: Boolean,
+        val micOnStart: Boolean,
         val audioOnly: Boolean,
         val videoOnStart: Boolean,
         val rearCamOnStart: Boolean,

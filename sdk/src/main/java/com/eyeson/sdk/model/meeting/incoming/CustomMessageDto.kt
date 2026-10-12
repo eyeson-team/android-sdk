@@ -1,6 +1,6 @@
 package com.eyeson.sdk.model.meeting.incoming
 
-import com.eyeson.sdk.model.local.meeting.CustomMessage
+import com.eyeson.sdk.model.local.meeting.CustomMessageLocal
 import com.eyeson.sdk.model.meeting.base.MeetingBaseMessageDto
 import com.squareup.moshi.Json
 import com.squareup.moshi.JsonClass
@@ -13,8 +13,8 @@ internal data class CustomMessageDto(
     @Json(name = "cid") val userId: String,
     @Json(name = "created_at") val createdAt: Date
 ) : MeetingBaseMessageDto {
-    override fun toLocal(): CustomMessage {
-        return CustomMessage(
+    override fun toLocal(): CustomMessageLocal {
+        return CustomMessageLocal(
             content = content,
             createdAt = createdAt,
             userId = userId

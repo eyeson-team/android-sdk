@@ -2,7 +2,7 @@ package com.eyeson.sdk.model.local.api
 
 import java.util.*
 
-data class UserInfo(
+public data class UserInfo(
     val id: String,
     val name: String,
     val avatar: String?,

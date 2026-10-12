@@ -2,7 +2,7 @@ package com.eyeson.sdk.model.meeting.incoming
 
 import com.eyeson.sdk.model.api.RecordingDto
 import com.eyeson.sdk.model.local.api.UserInfo
-import com.eyeson.sdk.model.local.meeting.Recording
+import com.eyeson.sdk.model.local.meeting.RecordingLocal
 import com.eyeson.sdk.model.meeting.base.MeetingBaseMessageDto
 import com.squareup.moshi.Json
 import com.squareup.moshi.JsonClass
@@ -13,8 +13,8 @@ internal data class RecordingUpdateDto(
     @Json(name = "type") override val type: String,
     @Json(name = "recording") val recording: RecordingDto
 ) : MeetingBaseMessageDto {
-    override fun toLocal(): Recording {
-        return Recording(
+    override fun toLocal(): RecordingLocal {
+        return RecordingLocal(
             id = recording.id,
             duration = recording.duration,
             downloadLink = recording.links.download,

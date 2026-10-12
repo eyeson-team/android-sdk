@@ -16,6 +16,7 @@ private val LightColorPalette = lightColorScheme(
     inverseSurface = Neutral7,
     inverseOnSurface = Color.White,
     surfaceContainerHighest = Gray400,
+    secondaryContainer = DarkGray900.copy(alpha = DisabledContentAlpha),
     outlineVariant = DarkGray900.copy(alpha = 0.1f)
 )
 

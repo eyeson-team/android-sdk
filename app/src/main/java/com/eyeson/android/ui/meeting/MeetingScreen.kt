@@ -90,8 +90,9 @@ import com.eyeson.android.ui.theme.OverlayMenuHorizontalShape
 import com.eyeson.android.ui.theme.OverlayMenuVerticalShape
 import com.eyeson.sdk.events.CallTerminationReason
 import com.eyeson.sdk.model.local.api.UserInfo
+import com.eyeson.sdk.options.Resolution16by9
+import com.eyeson.sdk.options.ScreenShareMaxResolution
 import com.eyeson.sdk.webrtc.VideoRenderer
-import org.webrtc.EglBase
 import org.webrtc.RendererCommon
 import kotlin.math.roundToInt
 
@@ -116,11 +117,11 @@ fun MeetingRout(
     val cameraDisconnected by viewModel.cameraDisconnected
     val remoteAudioActive by viewModel.remoteAudioActive.collectAsStateWithLifecycle()
 
-    val remoteVideoRenderer = rememberVideoRendererWithLifecycle(viewModel.getEglContext()) {
+    val remoteVideoRenderer = rememberVideoRendererWithLifecycle {
         viewModel.setRemoteVideoTarget(it)
     }
 
-    val localVideoRenderer = rememberVideoRendererWithLifecycle(viewModel.getEglContext()) {
+    val localVideoRenderer = rememberVideoRendererWithLifecycle {
         viewModel.setLocalVideoTarget(it)
     }
 
@@ -129,6 +130,8 @@ fun MeetingRout(
     val audioDevices by viewModel.audioDevices.collectAsStateWithLifecycle()
     val userInMeeting by viewModel.userInMeeting.collectAsStateWithLifecycle()
     val recordingActive by viewModel.recordingActive.collectAsStateWithLifecycle()
+    val videoSettings by viewModel.videoSettings.collectAsStateWithLifecycle()
+    val screenShareSettings by viewModel.screenShareSettings.collectAsStateWithLifecycle()
 
     val window = context.findActivity().window
     val windowInsetsController =
@@ -347,6 +350,12 @@ fun MeetingRout(
         getEventsClip = { viewModel.getEventsClip() },
         clearLog = { viewModel.clearLog() },
         recordingActive = recordingActive,
+        videoSettings = videoSettings,
+        applyVideoOptions = { viewModel.applyVideoOptions() },
+        resetVideoOptions = { viewModel.resetVideoOptions() },
+        screenShareSettings = screenShareSettings,
+        applyScreenShareOptions = { viewModel.applyScreenShareOptions() },
+        resetScreenShareOptions = { viewModel.resetScreenShareOptions() },
         modifier = modifier,
 
         )
@@ -393,6 +402,12 @@ fun MeetingScreen(
     getEventsClip: () -> ClipData,
     clearLog: () -> Unit,
     recordingActive: Boolean,
+    videoSettings: VideoSettingsState,
+    applyVideoOptions: () -> Unit,
+    resetVideoOptions: () -> Unit,
+    screenShareSettings: ScreenShareSettingsState,
+    applyScreenShareOptions: () -> Unit,
+    resetScreenShareOptions: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
 
@@ -583,6 +598,16 @@ fun MeetingScreen(
         Triple(0.7f, 1f, OverlayMenuVerticalShape)
     }
 
+    // The settings entry swaps with the active source, so a sheet that is already open swaps with
+    // it instead of staying on values that no longer affect what is being sent.
+    LaunchedEffect(screenShareActive) {
+        whatIsOpen = when {
+            screenShareActive && whatIsOpen == SETTINGS_VIDEO -> SETTINGS_SCREEN_SHARE
+            !screenShareActive && whatIsOpen == SETTINGS_SCREEN_SHARE -> SETTINGS_VIDEO
+            else -> whatIsOpen
+        }
+    }
+
     Crossfade(targetState = whatIsOpen) { screen ->
         when (screen) {
             SETTINGS_AUDIO -> {
@@ -645,6 +670,44 @@ fun MeetingScreen(
                 )
             }
 
+            SETTINGS_VIDEO -> {
+                VideoSettings(
+                    visible = open,
+                    onClose = {
+                        whatIsOpen = SETTINGS_DEFAULT
+                        open = false
+                    },
+                    resolutions = videoSettings.resolutions,
+                    scaleDownBy = videoSettings.scaleDownBy,
+                    fps = videoSettings.fps,
+                    maxBitrate = videoSettings.maxBitrate,
+                    apply = applyVideoOptions,
+                    reset = resetVideoOptions,
+                    horizontalContentRatio = horizontal,
+                    verticalContentRatio = vertical,
+                    contentShape = overlayMenuShape,
+                )
+            }
+
+            SETTINGS_SCREEN_SHARE -> {
+                ScreenShareSettings(
+                    visible = open,
+                    onClose = {
+                        whatIsOpen = SETTINGS_DEFAULT
+                        open = false
+                    },
+                    resolutions = screenShareSettings.resolutions,
+                    scaleDownBy = screenShareSettings.scaleDownBy,
+                    fps = screenShareSettings.fps,
+                    maxBitrate = screenShareSettings.maxBitrate,
+                    apply = applyScreenShareOptions,
+                    reset = resetScreenShareOptions,
+                    horizontalContentRatio = horizontal,
+                    verticalContentRatio = vertical,
+                    contentShape = overlayMenuShape,
+                )
+            }
+
             else -> {
                 MeetingSettings(
                     visible = open,
@@ -673,6 +736,12 @@ fun MeetingScreen(
                     },
                     showAudioSettings = {
                         whatIsOpen = SETTINGS_AUDIO
+                    },
+                    showVideoSettings = {
+                        whatIsOpen = SETTINGS_VIDEO
+                    },
+                    showScreenShareSettings = {
+                        whatIsOpen = SETTINGS_SCREEN_SHARE
                     },
                     showEventLog = { whatIsOpen = SETTINGS_EVENT_LOG },
                     horizontalContentRatio = horizontal,
@@ -833,20 +902,22 @@ private fun VideoViews(
             )
         }
 
-        Box(modifier = modifierLocalView
-            .align(Alignment.BottomEnd)
-            .offset { IntOffset(offsetX.roundToInt(), offsetY.roundToInt()) }
-            .pointerInput(Unit) {
-                detectDragGestures { change, dragAmount ->
-                    change.consume()
-                    offsetX += dragAmount.x
-                    offsetY += dragAmount.y
-                }
-            }) {
+        Box(
+            modifier = modifierLocalView
+                .align(Alignment.BottomEnd)
+                .offset { IntOffset(offsetX.roundToInt(), offsetY.roundToInt()) }
+                .pointerInput(Unit) {
+                    detectDragGestures { change, dragAmount ->
+                        change.consume()
+                        offsetX += dragAmount.x
+                        offsetY += dragAmount.y
+                    }
+                }) {
 
             if (localExoPlayer == null) {
                 val localTarget = if (showLocal) {
-                    AndroidView(modifier = Modifier.fillMaxSize(),
+                    AndroidView(
+                        modifier = Modifier.fillMaxSize(),
                         factory = { localVideoRenderer })
 
                     localVideoRenderer
@@ -942,7 +1013,6 @@ fun Connecting(
 
 @Composable
 fun rememberVideoRendererWithLifecycle(
-    eglContext: EglBase.Context?,
     setTarget: (VideoRenderer?) -> Unit,
 ): VideoRenderer {
     val currentSetTarget by rememberUpdatedState(setTarget)
@@ -950,7 +1020,7 @@ fun rememberVideoRendererWithLifecycle(
     val context = LocalContext.current
     val videoRenderer = remember {
         VideoRenderer(context).apply {
-            init(eglContext)
+            init()
             setScalingType(RendererCommon.ScalingType.SCALE_ASPECT_FIT)
         }
     }
@@ -1045,6 +1115,26 @@ fun SettingsScreenPreview() {
             getEventsClip = { ClipData.newPlainText("Eyeson SDK event log", "") },
             recordingActive = true,
             clearLog = {/*NOOP*/ },
+            videoSettings = VideoSettingsState(
+                resolutions = SettingsRange(
+                    listOf(Resolution(Resolution16by9.DEFAULT, "640x360")), 0
+                ) {/*NOOP*/ },
+                scaleDownBy = SettingsRange(listOf(1.0), 0) {/*NOOP*/ },
+                fps = SettingsRange(listOf(30), 0) {/*NOOP*/ },
+                maxBitrate = SettingsRange(listOf(2000), 0) {/*NOOP*/ },
+            ),
+            applyVideoOptions = {/*NOOP*/ },
+            resetVideoOptions = {/*NOOP*/ },
+            screenShareSettings = ScreenShareSettingsState(
+                resolutions = SettingsRange(
+                    listOf(Resolution(ScreenShareMaxResolution, "1920x1080")), 0
+                ) {/*NOOP*/ },
+                scaleDownBy = SettingsRange(listOf(1.0), 0) {/*NOOP*/ },
+                fps = SettingsRange(listOf(15), 0) {/*NOOP*/ },
+                maxBitrate = SettingsRange(listOf(2000), 0) {/*NOOP*/ },
+            ),
+            applyScreenShareOptions = {/*NOOP*/ },
+            resetScreenShareOptions = {/*NOOP*/ },
         )
     }
 }
@@ -1053,6 +1143,8 @@ private const val SETTINGS_DEFAULT = 0
 private const val SETTINGS_AUDIO = 1
 private const val SETTINGS_EVENT_LOG = 2
 private const val SETTINGS_VIDEO_PLAYBACK = 3
+private const val SETTINGS_SCREEN_SHARE = 4
+private const val SETTINGS_VIDEO = 5
 
 private const val SCREEN_SHARE_NOTIFICATION_ID = 42
 private const val SCREEN_SHARE_CHANNEL_ID = "7"

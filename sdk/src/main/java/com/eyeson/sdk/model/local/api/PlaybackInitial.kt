@@ -1,6 +1,6 @@
 package com.eyeson.sdk.model.local.api
 
-data class PlaybackInitial(
+public data class PlaybackInitial(
     val url: String,
     val name: String?,
     val playId: String?,

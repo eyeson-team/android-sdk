@@ -2,7 +2,6 @@ package com.eyeson.sdk.di
 
 import android.os.Build
 import com.eyeson.sdk.BuildConfig
-import com.eyeson.sdk.EyesonMeeting
 import com.eyeson.sdk.model.meeting.base.MeetingBaseMessageDto
 import com.eyeson.sdk.moshi.adapter.AsStringAdapter
 import com.eyeson.sdk.moshi.adapter.DataChannelIncomingMessagesAdapter
@@ -20,14 +19,24 @@ import okhttp3.tls.decodeCertificatePem
 import retrofit2.Retrofit
 import retrofit2.converter.moshi.MoshiConverterFactory
 import java.util.Date
+import java.util.concurrent.ConcurrentHashMap
 
 internal object NetworkModule {
 
-    private val retrofit: Retrofit by lazy { provideRetrofit(okHttpClient, moshi) }
+    private val restClients = ConcurrentHashMap<String, EyesonRestClient>()
 
     val moshi: Moshi by lazy { provideMoshi() }
     val okHttpClient: OkHttpClient by lazy { provideOkHttpClient() }
-    val restClient: EyesonRestClient by lazy { provideEyesonRestClient(retrofit) }
+
+    /**
+     * One [EyesonRestClient] per API URL. [moshi] and [okHttpClient] are shared, so an additional
+     * URL only adds a [Retrofit] instance.
+     */
+    fun restClient(apiUrl: String): EyesonRestClient {
+        return restClients.getOrPut(apiUrl) {
+            provideEyesonRestClient(provideRetrofit(apiUrl, okHttpClient, moshi))
+        }
+    }
 
 
     private fun provideMoshi(): Moshi {
@@ -112,10 +121,14 @@ internal object NetworkModule {
         return builder.build()
     }
 
-    private fun provideRetrofit(okHttpClient: OkHttpClient, moshi: Moshi): Retrofit {
+    private fun provideRetrofit(
+        apiUrl: String,
+        okHttpClient: OkHttpClient,
+        moshi: Moshi,
+    ): Retrofit {
         return Retrofit.Builder()
             .addConverterFactory(MoshiConverterFactory.create(moshi))
-            .baseUrl(EyesonMeeting.API_URL)
+            .baseUrl(apiUrl)
             .client(okHttpClient)
             .build()
     }

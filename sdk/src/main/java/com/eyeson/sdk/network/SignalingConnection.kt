@@ -93,11 +93,6 @@ internal class SignalingConnection(private val meeting: MeetingDto) {
         socket.close(1001, "BYE")
     }
 
-    private fun terminate() {
-        signalingScope.cancel()
-        socket.cancel()
-    }
-
     private fun handleMessages(message: SeppBaseCommandDto) {
         when (message) {
             is UnknownCommandDto -> {

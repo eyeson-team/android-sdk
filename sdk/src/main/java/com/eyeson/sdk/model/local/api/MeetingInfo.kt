@@ -1,12 +1,8 @@
 package com.eyeson.sdk.model.local.api
 
-import com.eyeson.sdk.model.local.meeting.BroadcastUpdate
-import com.eyeson.sdk.model.local.meeting.Playback
-import com.eyeson.sdk.model.local.meeting.Recording
-import com.eyeson.sdk.model.local.meeting.SnapshotUpdate
 import java.util.Date
 
-data class MeetingInfo(
+public data class MeetingInfo(
     val accessKey: String,
     val id: String,
     val name: String,
