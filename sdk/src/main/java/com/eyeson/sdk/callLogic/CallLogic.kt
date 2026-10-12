@@ -16,19 +16,20 @@ import com.eyeson.sdk.model.datachannel.incoming.PingDto
 import com.eyeson.sdk.model.datachannel.outgoing.PongDto
 import com.eyeson.sdk.model.datachannel.outgoing.fromLocal
 import com.eyeson.sdk.model.local.base.LocalBaseCommand
-import com.eyeson.sdk.model.local.call.CameraClosed
-import com.eyeson.sdk.model.local.call.CameraDisconnected
-import com.eyeson.sdk.model.local.call.CameraError
-import com.eyeson.sdk.model.local.call.CameraFirstFrameAvailable
-import com.eyeson.sdk.model.local.call.CameraFrozen
-import com.eyeson.sdk.model.local.call.CameraOpen
-import com.eyeson.sdk.model.local.call.CameraSwitchDone
-import com.eyeson.sdk.model.local.call.CameraSwitchError
-import com.eyeson.sdk.model.local.call.MeetingJoined
+import com.eyeson.sdk.model.local.call.CameraClosedLocal
+import com.eyeson.sdk.model.local.call.CameraDisconnectedLocal
+import com.eyeson.sdk.model.local.call.CameraErrorLocal
+import com.eyeson.sdk.model.local.call.CameraFirstFrameAvailableLocal
+import com.eyeson.sdk.model.local.call.CameraFrozenLocal
+import com.eyeson.sdk.model.local.call.CameraOpenLocal
+import com.eyeson.sdk.model.local.call.CameraSwitchDoneLocal
+import com.eyeson.sdk.model.local.call.CameraSwitchErrorLocal
+import com.eyeson.sdk.model.local.call.MeetingJoinedLocal
 import com.eyeson.sdk.model.local.datachannel.Pong
 import com.eyeson.sdk.model.local.sepp.CallStart
 import com.eyeson.sdk.model.local.sepp.CallTerminated
 import com.eyeson.sdk.options.AudioOptions
+import com.eyeson.sdk.options.MediaOptions
 import com.eyeson.sdk.options.ScreenShareOptions
 import com.eyeson.sdk.options.VideoOptions
 import com.eyeson.sdk.service.ScreenCapturerService
@@ -40,6 +41,7 @@ import com.squareup.moshi.JsonDataException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.cancel
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.launch
@@ -47,7 +49,6 @@ import org.webrtc.Camera1Enumerator
 import org.webrtc.Camera2Enumerator
 import org.webrtc.CameraEnumerator
 import org.webrtc.CameraVideoCapturer
-import org.webrtc.EglBase
 import org.webrtc.IceCandidate
 import org.webrtc.PeerConnectionFactory
 import org.webrtc.RTCStatsReport
@@ -62,10 +63,11 @@ import java.util.concurrent.atomic.AtomicBoolean
 internal class CallLogic(
     @Volatile private var meeting: MeetingDto,
     private val context: Context,
-    private val rootEglBase: EglBase,
     val audioOptions: AudioOptions,
     videoOptions: VideoOptions,
     screenShareOptions: ScreenShareOptions,
+    private val videoCodecHardwareAcceleration: Boolean,
+    private val mediaOptions: MediaOptions,
 ) {
     private val callLogicScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
 
@@ -128,7 +130,7 @@ internal class CallLogic(
 
         override fun onConnected() {
             Logger.d("onConnected")
-            emitEvent(MeetingJoined())
+            emitEvent(MeetingJoinedLocal)
         }
 
         override fun onDisconnected() {
@@ -154,37 +156,37 @@ internal class CallLogic(
 
         override fun onCameraSwitchDone(isFrontCamera: Boolean) {
             cameraIsFrontFacing.set(isFrontCamera)
-            emitEvent(CameraSwitchDone(isFrontCamera))
+            emitEvent(CameraSwitchDoneLocal(isFrontCamera))
         }
 
         override fun onCameraSwitchError(error: String) {
-            emitEvent(CameraSwitchError(error))
+            emitEvent(CameraSwitchErrorLocal(error))
         }
     }
 
     private val cameraEventsHandler = object : CameraVideoCapturer.CameraEventsHandler {
         override fun onCameraError(error: String?) {
-            emitEvent(CameraError(error))
+            emitEvent(CameraErrorLocal(error))
         }
 
         override fun onCameraDisconnected() {
-            emitEvent(CameraDisconnected)
+            emitEvent(CameraDisconnectedLocal)
         }
 
         override fun onCameraFreezed(error: String?) {
-            emitEvent(CameraFrozen(error))
+            emitEvent(CameraFrozenLocal(error))
         }
 
         override fun onCameraOpening(cameraName: String?) {
-            emitEvent(CameraOpen(cameraName))
+            emitEvent(CameraOpenLocal(cameraName))
         }
 
         override fun onFirstFrameAvailable() {
-            emitEvent(CameraFirstFrameAvailable)
+            emitEvent(CameraFirstFrameAvailableLocal)
         }
 
         override fun onCameraClosed() {
-            emitEvent(CameraClosed)
+            emitEvent(CameraClosedLocal)
         }
     }
 
@@ -240,11 +242,15 @@ internal class CallLogic(
     private val peerConnectionClient: PeerConnectionClient by lazy {
         PeerConnectionClient(
             context,
-            rootEglBase,
             PeerConnectionParameters(
+                sendAudio = mediaOptions.sendAudio,
+                receiveAudio = mediaOptions.receiveAudio,
                 audioOptions = audioOptions,
+                sendVideo = mediaOptions.sendVideo,
+                receiveVideo = mediaOptions.receiveVideo,
                 videoOptions = videoOptions,
                 screenShareOptions = screenShareOptions,
+                videoCodecHardwareAcceleration = videoCodecHardwareAcceleration,
                 isWidescreen = meeting.options.widescreen
             ),
             peerConnectionEvents,
@@ -261,6 +267,10 @@ internal class CallLogic(
         notification: Notification?,
     ) {
         val videoCapturer = when {
+            // Not sending video takes precedence over a screen share on start: there is no video
+            // sender to feed a capturer into.
+            !mediaOptions.sendVideo -> null
+
             mediaProjectionPermissionResultData != null && notificationId != null && notification != null -> {
                 val connection: ServiceConnection = object : ServiceConnection {
                     override fun onServiceConnected(className: ComponentName, service: IBinder) {
@@ -317,6 +327,10 @@ internal class CallLogic(
         localProxyVideoSink.setTarget(null)
 
         peerConnectionClient.close()
+
+        // A CallLogic is created per join and never reused. Cancelling the scope here stops
+        // pending emitEvent coroutines from outliving the call they belong to.
+        callLogicScope.cancel()
     }
 
     fun setLocalVideoTarget(target: VideoSink?) {
@@ -334,6 +348,11 @@ internal class CallLogic(
         asPresentation: Boolean,
         enablePresentation: () -> Unit,
     ): Boolean {
+        if (!mediaOptions.sendVideo) {
+            Logger.w("Screen share is not possible in a meeting that does not send video")
+            return false
+        }
+
         if (screenCapturerServiceBound) {
             return false
         }
@@ -387,6 +406,10 @@ internal class CallLogic(
     }
 
     fun stopScreenShare(resumeLocalVideo: Boolean) {
+        if (!mediaOptions.sendVideo) {
+            return
+        }
+
         endScreenShareForeground()
 
         peerConnectionClient.replaceVideoCapturer(
@@ -428,6 +451,7 @@ internal class CallLogic(
     ): VideoCapturer? {
         val deviceNames = enumerator.deviceNames
         var preferredCapturer: VideoCapturer? = null
+        var preferredIsFrontFacing = false
         // First, try to find front facing camera
         for (deviceName in deviceNames) {
             if (enumerator.isFrontFacing(deviceName)) {
@@ -435,12 +459,14 @@ internal class CallLogic(
 
                 if (videoCapturer != null) {
                     preferredCapturer = videoCapturer
+                    preferredIsFrontFacing = true
                     break
                 }
             }
         }
 
         if (preferredCapturer != null && !preferBackCamera) {
+            cameraIsFrontFacing.set(true)
             return preferredCapturer
         }
 
@@ -451,11 +477,17 @@ internal class CallLogic(
 
                 if (videoCapturer != null) {
                     preferredCapturer = videoCapturer
+                    preferredIsFrontFacing = false
                     break
                 }
             }
         }
 
+        // The facing of the camera actually opened, which is not the preferred one if the device
+        // has no camera facing that way. Camera switches update it from then on.
+        if (preferredCapturer != null) {
+            cameraIsFrontFacing.set(preferredIsFrontFacing)
+        }
         return preferredCapturer
     }
 
@@ -521,10 +553,6 @@ internal class CallLogic(
 
     fun isFrontCamera(): Boolean {
         return cameraIsFrontFacing.get()
-    }
-
-    fun scaleResolutionDownBy(factor: Double?) {
-        peerConnectionClient.scaleResolutionDownBy(factor)
     }
 
     private fun emitEvent(event: LocalBaseCommand) {

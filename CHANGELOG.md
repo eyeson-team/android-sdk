@@ -5,12 +5,115 @@ The format is based on [Keep a Changelog] and this project adheres to
 [Semantic Versioning].  
 
 ## [Unreleased]
+### Added
+- `EyesonMeeting`
+  - `events`, a hot `SharedFlow<EyesonEvent>` without replay
+  - `JoinResult`, returned by `join`, `joinAsGuest` and `connectPermalink`
+  - `updateVideoOptions`
+  - `updateScreenShareOptions`
+  - `getMediaOptions`
+  - `eglBaseContext`, static and valid for the whole process
+- `AudioOptions`, fixed per `EyesonMeeting` instance
+  - `audioMaxAverageBitrateKbps`
+  - `echoCancellation`, `hardwareAcousticEchoCanceler`, `autoGainControl`, `highpassFilter`,
+    `noiseSuppression`, `hardwareNoiseSuppressor`, `typingNoiseDetection`
+  - `stereo`, opt-in via `@Experimental`
+- `VideoOptions`
+  - `videoResolution`, `videoFps`, `videoMaxBitrate`, `scaleResolutionDownBy`
+- `ScreenShareOptions`
+  - `screenShareResolution`, `screenShareFps`, `videoMaxBitrate`, `scaleResolutionDownBy`
+- `VideoResolution`, `Resolution16by9`, `Resolution4by3`, `ScreenShareMaxResolution`
+- `MediaOptions`, fixed per meeting, at least one `true`
+  - `sendAudio`, `receiveAudio`, `sendVideo`, `receiveVideo`
+- `SdkOptions`
+  - `apiUrl`
+  - `videoCodecHardwareAcceleration`
+  - `eglBase`, only for apps that own the GL share group; set before the SDK first uses EGL
+- Demo app
+  - Video settings while in a meeting
+  - Screen share settings while sharing the screen
 ### Changed
-- EyesonMeeting signature changes
-  - `EyesonMeeting`
-  - `startScreenShare`  
+- `EyesonMeeting` constructor takes `audioOptions`, `videoOptions`, `screenShareOptions` and
+  `sdkOptions`
+  - `experimentalFeatureStereo` -> `AudioOptions(stereo = true)`
+  - `customApiUrl` -> `SdkOptions(apiUrl = ...)`
+- `join`, `joinAsGuest`, `connectPermalink`
+  - `eventListener` removed, collect `events` before joining
+  - `audioOnly` -> `mediaOptions` (`audioOnly = true` is
+    `MediaOptions(sendVideo = false, receiveVideo = false)`)
+  - Return `JoinResult` instead of `Unit`; `onPermissionsNeeded` -> `JoinResult.MissingPermissions`
+  - `RECORD_AUDIO` only required when sending audio, `CAMERA` only when sending video
+  - `mediaOptions` overrides `microphoneEnabledOnStart`, `videoEnabledOnStart` and `screenShareInfo`
+- `EyesonMeeting`
+  - Can join again after `leave()`
+  - `MeetingTerminated` and `MeetingJoinFailed` emitted after leaving, so rejoining from their
+    handler works
+  - `enabledLogging` -> `enableLogging`
+  - `getEglContext` -> static `eglBaseContext`
+  - `setVideoEnabled`, `switchCamera`, `switchCameraTo`, `startScreenShare` no-ops without
+    `sendVideo`
+  - `setMicrophoneEnabled` and mutes by others ignored without `sendAudio`
+- `VideoRenderer`
+  - `init(sharedContext)` -> `init()`, always in the SDK's EGL share group
+- `EyesonEventListener` callbacks -> `EyesonEvent`s
+  - onMeetingJoining -> MeetingJoining
+  - onMeetingJoined -> MeetingJoined
+  - onMeetingJoinFailed -> MeetingJoinFailed
+  - onMeetingTerminated -> MeetingTerminated
+  - onMeetingLocked -> MeetingLocked
+  - onStreamingModeChanged -> StreamingModeChanged
+  - onVideoSourceUpdate -> VideoSourceUpdated
+  - onAudioMutedBy -> AudioMutedBy
+  - onMediaPlayback -> MediaPlayback
+  - onMediaPlaybackStartResponse -> MediaPlaybackStarted
+  - onMediaPlaybackStopResponse -> MediaPlaybackStopped
+  - onPresentationUpdate -> PresentationUpdated
+  - onPresentationStartResponse -> PresentationStarted
+  - onPresentationStopResponse -> PresentationStopped
+  - onBroadcastUpdate -> BroadcastUpdated
+  - onRecordingUpdate -> RecordingUpdated
+  - onSnapshotUpdate -> SnapshotUpdated
+  - onConnectionStatisticUpdate -> ConnectionStatisticUpdated
+  - onOptionsUpdate -> OptionsUpdated
+  - onUserJoinedMeeting -> UserJoined
+  - onUserLeftMeeting -> UserLeft
+  - onUserListUpdate -> UserListUpdated
+  - onVoiceActivity -> VoiceActivityChanged
+  - onChatMessageReceived -> ChatMessageReceived
+  - onCustomMessageReceived -> CustomMessageReceived
+  - onCameraOpen -> CameraOpened
+  - onCameraFirstFrameAvailable -> CameraFirstFrameAvailable
+  - onCameraClosed -> CameraClosed
+  - onCameraDisconnected -> CameraDisconnected
+  - onCameraFrozen -> CameraFrozen
+  - onCameraError -> CameraError
+  - onCameraSwitchDone -> CameraSwitchDone
+  - onCameraSwitchError -> CameraSwitchError
+- Model packages
+  - `BroadcastUpdate`, `Playback`, `PresentationUpdate`, `Recording`, `SnapshotUpdate`:
+    `model.local.meeting` -> `model.local.api`
+  - `ConnectionStatistic`: `model.local.call` -> `model.local.statistic`
+- Defaults
+  - Camera resolution `640x360` in 4:3 meetings too (was `640x480`)
+  - Screen share resolution `1920x1080` (was the display resolution)
 - Dependency updates
-  - Gradle `8.10.0`
+  - AndroidGradlePlugin `8.12.2`
+  - Gradle `8.13`
+  - AndroidxActivityCompose `1.9.0`
+  - AndroidxComposeBom `2025.09.00`
+### Removed
+- `EyesonEventListener`
+- `LocalBaseCommand` and `model.local.meeting.OptionsUpdate` from the public API
+### Fixed
+- Custom API URL ignored for every `EyesonMeeting` after the first
+- `join` stuck as a no-op after `onPermissionsNeeded` or `onMeetingJoinFailed`
+- Crash on network failures in REST requests and user lookups; affected responses report
+  `UNSPECIFIED`
+- `getPermalinkMeetingInfo` throwing on network failures instead of returning `null`
+- Concurrent user lookups fetching users twice and emitting events out of order
+- `isFrontCamera` wrong after joining with the back camera, so `stopScreenShare` returned to the
+  wrong camera
+- Opus `maxaveragebitrate` duplicated, or written to a second `a=fmtp` line
 ## [Released]
 ## [1.2.0] - 2025-03-24
 ### Added

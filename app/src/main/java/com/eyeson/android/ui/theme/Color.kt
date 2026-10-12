@@ -13,3 +13,4 @@ val Neutral6 = Color(0x99000000)
 val Red700 = Color(0xFFE01C1C)
 
 const val DisabledContentAlpha = 0.38f
+const val MutedContentAlpha = 0.6f

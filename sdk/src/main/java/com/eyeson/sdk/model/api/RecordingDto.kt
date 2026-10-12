@@ -1,8 +1,8 @@
 package com.eyeson.sdk.model.api
 
 
+import com.eyeson.sdk.model.local.api.Recording
 import com.eyeson.sdk.model.local.api.UserInfo
-import com.eyeson.sdk.model.local.meeting.Recording
 import com.squareup.moshi.Json
 import com.squareup.moshi.JsonClass
 import java.util.*

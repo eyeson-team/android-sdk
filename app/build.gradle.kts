@@ -17,6 +17,9 @@ android {
     }
 
     buildTypes {
+        debug {
+            isDefault = true
+        }
         release {
             isMinifyEnabled = false
             proguardFiles(
@@ -31,6 +34,7 @@ android {
     productFlavors {
         create("production") {
             dimension = "version"
+            isDefault = true
             resValue("string", "app_name", "Eyeson SDK")
         }
     }

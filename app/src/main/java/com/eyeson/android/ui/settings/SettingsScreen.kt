@@ -109,7 +109,7 @@ private fun SettingsScreen(
                     val settings = settingsUiState.settings
 
                     SettingsToggle(
-                        value = settings.micOnStar,
+                        value = settings.micOnStart,
                         onValueChange = {
                             micOnStartChange(it)
                         },
@@ -162,7 +162,7 @@ fun SettingsScreenPreview() {
         mutableStateOf(
             Success(
                 SettingsRepository.MeetingSettings(
-                    micOnStar = true,
+                    micOnStart = true,
                     audioOnly = false,
                     videoOnStart = true,
                     rearCamOnStart = false,
@@ -180,7 +180,7 @@ fun SettingsScreenPreview() {
         SettingsScreen(
             onBack = {/*NOOP*/ },
             settingsUiState = settingsUiState,
-            micOnStartChange = { updateSettings(settingsUiState.settings.copy(micOnStar = it)) },
+            micOnStartChange = { updateSettings(settingsUiState.settings.copy(micOnStart = it)) },
             audioOnlyChange = { updateSettings(settingsUiState.settings.copy(audioOnly = it)) },
             videoOnStartChange = { updateSettings(settingsUiState.settings.copy(videoOnStart = it)) },
             rearCamOnStartChange = { updateSettings(settingsUiState.settings.copy(rearCamOnStart = it)) },

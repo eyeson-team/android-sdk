@@ -6,7 +6,7 @@ import com.eyeson.sdk.model.meeting.incoming.BroadcastUpdateDto
 import com.eyeson.sdk.model.meeting.incoming.ChatIncomingDto
 import com.eyeson.sdk.model.meeting.incoming.CustomMessageDto
 import com.eyeson.sdk.model.meeting.incoming.MeetingLockedDto
-import com.eyeson.sdk.model.meeting.incoming.MeetingMessagesIncoming
+import com.eyeson.sdk.model.meeting.incoming.MeetingMessagesIncomingTypes
 import com.eyeson.sdk.model.meeting.incoming.MuteLocalAudioDto
 import com.eyeson.sdk.model.meeting.incoming.OptionsUpdateDto
 import com.eyeson.sdk.model.meeting.incoming.PlaybackUpdateDto
@@ -21,33 +21,33 @@ internal object MeetingIncomingMessagesAdapter {
     fun provideMeetingIncomingMessagesAdapterFactory(): PolymorphicJsonAdapterFactory<MeetingBaseMessageDto> {
         return PolymorphicJsonAdapterFactory
             .of(MeetingBaseMessageDto::class.java, "type")
-            .withSubtype(RoomSetupDto::class.java, MeetingMessagesIncoming.ROOM_SETUP.type)
-            .withSubtype(RoomReadyDto::class.java, MeetingMessagesIncoming.ROOM_READY.type)
-            .withSubtype(ChatIncomingDto::class.java, MeetingMessagesIncoming.CHAT.type)
+            .withSubtype(RoomSetupDto::class.java, MeetingMessagesIncomingTypes.ROOM_SETUP.type)
+            .withSubtype(RoomReadyDto::class.java, MeetingMessagesIncomingTypes.ROOM_READY.type)
+            .withSubtype(ChatIncomingDto::class.java, MeetingMessagesIncomingTypes.CHAT.type)
             .withSubtype(
                 SnapshotUpdateDto::class.java,
-                MeetingMessagesIncoming.SNAPSHOT_UPDATE.type
+                MeetingMessagesIncomingTypes.SNAPSHOT_UPDATE.type
             )
             .withSubtype(
                 PlaybackUpdateDto::class.java,
-                MeetingMessagesIncoming.PLAYBACK_UPDATE.type
+                MeetingMessagesIncomingTypes.PLAYBACK_UPDATE.type
             )
             .withSubtype(
                 RecordingUpdateDto::class.java,
-                MeetingMessagesIncoming.RECORDING_UPDATE.type
+                MeetingMessagesIncomingTypes.RECORDING_UPDATE.type
             )
             .withSubtype(
                 BroadcastUpdateDto::class.java,
-                MeetingMessagesIncoming.BROADCASTS_UPDATE.type
+                MeetingMessagesIncomingTypes.BROADCASTS_UPDATE.type
             )
             .withSubtype(
                 MuteLocalAudioDto::class.java,
-                MeetingMessagesIncoming.MUTE_LOCAL_AUDIO.type
+                MeetingMessagesIncomingTypes.MUTE_LOCAL_AUDIO.type
             )
-            .withSubtype(MeetingLockedDto::class.java, MeetingMessagesIncoming.ROOM_LOCKED.type)
-            .withSubtype(CustomMessageDto::class.java, MeetingMessagesIncoming.CUSTOM.type)
-            .withSubtype(PresentationUpdateDto::class.java, MeetingMessagesIncoming.PRESENTATION_UPDATE.type)
-            .withSubtype(OptionsUpdateDto::class.java, MeetingMessagesIncoming.OPTIONS_UPDATE.type)
+            .withSubtype(MeetingLockedDto::class.java, MeetingMessagesIncomingTypes.ROOM_LOCKED.type)
+            .withSubtype(CustomMessageDto::class.java, MeetingMessagesIncomingTypes.CUSTOM.type)
+            .withSubtype(PresentationUpdateDto::class.java, MeetingMessagesIncomingTypes.PRESENTATION_UPDATE.type)
+            .withSubtype(OptionsUpdateDto::class.java, MeetingMessagesIncomingTypes.OPTIONS_UPDATE.type)
             .withDefaultValue(UnknownMessageDto())
     }
 }

@@ -35,38 +35,70 @@ import com.eyeson.android.ui.meeting.ChatMessage.IncomingMessage
 import com.eyeson.android.ui.meeting.ChatMessage.OutgoingMessage
 import com.eyeson.sdk.EyesonAudioManager
 import com.eyeson.sdk.EyesonMeeting
+import com.eyeson.sdk.events.AudioMutedBy
+import com.eyeson.sdk.events.BroadcastUpdated
 import com.eyeson.sdk.events.CallRejectionReason
 import com.eyeson.sdk.events.CallTerminationReason
-import com.eyeson.sdk.events.EyesonEventListener
+import com.eyeson.sdk.events.CameraClosed
+import com.eyeson.sdk.events.CameraDisconnected
+import com.eyeson.sdk.events.CameraError
+import com.eyeson.sdk.events.CameraFirstFrameAvailable
+import com.eyeson.sdk.events.CameraFrozen
+import com.eyeson.sdk.events.CameraOpened
+import com.eyeson.sdk.events.CameraSwitchDone
+import com.eyeson.sdk.events.CameraSwitchError
+import com.eyeson.sdk.events.ChatMessageReceived
+import com.eyeson.sdk.events.ConnectionStatisticUpdated
+import com.eyeson.sdk.events.CustomMessageReceived
+import com.eyeson.sdk.events.EyesonEvent
+import com.eyeson.sdk.events.MediaPlayback
 import com.eyeson.sdk.events.MediaPlaybackResponse
-import com.eyeson.sdk.events.NeededPermissions
-import com.eyeson.sdk.events.PresentationResponse
-import com.eyeson.sdk.model.local.api.MeetingInfoInitial
-import com.eyeson.sdk.model.local.api.MeetingOptions
+import com.eyeson.sdk.events.MediaPlaybackStarted
+import com.eyeson.sdk.events.MediaPlaybackStopped
+import com.eyeson.sdk.events.MeetingJoinFailed
+import com.eyeson.sdk.events.MeetingJoined
+import com.eyeson.sdk.events.MeetingJoining
+import com.eyeson.sdk.events.MeetingLocked
+import com.eyeson.sdk.events.MeetingTerminated
+import com.eyeson.sdk.events.OptionsUpdated
+import com.eyeson.sdk.events.PresentationStarted
+import com.eyeson.sdk.events.PresentationStopped
+import com.eyeson.sdk.events.PresentationUpdated
+import com.eyeson.sdk.events.RecordingUpdated
+import com.eyeson.sdk.events.SnapshotUpdated
+import com.eyeson.sdk.events.StreamingModeChanged
+import com.eyeson.sdk.events.UserJoined
+import com.eyeson.sdk.events.UserLeft
+import com.eyeson.sdk.events.UserListUpdated
+import com.eyeson.sdk.events.VideoSourceUpdated
+import com.eyeson.sdk.events.VoiceActivityChanged
 import com.eyeson.sdk.model.local.api.PermalinkMeetingInfo
 import com.eyeson.sdk.model.local.api.UserInfo
-import com.eyeson.sdk.model.local.call.ConnectionStatistic
-import com.eyeson.sdk.model.local.meeting.BroadcastUpdate
-import com.eyeson.sdk.model.local.meeting.Playback
-import com.eyeson.sdk.model.local.meeting.PresentationUpdate
-import com.eyeson.sdk.model.local.meeting.Recording
-import com.eyeson.sdk.model.local.meeting.SnapshotUpdate
+import com.eyeson.sdk.model.local.api.Playback
+import com.eyeson.sdk.options.MediaOptions
+import com.eyeson.sdk.options.Resolution16by9
+import com.eyeson.sdk.options.Resolution4by3
+import com.eyeson.sdk.options.ScreenShareMaxResolution
 import com.eyeson.sdk.options.ScreenShareOptions
+import com.eyeson.sdk.options.VideoOptions
+import com.eyeson.sdk.options.VideoResolution
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
-import org.webrtc.EglBase
 import org.webrtc.VideoSink
 import timber.log.Timber
 import java.util.Date
 import java.util.UUID
 import javax.inject.Inject
+import kotlin.time.Duration.Companion.milliseconds
 
 @OptIn(UnstableApi::class)
 @HiltViewModel
@@ -90,244 +122,245 @@ class MeetingViewModel @Inject constructor(
     private val _userInMeeting = MutableStateFlow(emptyList<UserInfo>())
     val userInMeeting: StateFlow<List<UserInfo>> = _userInMeeting.asStateFlow()
 
-    private val eventListener: EyesonEventListener = object : EyesonEventListener() {
-        override fun onPermissionsNeeded(neededPermissions: List<NeededPermissions>) {
-            addEvent("onPermissionsNeeded: neededPermissions $neededPermissions")
-        }
-
-        override fun onMeetingJoining(meetingInfo: MeetingInfoInitial) {
-            with(meetingInfo) {
-                addEvent(
-                    "onMeetingJoining: accessKey: $accessKey;  name $name; startedAt $startedAt; user $user; " +
-                            "locked $locked; guestToke $guestToken; guestLink $guestLink; activeRecording " +
-                            "$activeRecording; activeBroadcasts $activeBroadcasts; snapshots $snapshots;" +
-                            " meetingOptions $meetingOptions, playbacks $playbacks"
-                )
-            }
-            meetingState.value = MeetingState.Connecting
-            _recordingActive.value = meetingInfo.activeRecording != null
-        }
-
-        override fun onMeetingJoined() {
-            addEvent("onMeetingJoined")
-            meetingState.value = MeetingState.Connected
-            lastCameraState = isVideoEnabled()
-            _cameraActive.value = isVideoEnabled()
-        }
-
-        override fun onMeetingJoinFailed(callRejectionReason: CallRejectionReason) {
-            addEvent("onMeetingJoinFailed: callRejectionReason $callRejectionReason", true)
-            audioManager.stop()
-            meetingState.value = MeetingState.ConnectionFailed(callRejectionReason)
-        }
-
-        override fun onMeetingTerminated(callTerminationReason: CallTerminationReason) {
-            addEvent("onMeetingTerminated: callTerminationReason $callTerminationReason")
-            Timber.d("onMeetingTerminated: callTerminationReason $callTerminationReason")
-            audioManager.stop()
-            meetingState.value = MeetingState.ConnectionTerminated(callTerminationReason)
-        }
-
-        override fun onMeetingLocked(locked: Boolean) {
-            addEvent("onMeetingLocked: locked $locked", true)
-        }
-
-        override fun onStreamingModeChanged(p2p: Boolean) {
-            addEvent("onStreamingModeChanged: p2p $p2p")
-            _p2p.value = p2p
-            if (p2p) {
-                pauseExoPlayers()
-            }
-        }
-
-        override fun onVideoSourceUpdate(
-            visibleUsers: List<UserInfo>,
-            presenter: UserInfo?,
-        ) {
-            addEvent("onVideoSourceUpdate: $visibleUsers; presenter $presenter")
-            if (!_presentationActive.value && presenter?.id != null && presenter.id != eyesonMeeting.getUserInfo()?.id) {
-                lastCameraState = isVideoEnabled()
-                _cameraActive.value = false
-                eyesonMeeting.setVideoEnabled(false)
-            }
-            if (_presentationActive.value && presenter == null) {
-                eyesonMeeting.setVideoEnabled(lastCameraState)
-                _cameraActive.value = lastCameraState
-            }
-        }
-
-        override fun onAudioMutedBy(user: UserInfo) {
-            addEvent("onAudioMutedBy: user $user")
-            setLocalAudioEnabled(enabled = false)
-        }
-
-        override fun onMediaPlayback(playing: List<Playback>) {
-            addEvent("onMediaPlayback: playing $playing")
-
-            val playMedia = { exoPlayer: ExoPlayer, playback: Playback ->
-                viewModelScope.launch(Dispatchers.Main) {
-                    exoPlayer.volume = if (playback.audio) 1F else 0F
-                    exoPlayer.setMediaItem(MediaItem.fromUri(playback.url))
-                }
-            }
-            if (_p2p.value) {
-                for (playback in playing) {
-                    if (!_localVideoPlaybackActive.value &&
-                        playback.replacedUser?.id == (eyesonMeeting.getUserInfo()?.id ?: continue)
-                    ) {
-                        _localVideoPlaybackActive.value = true
-                        playMedia(localExoPlayer, playback)
-                    }
-
-                    if (!_remoteVideoPlaybackActive.value &&
-                        _userInMeeting.value.find {
-                            it.id == playback.replacedUser?.id &&
-                                    it.id != eyesonMeeting.getUserInfo()?.id
-                        } != null
-                    ) {
-                        _remoteVideoPlaybackActive.value = true
-                        playMedia(remoteExoPlayer, playback)
-                    }
-                }
-            }
-        }
-
-        override fun onMediaPlaybackStartResponse(
-            playId: String?,
-            mediaPlaybackResponse: MediaPlaybackResponse,
-        ) {
-            addEvent(
-                "onMediaPlaybackStartResponse: mediaPlaybackResponse $mediaPlaybackResponse",
-                error = !mediaPlaybackResponse.isSuccessful()
-            )
-
-            _localVideoPlaybackPlayId.value = playId
-        }
-
-        override fun onMediaPlaybackStopResponse(
-            playId: String,
-            mediaPlaybackResponse: MediaPlaybackResponse,
-        ) {
-            addEvent(
-                "onMediaPlaybackStopResponse: playId: $playId mediaPlaybackResponse $mediaPlaybackResponse",
-                error = mediaPlaybackResponse != MediaPlaybackResponse.OK
-            )
-            _localVideoPlaybackActive.value = false
-            _localVideoPlaybackPlayId.value = null
-        }
-
-        override fun onPresentationUpdate(presentationUpdate: PresentationUpdate) {
-            addEvent("onPresentationUpdate: presentationUpdate $presentationUpdate")
-            _presentationActive.value = presentationUpdate.user != null
-        }
-
-        override fun onPresentationStartResponse(presentationResponse: PresentationResponse) {
-            addEvent("onPresentationStartResponse: presentationResponse $presentationResponse")
-        }
-
-
-        override fun onPresentationStopResponse(presentationResponse: PresentationResponse) {
-            addEvent("onPresentationStopResponse: presentationResponse $presentationResponse")
-        }
-
-        override fun onBroadcastUpdate(activeBroadcasts: BroadcastUpdate) {
-            addEvent("onBroadcastUpdate: activeBroadcasts $activeBroadcasts")
-        }
-
-        override fun onRecordingUpdate(recording: Recording) {
-            addEvent("onRecordingUpdate: recording $recording")
-            _recordingActive.value = recording.duration == null
-        }
-
-        override fun onSnapshotUpdate(snapshots: SnapshotUpdate) {
-            addEvent("onSnapshotUpdate: snapshots $snapshots")
-        }
-
-        override fun onConnectionStatisticUpdate(statistic: ConnectionStatistic) {
-            // NOTE: omitted to reduce clutter
-//            addEvent("onConnectionStatisticUpdate: statistic $statistic")
-//            Timber.d("onConnectionStatisticUpdate: statistic $statistic")
-        }
-
-        override fun onOptionsUpdate(meetingOptions: MeetingOptions) {
-            addEvent("onOptionsUpdate: meetingOptions $meetingOptions")
-        }
-
-        override fun onUserJoinedMeeting(users: List<UserInfo>) {
-            addEvent("onUserJoinedMeeting: users $users")
-        }
-
-        override fun onUserLeftMeeting(users: List<UserInfo>) {
-            addEvent("onUserLeftMeeting: users $users")
-        }
-
-        override fun onUserListUpdate(users: List<UserInfo>, playbackPlayIds: List<String>) {
-            addEvent("onUserListUpdate: users $users; playbackPlayIds $playbackPlayIds")
-            _userInMeeting.value = users
-        }
-
-        override fun onVoiceActivity(user: UserInfo, active: Boolean) {
-            // NOTE: omitted to reduce clutter
-//            addEvent("onVoiceActivity: users $user; active $active")
-        }
-
-        override fun onChatMessageReceived(
-            user: UserInfo,
-            message: String,
-            timestamp: Date,
-        ) {
-            addEvent("onChatMessageReceived: user $user; message $message; timestamp $timestamp")
-
-            emitChatMessage(user, message, timestamp)
-        }
-
-        override fun onCustomMessageReceived(user: UserInfo, message: String, timestamp: Date) {
-            addEvent("onCustomMessageReceived: user $user; message $message; timestamp $timestamp")
-        }
-
-        override fun onCameraOpen(cameraName: String) {
-            // NOTE: omitted to reduce clutter
-//            addEvent("onCameraOpen: cameraName $cameraName")
-            cameraDisconnected.value = false
-        }
-
-        override fun onCameraFirstFrameAvailable() {
-            // NOTE: omitted to reduce clutter
-//            addEvent("onCameraFirstFrameAvailable")
-        }
-
-        override fun onCameraClosed() {
-            // NOTE: omitted to reduce clutter
-//            addEvent("onCameraClosed")
-        }
-
-        override fun onCameraDisconnected() {
-            // NOTE: omitted to reduce clutter
-//            addEvent("onCameraDisconnected")
-            cameraDisconnected.value = true
-        }
-
-        override fun onCameraFrozen(error: String) {
-            addEvent("onCameraFrozen: error $error", true)
-        }
-
-        override fun onCameraError(error: String) {
-            addEvent("onCameraError: error $error", true)
-            cameraDisconnected.value = true
-        }
-
-        override fun onCameraSwitchDone(isFrontCamera: Boolean) {
-            addEvent("onCameraSwitchDone: isFrontCamera $isFrontCamera")
-        }
-
-        override fun onCameraSwitchError(error: String) {
-            addEvent("onCameraSwitchError: error $error", true)
-        }
-    }
-
     private val eyesonMeeting: EyesonMeeting by lazy {
         EyesonMeeting(application = application)
     }
+
+    init {
+        viewModelScope.launch {
+            eyesonMeeting.events.collectLatest {
+                handleEvent(it)
+            }
+        }
+    }
+
+    private fun handleEvent(event: EyesonEvent) {
+        when (event) {
+            is MeetingJoining -> {
+                with(event.meetingInfo) {
+                    addEvent(
+                        "MeetingJoining: accessKey: $accessKey;  name $name; startedAt $startedAt; user $user; " +
+                                "locked $locked; guestToke $guestToken; guestLink $guestLink; activeRecording " +
+                                "$activeRecording; activeBroadcasts $activeBroadcasts; snapshots $snapshots;" +
+                                " meetingOptions $meetingOptions, playbacks $playbacks"
+                    )
+                }
+                meetingState.value = MeetingState.Connecting
+                _recordingActive.value = event.meetingInfo.activeRecording != null
+            }
+
+            is MeetingJoined -> {
+                addEvent("MeetingJoined")
+                meetingState.value = MeetingState.Connected
+                lastCameraState = isVideoEnabled()
+                _cameraActive.value = isVideoEnabled()
+                // The aspect ratio of the meeting is only known now.
+                _videoSettings.value = videoSettingsState(eyesonMeeting.isWidescreen())
+                // Screen share on start is handled inside join(), so ask the SDK instead of
+                // assuming the share is off.
+                _screenShareActive.value = eyesonMeeting.isScreenShareActive()
+            }
+
+            is MeetingJoinFailed -> {
+                addEvent(
+                    "MeetingJoinFailed: callRejectionReason ${event.callRejectionReason}",
+                    true
+                )
+                audioManager.stop()
+                meetingState.value = MeetingState.ConnectionFailed(event.callRejectionReason)
+            }
+
+            is MeetingTerminated -> {
+                addEvent("MeetingTerminated: callTerminationReason ${event.callTerminationReason}")
+                audioManager.stop()
+                meetingState.value = MeetingState.ConnectionTerminated(event.callTerminationReason)
+            }
+
+            is MeetingLocked -> {
+                addEvent("MeetingLocked: locked ${event.locked}", true)
+            }
+
+            is StreamingModeChanged -> {
+                addEvent("StreamingModeChanged: p2p ${event.p2p}")
+                _p2p.value = event.p2p
+                if (event.p2p) {
+                    pauseExoPlayers()
+                }
+            }
+
+            is VideoSourceUpdated -> {
+                addEvent("VideoSourceUpdated: ${event.visibleUsers}; presenter ${event.presenter}")
+                if (!_presentationActive.value && event.presenter?.id != null && event.presenter?.id != eyesonMeeting.getUserInfo()?.id) {
+                    lastCameraState = isVideoEnabled()
+                    _cameraActive.value = false
+                    eyesonMeeting.setVideoEnabled(false)
+                }
+                if (_presentationActive.value && event.presenter == null) {
+                    eyesonMeeting.setVideoEnabled(lastCameraState)
+                    _cameraActive.value = lastCameraState
+                }
+            }
+
+            is AudioMutedBy -> {
+                addEvent("AudioMutedBy: user ${event.user}")
+                setLocalAudioEnabled(enabled = false)
+            }
+
+            is MediaPlayback -> {
+                addEvent("MediaPlayback: playing ${event.playing}")
+
+                val playMedia = { exoPlayer: ExoPlayer, playback: Playback ->
+                    viewModelScope.launch(Dispatchers.Main) {
+                        exoPlayer.volume = if (playback.audio) 1F else 0F
+                        exoPlayer.setMediaItem(MediaItem.fromUri(playback.url))
+                    }
+                }
+                if (_p2p.value) {
+                    for (playback in event.playing) {
+                        if (!_localVideoPlaybackActive.value &&
+                            playback.replacedUser?.id == (eyesonMeeting.getUserInfo()?.id
+                                ?: continue)
+                        ) {
+                            _localVideoPlaybackActive.value = true
+                            playMedia(localExoPlayer, playback)
+                        }
+
+                        if (!_remoteVideoPlaybackActive.value &&
+                            _userInMeeting.value.find {
+                                it.id == playback.replacedUser?.id &&
+                                        it.id != eyesonMeeting.getUserInfo()?.id
+                            } != null
+                        ) {
+                            _remoteVideoPlaybackActive.value = true
+                            playMedia(remoteExoPlayer, playback)
+                        }
+                    }
+                }
+
+            }
+
+            is MediaPlaybackStarted -> {
+                addEvent(
+                    "MediaPlaybackStarted: mediaPlaybackResponse ${event.mediaPlaybackResponse}",
+                    error = !event.mediaPlaybackResponse.isSuccessful()
+                )
+
+                _localVideoPlaybackPlayId.value = event.playId
+
+            }
+
+            is MediaPlaybackStopped -> {
+                addEvent(
+                    "MediaPlaybackStopped: playId: ${event.playId} mediaPlaybackResponse ${event.mediaPlaybackResponse}",
+                    error = event.mediaPlaybackResponse != MediaPlaybackResponse.OK
+                )
+                _localVideoPlaybackActive.value = false
+                _localVideoPlaybackPlayId.value = null
+            }
+
+            is PresentationUpdated -> {
+                addEvent("PresentationUpdated: presentationUpdate ${event.presentationUpdate}")
+                _presentationActive.value = event.presentationUpdate.user != null
+            }
+
+            is PresentationStarted -> {
+                addEvent("PresentationStarted: presentationResponse ${event.presentationResponse}")
+            }
+
+            is PresentationStopped -> {
+                addEvent("PresentationStopped: presentationResponse ${event.presentationResponse}")
+            }
+
+            is BroadcastUpdated -> {
+                addEvent("BroadcastUpdated: activeBroadcasts ${event.activeBroadcasts}")
+            }
+
+            is RecordingUpdated -> {
+                addEvent("RecordingUpdated: recording ${event.recording}")
+                _recordingActive.value = event.recording.duration == null
+            }
+
+            is SnapshotUpdated -> {
+                addEvent("SnapshotUpdated: snapshots ${event.snapshots}")
+            }
+
+            is ConnectionStatisticUpdated -> {
+                // NOTE: omitted to reduce clutter
+//                addEvent("ConnectionStatisticUpdated: statistic ${event.statistic}")
+            }
+
+            is OptionsUpdated -> {
+                addEvent("OptionsUpdated: meetingOptions ${event.meetingOptions}")
+            }
+
+            is UserJoined -> {
+                addEvent("UserJoined: users ${event.users}")
+            }
+
+            is UserLeft -> {
+                addEvent("UserLeft: users ${event.users}")
+            }
+
+            is UserListUpdated -> {
+                addEvent("UserListUpdated: users ${event.users}; playbackPlayIds ${event.playbackPlayIds}")
+                _userInMeeting.value = event.users
+            }
+
+            is VoiceActivityChanged -> {
+                // NOTE: omitted to reduce clutter
+//                addEvent("VoiceActivityChanged: users ${event.user}; active ${event.active}")
+            }
+
+            is ChatMessageReceived -> {
+                addEvent("ChatMessageReceived: user ${event.user}; message ${event.message}; timestamp ${event.timestamp}")
+                emitChatMessage(event.user, event.message, event.timestamp)
+            }
+
+            is CustomMessageReceived -> {
+                addEvent("CustomMessageReceived: user ${event.user}; message ${event.message}; timestamp ${event.timestamp}")
+            }
+
+            is CameraOpened -> {
+                // NOTE: omitted to reduce clutter
+//                addEvent("CameraOpened: cameraName ${event.cameraName}")
+                cameraDisconnected.value = false
+            }
+
+            is CameraFirstFrameAvailable -> {
+                // NOTE: omitted to reduce clutter
+//                addEvent("CameraFirstFrameAvailable")
+            }
+
+            is CameraClosed -> {
+                // NOTE: omitted to reduce clutter
+//                addEvent("CameraClosed")
+            }
+
+            is CameraDisconnected -> {
+                // NOTE: omitted to reduce clutter
+//                addEvent("CameraDisconnected")
+                cameraDisconnected.value = true
+            }
+
+            is CameraFrozen -> {
+                addEvent("CameraFrozen: error ${event.error}", true)
+            }
+
+            is CameraError -> {
+                addEvent("CameraError: error ${event.error}", true)
+                cameraDisconnected.value = true
+            }
+
+            is CameraSwitchDone -> {
+                addEvent("CameraSwitchDone: isFrontCamera ${event.isFrontCamera}")
+            }
+
+            is CameraSwitchError -> {
+                addEvent("CameraSwitchError: error ${event.error}", true)
+            }
+        }
+    }
+
 
     private val audioManager by lazy {
         EyesonAudioManager(application) {
@@ -362,7 +395,7 @@ class MeetingViewModel @Inject constructor(
     private val _cameraActive = MutableStateFlow(isVideoEnabled())
     val cameraActive: StateFlow<Boolean> = _cameraActive.asStateFlow()
 
-    private val _microphoneActive = MutableStateFlow(meetingSettings.micOnStar)
+    private val _microphoneActive = MutableStateFlow(meetingSettings.micOnStart)
     val microphoneActive: StateFlow<Boolean> = _microphoneActive.asStateFlow()
 
     private val _remoteAudioActive = MutableStateFlow(true)
@@ -386,17 +419,176 @@ class MeetingViewModel @Inject constructor(
     private val _recordingActive = MutableStateFlow(false)
     val recordingActive: StateFlow<Boolean> = _recordingActive.asStateFlow()
 
+    // Only the resolutions matching the aspect ratio of the meeting are offered. The SDK bounds
+    // the two modes differently, so a 4:3 resolution in a widescreen meeting would silently be
+    // scaled back to the widescreen maximum.
+    private val widescreenResolutions = listOf(
+        Resolution16by9.LOWEST,
+        Resolution16by9.LOWER,
+        Resolution16by9.DEFAULT,
+        Resolution16by9.HIGH,
+        Resolution16by9.HIGHEST,
+    ).map { Resolution(it, "${it.width}x${it.height}") }
+
+    private val standardResolutions = listOf(
+        Resolution4by3.LOWEST,
+        Resolution4by3.LOWER,
+        Resolution4by3.DEFAULT,
+        Resolution4by3.HIGH,
+        Resolution4by3.HIGHEST,
+    ).map { Resolution(it, "${it.width}x${it.height}") }
+
+    // Screen share is bound to one maximum regardless of the meeting aspect ratio, so unlike the
+    // camera it only needs a single list.
+    private val screenShareResolutions = listOf(
+        Resolution16by9.LOWEST,
+        Resolution16by9.LOWER,
+        Resolution16by9.DEFAULT,
+        Resolution16by9.HIGH,
+        Resolution16by9.HIGHEST,
+        ScreenShareMaxResolution,
+    ).map { Resolution(it, "${it.width}x${it.height}") }
+
+    private val scaleDownByValues = listOf(1.0, 1.5, 2.0, 3.0, 4.0, 8.0, 16.0)
+
+    private val fpsValues = listOf(0, 5, 10, 15, 20, 25, 30)
+
+    private val maxBitrateValues = listOf(100, 250, 500, 1000, 1500, 2000)
+
+    // isWidescreen() only knows the answer once the meeting is joined, so this is seeded again
+    // on MeetingJoined. The lists above have to stay declared before this.
+    private val _videoSettings = MutableStateFlow(videoSettingsState(widescreen = false))
+    val videoSettings: StateFlow<VideoSettingsState> = _videoSettings.asStateFlow()
+
+    // Unlike the camera settings this never depends on isWidescreen(), so seeding it once is enough.
+    private val _screenShareSettings = MutableStateFlow(screenShareSettingsState())
+    val screenShareSettings: StateFlow<ScreenShareSettingsState> =
+        _screenShareSettings.asStateFlow()
+
+    /**
+     * Every control starts on the value the SDK uses when nothing was changed, which is what
+     * [resetVideoOptions] goes back to.
+     */
+    private fun videoSettingsState(widescreen: Boolean): VideoSettingsState {
+        val resolutions = if (widescreen) widescreenResolutions else standardResolutions
+        val defaultResolution = if (widescreen) {
+            Resolution16by9.DEFAULT
+        } else {
+            Resolution4by3.DEFAULT
+        }
+        val defaults = VideoOptions()
+
+        return VideoSettingsState(
+            resolutions = SettingsRange(
+                values = resolutions,
+                selectedIndex = resolutions
+                    .indexOfFirst { it.resolution == defaultResolution }
+                    .coerceAtLeast(0),
+                onIndexChange = ::setResolutionIndex
+            ),
+            scaleDownBy = SettingsRange(
+                values = scaleDownByValues,
+                selectedIndex = scaleDownByValues
+                    .indexOf(defaults.scaleResolutionDownBy)
+                    .coerceAtLeast(0),
+                onIndexChange = ::setScaleDownByIndex
+            ),
+            fps = SettingsRange(
+                values = fpsValues,
+                selectedIndex = fpsValues.indexOf(defaults.videoFps).coerceAtLeast(0),
+                onIndexChange = ::setFpsIndex
+            ),
+            maxBitrate = SettingsRange(
+                values = maxBitrateValues,
+                selectedIndex = maxBitrateValues
+                    .indexOf(defaults.videoMaxBitrate)
+                    .coerceAtLeast(0),
+                onIndexChange = ::setMaxBitrateIndex
+            )
+        )
+    }
+
+    /**
+     * Every control starts on the value the SDK uses when nothing was changed, which is what
+     * [resetScreenShareOptions] goes back to.
+     */
+    private fun screenShareSettingsState(): ScreenShareSettingsState {
+        val defaults = ScreenShareOptions()
+
+        return ScreenShareSettingsState(
+            resolutions = SettingsRange(
+                values = screenShareResolutions,
+                selectedIndex = screenShareResolutions
+                    .indexOfFirst { it.resolution == defaults.screenShareResolution }
+                    .coerceAtLeast(0),
+                onIndexChange = ::setScreenShareResolutionIndex
+            ),
+            scaleDownBy = SettingsRange(
+                values = scaleDownByValues,
+                selectedIndex = scaleDownByValues
+                    .indexOf(defaults.scaleResolutionDownBy)
+                    .coerceAtLeast(0),
+                onIndexChange = ::setScreenShareScaleDownByIndex
+            ),
+            fps = SettingsRange(
+                values = fpsValues,
+                selectedIndex = fpsValues.indexOf(defaults.screenShareFps).coerceAtLeast(0),
+                onIndexChange = ::setScreenShareFpsIndex
+            ),
+            maxBitrate = SettingsRange(
+                values = maxBitrateValues,
+                selectedIndex = maxBitrateValues
+                    .indexOf(defaults.videoMaxBitrate)
+                    .coerceAtLeast(0),
+                onIndexChange = ::setScreenShareMaxBitrateIndex
+            )
+        )
+    }
+
+    private fun setResolutionIndex(index: Int) {
+        _videoSettings.update { it.copy(resolutions = it.resolutions.copy(selectedIndex = index)) }
+    }
+
+    private fun setScaleDownByIndex(index: Int) {
+        _videoSettings.update { it.copy(scaleDownBy = it.scaleDownBy.copy(selectedIndex = index)) }
+    }
+
+    private fun setFpsIndex(index: Int) {
+        _videoSettings.update { it.copy(fps = it.fps.copy(selectedIndex = index)) }
+    }
+
+    private fun setMaxBitrateIndex(index: Int) {
+        _videoSettings.update { it.copy(maxBitrate = it.maxBitrate.copy(selectedIndex = index)) }
+    }
+
+    private fun setScreenShareResolutionIndex(index: Int) {
+        _screenShareSettings.update {
+            it.copy(resolutions = it.resolutions.copy(selectedIndex = index))
+        }
+    }
+
+    private fun setScreenShareScaleDownByIndex(index: Int) {
+        _screenShareSettings.update {
+            it.copy(scaleDownBy = it.scaleDownBy.copy(selectedIndex = index))
+        }
+    }
+
+    private fun setScreenShareFpsIndex(index: Int) {
+        _screenShareSettings.update { it.copy(fps = it.fps.copy(selectedIndex = index)) }
+    }
+
+    private fun setScreenShareMaxBitrateIndex(index: Int) {
+        _screenShareSettings.update {
+            it.copy(maxBitrate = it.maxBitrate.copy(selectedIndex = index))
+        }
+    }
+
     private fun addEvent(text: String, error: Boolean = false) {
         Timber.d("addEvent: $text")
         _events.value = emptyList<EventEntry>() + EventEntry(text, Date(), error) + _events.value
     }
 
     var screenCaptureAsPresentation = false
-
-    fun getEglContext(): EglBase.Context? {
-        return eyesonMeeting.getEglContext()
-    }
-
 
     val remoteExoPlayer = getExoPlayer {
         _remoteVideoPlaybackActive.value = false
@@ -454,16 +646,21 @@ class MeetingViewModel @Inject constructor(
             null
         }
 
-        when {
+        val mediaOptions = MediaOptions(
+            sendVideo = !meetingSettings.audioOnly,
+            receiveVideo = !meetingSettings.audioOnly
+        )
+
+        val joinResult = when {
             savedStateHandle.get<String>(ACCESS_KEY) != null -> {
                 eyesonMeeting.join(
                     accessKey = checkNotNull(savedStateHandle.get<String>(ACCESS_KEY)),
                     frontCamera = !meetingSettings.rearCamOnStart,
                     local = local,
                     remote = remote,
-                    eventListener = eventListener,
-                    microphoneEnabledOnStart = meetingSettings.micOnStar,
+                    microphoneEnabledOnStart = meetingSettings.micOnStart,
                     videoEnabledOnStart = meetingSettings.videoOnStart,
+                    mediaOptions = mediaOptions,
                     screenShareInfo = screenShareInfo
                 )
             }
@@ -477,9 +674,9 @@ class MeetingViewModel @Inject constructor(
                     frontCamera = !meetingSettings.rearCamOnStart,
                     local = local,
                     remote = remote,
-                    eventListener = eventListener,
-                    microphoneEnabledOnStart = meetingSettings.micOnStar,
+                    microphoneEnabledOnStart = meetingSettings.micOnStart,
                     videoEnabledOnStart = meetingSettings.videoOnStart,
+                    mediaOptions = mediaOptions,
                     screenShareInfo = screenShareInfo
                 )
             }
@@ -490,9 +687,9 @@ class MeetingViewModel @Inject constructor(
                     frontCamera = !meetingSettings.rearCamOnStart,
                     local = local,
                     remote = remote,
-                    eventListener = eventListener,
-                    microphoneEnabledOnStart = meetingSettings.micOnStar,
+                    microphoneEnabledOnStart = meetingSettings.micOnStart,
                     videoEnabledOnStart = meetingSettings.videoOnStart,
+                    mediaOptions = mediaOptions,
                     screenShareInfo = screenShareInfo
                 )
             }
@@ -517,30 +714,64 @@ class MeetingViewModel @Inject constructor(
                                 break
                             }
                         }
-                        delay(PERMALINK_GUEST_POLLING_INTERVAL_MILLIS)
+                        delay(PERMALINK_GUEST_POLLING_INTERVAL_MILLIS.milliseconds)
                     }
 
-                    eyesonMeeting.joinAsGuest(
-                        guestToken = checkNotNull(savedStateHandle.get<String>(GUEST_TOKEN_PERMALINK)),
-                        name = checkNotNull(savedStateHandle.get<String>(GUEST_NAME_PERMALINK)),
-                        id = null,
-                        avatar = null,
-                        frontCamera = !meetingSettings.rearCamOnStart,
-                        local = local,
-                        remote = remote,
-                        eventListener = eventListener,
-                        microphoneEnabledOnStart = meetingSettings.micOnStar,
-                        videoEnabledOnStart = meetingSettings.videoOnStart,
-                        screenShareInfo = screenShareInfo
-                    )
+                    if (reportJoinNotStarted(
+                            eyesonMeeting.joinAsGuest(
+                                guestToken = checkNotNull(savedStateHandle.get<String>(GUEST_TOKEN_PERMALINK)),
+                                name = checkNotNull(savedStateHandle.get<String>(GUEST_NAME_PERMALINK)),
+                                id = null,
+                                avatar = null,
+                                frontCamera = !meetingSettings.rearCamOnStart,
+                                local = local,
+                                remote = remote,
+                                microphoneEnabledOnStart = meetingSettings.micOnStart,
+                                videoEnabledOnStart = meetingSettings.videoOnStart,
+                                mediaOptions = mediaOptions,
+                                screenShareInfo = screenShareInfo
+                            )
+                        )
+                    ) {
+                        // The audio manager is already running: this join only happens once the
+                        // permalink meeting has started.
+                        audioManager.stop()
+                    }
                 }
+                // Placeholder, not a real result: the join above only happens once the permalink
+                // meeting has started, and reports itself from inside the coroutine.
+                EyesonMeeting.JoinResult.Joining
             }
 
             else -> {
                 return
             }
         }
+
+        if (reportJoinNotStarted(joinResult)) {
+            return
+        }
+
         startAudioManager()
+    }
+
+    /**
+     * Returns `true` if the join was not started.
+     */
+    private fun reportJoinNotStarted(joinResult: EyesonMeeting.JoinResult): Boolean {
+        return when (joinResult) {
+            EyesonMeeting.JoinResult.Joining -> false
+
+            is EyesonMeeting.JoinResult.MissingPermissions -> {
+                addEvent("Join not started; missing permissions: ${joinResult.permissions}", true)
+                true
+            }
+
+            EyesonMeeting.JoinResult.AlreadyJoined -> {
+                addEvent("Join not started; already in a meeting", true)
+                true
+            }
+        }
     }
 
     fun disconnect() {
@@ -618,6 +849,50 @@ class MeetingViewModel @Inject constructor(
 
     fun switchCamera() {
         eyesonMeeting.switchCamera()
+    }
+
+    /**
+     * `videoCodecHardwareAcceleration` is not forwarded because it is an `SdkOptions` value and
+     * can only be set when the meeting is created.
+     */
+    fun applyVideoOptions() {
+        val settings = _videoSettings.value
+        Timber.d(
+            "applyVideoOptions: resolution ${settings.resolutions.selected.resolution}; " +
+                    "fps ${settings.fps.selected}; maxBitrate ${settings.maxBitrate.selected}; " +
+                    "scaleResolutionDownBy ${settings.scaleDownBy.selected}"
+        )
+        eyesonMeeting.updateVideoOptions(
+            videoResolution = settings.resolutions.selected.resolution,
+            videoFps = settings.fps.selected,
+            videoMaxBitrate = settings.maxBitrate.selected,
+            scaleResolutionDownBy = settings.scaleDownBy.selected
+        )
+    }
+
+    fun resetVideoOptions() {
+        _videoSettings.value = videoSettingsState(eyesonMeeting.isWidescreen())
+        applyVideoOptions()
+    }
+
+    fun applyScreenShareOptions() {
+        val settings = _screenShareSettings.value
+        Timber.d(
+            "applyScreenShareOptions: resolution ${settings.resolutions.selected.resolution}; " +
+                    "fps ${settings.fps.selected}; maxBitrate ${settings.maxBitrate.selected}; " +
+                    "scaleResolutionDownBy ${settings.scaleDownBy.selected}"
+        )
+        eyesonMeeting.updateScreenShareOptions(
+            screenShareFps = settings.fps.selected,
+            screenShareResolution = settings.resolutions.selected.resolution,
+            scaleResolutionDownBy = settings.scaleDownBy.selected,
+            videoMaxBitrate = settings.maxBitrate.selected
+        )
+    }
+
+    fun resetScreenShareOptions() {
+        _screenShareSettings.value = screenShareSettingsState()
+        applyScreenShareOptions()
     }
 
     fun sendChatMessage(message: String) {
@@ -797,3 +1072,38 @@ data class AudioDevice(
     val onClick: () -> Unit,
     val enabled: Boolean = true,
 )
+
+data class Resolution(
+    val resolution: VideoResolution,
+    val label: String,
+)
+
+/**
+ * One "pick one of N values" control. [onIndexChange] belongs to the control itself, the same way
+ * [AudioDevice.onClick] does.
+ */
+data class SettingsRange<T>(
+    val values: List<T>,
+    val selectedIndex: Int,
+    val onIndexChange: (Int) -> Unit,
+) {
+    val selected: T get() = values[selectedIndex]
+}
+
+data class VideoSettingsState(
+    val resolutions: SettingsRange<Resolution>,
+    val scaleDownBy: SettingsRange<Double>,
+    val fps: SettingsRange<Int>,
+    val maxBitrate: SettingsRange<Int>,
+)
+
+/**
+ * Same controls as [VideoSettingsState], applied while screen sharing is the active source.
+ */
+data class ScreenShareSettingsState(
+    val resolutions: SettingsRange<Resolution>,
+    val scaleDownBy: SettingsRange<Double>,
+    val fps: SettingsRange<Int>,
+    val maxBitrate: SettingsRange<Int>,
+)
+

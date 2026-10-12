@@ -67,6 +67,17 @@
 
     <string name="event_log">Event log</string>
 
+    <string name="video_settings">Video settings</string>
+    <string name="screen_share_settings">Screen share settings</string>
+    <string name="resolution">Resolution (px)</string>
+    <string name="scale_down">Scale down</string>
+    <string name="fps">Frames per second</string>
+    <string name="max_bitrate">Max. Bitrate (kBit/s)</string>
+    <string name="high">High</string>
+    <string name="low">Low</string>
+    <string name="apply">Apply</string>
+    <string name="reset">Reset</string>
+
     <!-- Meeting -->
     <string name="no_video_is_sent_or_received">No video stream is sent or received to save bandwidth in poor connection environments</string>
     <string name="participants">Participants</string>

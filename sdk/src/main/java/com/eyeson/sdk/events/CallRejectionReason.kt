@@ -1,6 +1,6 @@
 package com.eyeson.sdk.events
 
-enum class CallRejectionReason(val rejectCode: Int) {
+public enum class CallRejectionReason(public val rejectCode: Int) {
     UNSPECIFIED(-7),
     BAD_REQUEST(400),
     FORBIDDEN(403),
@@ -10,8 +10,8 @@ enum class CallRejectionReason(val rejectCode: Int) {
     SERVICE_UNAVAILABLE(503),
     UNWANTED(607);
 
-    companion object {
+    public companion object {
         private val mapping = entries.associateBy(CallRejectionReason::rejectCode)
-        fun fromRejectCode(code: Int) = mapping[code] ?: ERROR
+        public fun fromRejectCode(code: Int): CallRejectionReason = mapping[code] ?: ERROR
     }
 }

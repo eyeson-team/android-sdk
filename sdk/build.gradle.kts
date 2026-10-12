@@ -7,6 +7,11 @@ plugins {
 group = EyesonConstants.GROUP_ID
 version = EyesonConstants.VERSION
 
+kotlin {
+    // Published library: every public declaration must state its visibility and return type.
+    explicitApi()
+}
+
 android {
     defaultConfig {
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
@@ -16,6 +21,9 @@ android {
     }
 
     buildTypes {
+        debug {
+            isDefault = true
+        }
         release {
             isMinifyEnabled = false
             proguardFiles(
@@ -29,12 +37,13 @@ android {
     productFlavors {
         create("production") {
             dimension = "version"
+            isDefault = true
             buildConfigField("String", "API_URL", "\"https://api.eyeson.team/\"")
         }
     }
 
     publishing {
-        singleVariant("release") {
+        singleVariant("productionRelease") {
             withSourcesJar()
             withJavadocJar()
         }
@@ -42,6 +51,11 @@ android {
 
     buildFeatures {
         buildConfig = true
+    }
+
+    testOptions {
+        // Robolectric needs the merged manifest and resources to build its Application.
+        unitTests.isIncludeAndroidResources = true
     }
 
     namespace = "com.eyeson.sdk"
@@ -56,6 +70,7 @@ dependencies {
 
     implementation(libs.kotlinx.coroutines.android)
     implementation(libs.androidx.core.ktx)
+    implementation(libs.androidx.annotation)
     implementation(libs.okhttp)
     implementation(libs.okhttp.tls)
     implementation(libs.okhttp.logging)
@@ -66,6 +81,8 @@ dependencies {
     ksp(libs.moshi.kotlin.codegen)
 
     testImplementation(libs.jUnit)
+    testImplementation(libs.robolectric)
+    testImplementation(libs.okhttp.mockwebserver)
     androidTestImplementation(libs.androidx.test.ext)
     androidTestImplementation(libs.androidx.test.espresso.core)
 }

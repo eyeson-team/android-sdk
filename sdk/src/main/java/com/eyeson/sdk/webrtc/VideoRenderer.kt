@@ -22,11 +22,11 @@ import org.webrtc.VideoSink
 import java.util.concurrent.CountDownLatch
 
 /**
- * Based on [SurfaceViewRenderer]
+ * Renders video frames of a meeting. A port of `SurfaceViewRenderer` to [TextureView].
  *
  * Standard View constructor. In order to render something, you must first call init().
  */
-class VideoRenderer(context: Context, attrs: AttributeSet? = null) :
+public class VideoRenderer(context: Context, attrs: AttributeSet? = null) :
     TextureView(context, attrs),
     VideoSink, RendererEvents, TextureView.SurfaceTextureListener {
     // Cached resource name.
@@ -47,18 +47,20 @@ class VideoRenderer(context: Context, attrs: AttributeSet? = null) :
         surfaceTextureListener = this
     }
     /**
-     * Initialize this class, sharing resources with `sharedContext`. The custom `drawer` will be used
-     * for drawing frames on the EGLSurface. This class is responsible for calling release() on
-     * `drawer`. It is allowed to call init() to reinitialize the renderer after a previous
-     * init()/release() cycle.
-     */
-    /**
-     * Initialize this class, sharing resources with `sharedContext`. It is allowed to call init() to
-     * reinitialize the renderer after a previous init()/release() cycle.
+     * Initialize this class, sharing resources with the EGL context of the SDK. The custom
+     * `drawer` will be used for drawing frames on the EGLSurface. This class is responsible for
+     * calling release() on `drawer`. It is allowed to call init() to reinitialize the renderer
+     * after a previous init()/release() cycle.
+     *
+     * Has to be called on the main thread.
+     *
+     * @param rendererEvents Callback for renderer events. Both callbacks are invoked on the
+     * thread that delivers the video frames, never on the main thread, and
+     * [RendererEvents.onFrameResolutionChanged] is forwarded before this renderer updates its
+     * own layout. A callback that touches a `View` has to post to the main thread itself.
      */
     @JvmOverloads
-    fun init(
-        sharedContext: EglBase.Context?,
+    public fun init(
         rendererEvents: RendererEvents? = null,
         configAttributes: IntArray? = EglBase.CONFIG_PLAIN,
         drawer: GlDrawer? = GlRectDrawer(),
@@ -67,7 +69,12 @@ class VideoRenderer(context: Context, attrs: AttributeSet? = null) :
         this.rendererEvents = rendererEvents
         rotatedFrameWidth = 0
         rotatedFrameHeight = 0
-        eglRenderer.init(sharedContext, this /* rendererEvents */, configAttributes, drawer)
+        eglRenderer.init(
+            EyesonEglBase.context,
+            this /* rendererEvents */,
+            configAttributes,
+            drawer
+        )
     }
 
     /**
@@ -76,7 +83,7 @@ class VideoRenderer(context: Context, attrs: AttributeSet? = null) :
      * should be called before the Activity is destroyed and the EGLContext is still valid. If you
      * don't call this function, the GL resources might leak.
      */
-    fun release() {
+    public fun release() {
         eglRenderer.release()
     }
 
@@ -89,7 +96,7 @@ class VideoRenderer(context: Context, attrs: AttributeSet? = null) :
      * required.
      * @param drawer   Custom drawer to use for this frame listener.
      */
-    fun addFrameListener(
+    public fun addFrameListener(
         listener: EglRenderer.FrameListener?, scale: Float, drawerParam: GlDrawer?,
     ) {
         eglRenderer.addFrameListener(listener, scale, drawerParam)
@@ -104,38 +111,38 @@ class VideoRenderer(context: Context, attrs: AttributeSet? = null) :
      * @param scale    The scale of the Bitmap passed to the callback, or 0 if no Bitmap is
      * required.
      */
-    fun addFrameListener(listener: EglRenderer.FrameListener?, scale: Float) {
+    public fun addFrameListener(listener: EglRenderer.FrameListener?, scale: Float) {
         eglRenderer.addFrameListener(listener, scale)
     }
 
-    fun removeFrameListener(listener: EglRenderer.FrameListener?) {
+    public fun removeFrameListener(listener: EglRenderer.FrameListener?) {
         eglRenderer.removeFrameListener(listener)
     }
 
     /**
      * Set if the video stream should be mirrored horizontally or not.
      */
-    fun setMirror(mirror: Boolean) {
+    public fun setMirror(mirror: Boolean) {
         eglRenderer.setMirror(mirror)
     }
 
     /**
      * Set if the video stream should be mirrored vertically or not.
      */
-    fun setMirrorVertically(mirror: Boolean) {
+    public fun setMirrorVertically(mirror: Boolean) {
         eglRenderer.setMirrorVertically(mirror)
     }
 
     /**
      * Set how the video will fill the allowed layout area.
      */
-    fun setScalingType(scalingType: ScalingType?) {
+    public fun setScalingType(scalingType: ScalingType?) {
         ThreadUtils.checkIsOnMainThread()
         videoLayoutMeasure.setScalingType(scalingType)
         requestLayout()
     }
 
-    fun setScalingType(
+    public fun setScalingType(
         scalingTypeMatchOrientation: ScalingType?,
         scalingTypeMismatchOrientation: ScalingType?,
     ) {
@@ -153,15 +160,15 @@ class VideoRenderer(context: Context, attrs: AttributeSet? = null) :
      * @param fps Limit render framerate to this value, or use Float.POSITIVE_INFINITY to disable fps
      * reduction.
      */
-    fun setFpsReduction(fps: Float) {
+    public fun setFpsReduction(fps: Float) {
         eglRenderer.setFpsReduction(fps)
     }
 
-    fun disableFpsReduction() {
+    public fun disableFpsReduction() {
         eglRenderer.disableFpsReduction()
     }
 
-    fun pauseVideo() {
+    public fun pauseVideo() {
         eglRenderer.pauseVideo()
     }
 
@@ -195,7 +202,7 @@ class VideoRenderer(context: Context, attrs: AttributeSet? = null) :
     /**
      * Post a task to clear the SurfaceView to a transparent uniform color.
      */
-    fun clearImage() {
+    public fun clearImage() {
         eglRenderer.clearImage()
     }
 

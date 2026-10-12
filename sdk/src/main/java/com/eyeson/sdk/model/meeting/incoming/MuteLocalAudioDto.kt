@@ -1,7 +1,7 @@
 package com.eyeson.sdk.model.meeting.incoming
 
 import com.eyeson.sdk.model.local.api.UserInfo
-import com.eyeson.sdk.model.local.meeting.MuteLocalAudio
+import com.eyeson.sdk.model.local.meeting.MuteLocalAudioLocal
 import com.eyeson.sdk.model.meeting.base.MeetingBaseMessageDto
 import com.squareup.moshi.Json
 import com.squareup.moshi.JsonClass
@@ -21,8 +21,8 @@ internal data class MuteLocalAudioDto(
         @Json(name = "joined_at") val joinedAt: Date
     )
 
-    override fun toLocal(): MuteLocalAudio {
-        return MuteLocalAudio(
+    override fun toLocal(): MuteLocalAudioLocal {
+        return MuteLocalAudioLocal(
             UserInfo(
                 id = user.id,
                 name = user.name,

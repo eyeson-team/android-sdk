@@ -2,4 +2,4 @@ package com.eyeson.sdk.annotations
 
 @Retention(AnnotationRetention.BINARY)
 @RequiresOptIn()
-annotation class Experimental
+public annotation class Experimental

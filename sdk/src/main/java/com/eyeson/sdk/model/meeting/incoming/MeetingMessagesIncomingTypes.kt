@@ -1,7 +1,7 @@
 package com.eyeson.sdk.model.meeting.incoming
 
 
-internal enum class MeetingMessagesIncoming(val type: String) {
+internal enum class MeetingMessagesIncomingTypes(val type: String) {
     ROOM_SETUP("room_setup"),
     ROOM_READY("room_ready"),
     CHAT("chat"),

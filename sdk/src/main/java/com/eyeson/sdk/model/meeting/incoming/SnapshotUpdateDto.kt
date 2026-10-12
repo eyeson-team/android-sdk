@@ -2,7 +2,7 @@ package com.eyeson.sdk.model.meeting.incoming
 
 import com.eyeson.sdk.model.api.SnapshotDto
 import com.eyeson.sdk.model.local.api.UserInfo
-import com.eyeson.sdk.model.local.meeting.SnapshotUpdate
+import com.eyeson.sdk.model.local.meeting.SnapshotUpdateLocal
 import com.eyeson.sdk.model.meeting.base.MeetingBaseMessageDto
 import com.squareup.moshi.Json
 import com.squareup.moshi.JsonClass
@@ -12,10 +12,10 @@ internal data class SnapshotUpdateDto(
     @Json(name = "type") override val type: String,
     @Json(name = "snapshots") val snapshots: List<SnapshotDto>
 ) : MeetingBaseMessageDto {
-    override fun toLocal(): SnapshotUpdate {
-        return SnapshotUpdate(
+    override fun toLocal(): SnapshotUpdateLocal {
+        return SnapshotUpdateLocal(
             snapshots = snapshots.map {
-                SnapshotUpdate.Snapshot(
+                SnapshotUpdateLocal.Snapshot(
                     id = it.id,
                     name = it.name,
                     creator = UserInfo(
