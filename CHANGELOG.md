@@ -97,6 +97,8 @@ The format is based on [Keep a Changelog] and this project adheres to
   - Camera resolution `640x360` in 4:3 meetings too (was `640x480`)
   - Screen share resolution `1920x1080` (was the display resolution)
 - JSON (de)serialization: Moshi -> kotlinx.serialization
+- Demo app
+  - View sample: data binding -> view binding
 - Dependency updates
   - AndroidGradlePlugin `8.12.2`
   - Gradle `8.13`

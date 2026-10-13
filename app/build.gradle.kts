@@ -2,7 +2,6 @@ plugins {
     alias(libs.plugins.eyeson.application)
     alias(libs.plugins.hilt)
     alias(libs.plugins.compose)
-    alias(libs.plugins.kapt)
     alias(libs.plugins.ksp)
 }
 
@@ -41,14 +40,8 @@ android {
 
     buildFeatures {
         viewBinding = true
-        dataBinding = true
         compose = true
         buildConfig = true
-    }
-
-    kapt {
-        correctErrorTypes = true
-        generateStubs = true
     }
 
     namespace = "com.eyeson.android"

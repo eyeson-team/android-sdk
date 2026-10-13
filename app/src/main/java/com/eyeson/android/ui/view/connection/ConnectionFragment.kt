@@ -7,7 +7,7 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.databinding.DataBindingUtil
+import androidx.core.widget.doAfterTextChanged
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.commit
 import com.eyeson.android.R
@@ -55,14 +55,17 @@ class ConnectionFragment : Fragment() {
         inflater: LayoutInflater, container: ViewGroup?,
         savedInstanceState: Bundle?
     ): View {
-        binding = DataBindingUtil.inflate(inflater, R.layout.connection_fragment, container, false)
-        binding.lifecycleOwner = viewLifecycleOwner
+        binding = ConnectionFragmentBinding.inflate(inflater, container, false)
 
         return binding.root
     }
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
+
+        binding.accessKey.doAfterTextChanged {
+            binding.connect.isEnabled = !it.isNullOrEmpty()
+        }
 
         binding.connect.setOnClickListener {
             requireActivity().supportFragmentManager.commit {

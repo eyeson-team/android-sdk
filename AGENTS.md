@@ -73,8 +73,7 @@ utils/Logger.kt          # The only logger to use (never android.util.Log)
 - **OkHttp + Retrofit + kotlinx.serialization** for REST and WebSockets
 - **Kotlin Coroutines/Flow** for the public events API
 - **eyeson-webrtc-android** exposed via `api(...)`, so `org.webrtc.*` types are part of the public API
-- Demo app: **Jetpack Compose**, **Hilt** (KSP), **DataStore**, plus kapt for the View sample's
-  data binding
+- Demo app: **Jetpack Compose**, **Hilt** (KSP), **DataStore**; the View sample uses view binding
 
 Versions live in `gradle/libs.versions.toml` (the `gradle` key is the AGP version) and
 `build-logic/convention/src/main/kotlin/EyesonConstants.kt`. SDK levels and Java settings live in
