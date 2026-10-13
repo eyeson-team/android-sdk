@@ -11,7 +11,6 @@ import com.eyeson.sdk.model.meeting.base.MeetingBaseMessageDto
 import com.eyeson.sdk.model.meeting.base.UnknownMessageDto
 import com.eyeson.sdk.model.meeting.outgoing.SubscribeToChannel
 import com.eyeson.sdk.utils.Logger
-import com.squareup.moshi.JsonDataException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -29,7 +28,7 @@ import java.util.concurrent.TimeUnit
 
 internal class MeetingConnection(private val meeting: MeetingDto) {
     private val meetingScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
-    private val moshi = NetworkModule.moshi
+    private val json = NetworkModule.json
     private val okHttpClient = NetworkModule.okHttpClient
 
     private var webSocketListener: WebSocketListener = object : WebSocketListener() {
@@ -43,14 +42,15 @@ internal class MeetingConnection(private val meeting: MeetingDto) {
                 Logger.d("WebSocket onMessage: $text")
             }
 
-            val adapter = moshi.adapter(MeetingBaseCommandDto::class.java)
-            try {
-                val command = adapter.fromJson(text)
-                command?.message?.let {
-                    handleMessages(it)
-                }
-            } catch (e: JsonDataException) {
+            val command = try {
+                json.decodeFromString(MeetingBaseCommandDto.serializer(), text)
+            } catch (e: IllegalArgumentException) {
+                // SerializationException is an IllegalArgumentException
                 Logger.e("WebSocketCommands.BaseCommand: parsing FAILED $e")
+                return
+            }
+            command.message?.let {
+                handleMessages(it)
             }
         }
 
@@ -99,10 +99,8 @@ internal class MeetingConnection(private val meeting: MeetingDto) {
             SubscribeToChannel.userChannel(subscribe = true)
         )
 
-        val adapter = moshi.adapter(SubscribeToChannel::class.java)
-
         channels.forEach { channel ->
-            sendMessage(adapter.toJson(channel))
+            sendMessage(json.encodeToString(SubscribeToChannel.serializer(), channel))
         }
     }
 

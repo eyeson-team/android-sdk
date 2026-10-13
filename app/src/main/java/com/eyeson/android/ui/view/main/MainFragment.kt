@@ -13,14 +13,11 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.updatePadding
-import androidx.databinding.DataBindingUtil
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.viewModels
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
-import com.eyeson.android.BR
-import com.eyeson.android.R
 import com.eyeson.android.databinding.MainFragmentBinding
 import kotlinx.coroutines.launch
 import org.webrtc.RendererCommon
@@ -64,9 +61,7 @@ class MainFragment : Fragment() {
         container: ViewGroup?,
         savedInstanceState: Bundle?
     ): View {
-        binding = DataBindingUtil.inflate(inflater, R.layout.main_fragment, container, false)
-        binding.setVariable(BR.viewModel, viewModel)
-        binding.lifecycleOwner = viewLifecycleOwner
+        binding = MainFragmentBinding.inflate(inflater, container, false)
 
         return binding.root
     }

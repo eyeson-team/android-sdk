@@ -9,15 +9,15 @@ import org.gradle.kotlin.dsl.withType
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 
-internal fun Project.configureKotlin(commonExtension: CommonExtension<*, *, *, *, *, *>) {
+internal fun Project.configureKotlin(commonExtension: CommonExtension) {
     commonExtension.apply {
         compileSdk = EyesonConstants.COMPILE_SDK
 
-        defaultConfig {
+        defaultConfig.apply {
             minSdk = EyesonConstants.MIN_SDK
         }
 
-        compileOptions {
+        compileOptions.apply {
             sourceCompatibility = JavaVersion.VERSION_17
             targetCompatibility = JavaVersion.VERSION_17
             isCoreLibraryDesugaringEnabled = true

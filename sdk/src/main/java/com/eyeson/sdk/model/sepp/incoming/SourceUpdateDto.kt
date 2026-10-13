@@ -3,36 +3,36 @@ package com.eyeson.sdk.model.sepp.incoming
 
 import com.eyeson.sdk.model.local.sepp.SourceUpdate
 import com.eyeson.sdk.model.sepp.base.SeppBaseCommandDto
-import com.squareup.moshi.Json
-import com.squareup.moshi.JsonClass
+import kotlinx.serialization.SerialName
+import kotlinx.serialization.Serializable
 
-@JsonClass(generateAdapter = true)
+@Serializable
 internal data class SourceUpdateDto(
-    @Json(name = "type") override val type: String,
-    @Json(name = "msg_id") val msgId: String,
-    @Json(name = "from") val from: String,
-    @Json(name = "to") val to: String,
-    @Json(name = "data") val data: Data
+    @SerialName("type") override val type: String,
+    @SerialName("msg_id") val msgId: String,
+    @SerialName("from") val from: String,
+    @SerialName("to") val to: String,
+    @SerialName("data") val data: Data
 ) : SeppBaseCommandDto {
-    @JsonClass(generateAdapter = true)
+    @Serializable
     data class Data(
-        @Json(name = "call_id") val callId: String,
-        @Json(name = "asrc") val audioSources: List<Int>,
-        @Json(name = "bcast") val broadcasting: Boolean,
-        @Json(name = "dims") val dimensions: List<Dim>,
-        @Json(name = "dsrc") val desktopStreamingId: Int?,
-        @Json(name = "l") val layout: Int,
-        @Json(name = "psrc") val presenter: Int?,
-        @Json(name = "src") val sources: List<String>,
-        @Json(name = "tovl") val textOverlay: Boolean,
-        @Json(name = "vsrc") val videSources: List<Int>
+        @SerialName("call_id") val callId: String,
+        @SerialName("asrc") val audioSources: List<Int>,
+        @SerialName("bcast") val broadcasting: Boolean,
+        @SerialName("dims") val dimensions: List<Dim>,
+        @SerialName("dsrc") val desktopStreamingId: Int?,
+        @SerialName("l") val layout: Int,
+        @SerialName("psrc") val presenter: Int?,
+        @SerialName("src") val sources: List<String>,
+        @SerialName("tovl") val textOverlay: Boolean,
+        @SerialName("vsrc") val videSources: List<Int>
     ) {
-        @JsonClass(generateAdapter = true)
+        @Serializable
         data class Dim(
-            @Json(name = "h") val height: Int,
-            @Json(name = "w") val width: Int,
-            @Json(name = "x") val x: Int,
-            @Json(name = "y") val y: Int
+            @SerialName("h") val height: Int,
+            @SerialName("w") val width: Int,
+            @SerialName("x") val x: Int,
+            @SerialName("y") val y: Int
         )
     }
 

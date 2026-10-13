@@ -36,7 +36,7 @@ internal class WebSocketCommunicator(
     @Volatile private var meeting: MeetingDto,
 ) {
     private val communicatorScope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
-    private val moshi = NetworkModule.moshi
+    private val json = NetworkModule.json
 
     private var meetingCommunicator: MeetingConnection? = null
     private val meetingReady = AtomicBoolean(false)
@@ -60,29 +60,31 @@ internal class WebSocketCommunicator(
     fun startCall(callStart: CallStart, videoOnStart: Boolean, version: String) {
         val callStartDto =
             callStart.fromLocal(meeting, videoOnStart, "$CALL_START_VERSION_PREFIX$version")
-        val adapter = moshi.adapter(CallStartDto::class.java)
-        signalingConnection?.sendMessage(adapter.toJson(callStartDto))
+        signalingConnection?.sendMessage(
+            json.encodeToString(CallStartDto.serializer(), callStartDto)
+        )
     }
 
     fun resumeCall(callResume: CallResume) {
         val callResumeDto = callResume.fromLocal(meeting)
-        val adapter = moshi.adapter(CallResumeDto::class.java)
-        signalingConnection?.sendMessage(adapter.toJson(callResumeDto))
+        signalingConnection?.sendMessage(
+            json.encodeToString(CallResumeDto.serializer(), callResumeDto)
+        )
     }
 
     fun sendMuteAll() {
         val muteAll = MuteAllDto()
-        val adapter = moshi.adapter(MuteAllDto::class.java)
-        meetingCommunicator?.sendMessage(adapter.toJson(muteAll))
+        meetingCommunicator?.sendMessage(json.encodeToString(MuteAllDto.serializer(), muteAll))
     }
 
     fun terminateCall() {
         communicatorScope.cancel()
         if (callId.isNotBlank()) {
             val callTerminateDto = CallTerminate(callId, TERMINATE_CALL_CODE_OK).fromLocal(meeting)
-            val adapter = moshi.adapter(CallTerminateDto::class.java)
 
-            signalingConnection?.sendMessage(adapter.toJson(callTerminateDto))
+            signalingConnection?.sendMessage(
+                json.encodeToString(CallTerminateDto.serializer(), callTerminateDto)
+            )
         }
         meetingCommunicator?.disconnect()
         signalingConnection?.disconnect()
@@ -90,9 +92,9 @@ internal class WebSocketCommunicator(
 
     fun setLocalVideoEnabled(enable: Boolean) {
         val muteVideo = MuteVideo(muted = !enable, cid = meeting.signaling.options.clientId)
-        val adapter = moshi.adapter(MuteVideoDto::class.java)
+        val muteVideoDto = muteVideo.fromLocal(callId, meeting)
 
-        signalingConnection?.sendMessage(adapter.toJson(muteVideo.fromLocal(callId, meeting)))
+        signalingConnection?.sendMessage(json.encodeToString(MuteVideoDto.serializer(), muteVideoDto))
     }
 
 

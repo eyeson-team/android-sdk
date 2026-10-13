@@ -49,7 +49,7 @@ model/local/api|statistic/  # Public models; everything else under model/ is int
 network/                 # REST (Retrofit), meeting + signalling WebSockets
 callLogic/               # CallLogic: wires signalling to the PeerConnection
 webrtc/                  # PeerConnectionClient, VideoRenderer (public), EyesonEglBase
-moshi/adapter/           # Polymorphic adapters for incoming messages
+serializer/              # kotlinx.serialization: incoming-message polymorphism, AsString, Date
 service/                 # ScreenCapturerService (merged into consumer manifests)
 di/NetworkModule.kt      # Hand-written DI; :sdk has no Hilt
 utils/Logger.kt          # The only logger to use (never android.util.Log)
@@ -69,12 +69,12 @@ utils/Logger.kt          # The only logger to use (never android.util.Log)
 
 ## Key Technologies
 
-- **Kotlin 2.0**, **AGP 8.12**, min SDK 23, compile/target SDK 35, Java 17 bytecode
-- **OkHttp + Retrofit + Moshi** (codegen) for REST and WebSockets
+- **Kotlin 2.4**, **AGP 9.4** with built-in Kotlin (no `org.jetbrains.kotlin.android`), **Gradle 9.7**,
+  min SDK 23, compile/target SDK 35, Java 17 bytecode
+- **OkHttp + Retrofit + kotlinx.serialization** for REST and WebSockets
 - **Kotlin Coroutines/Flow** for the public events API
 - **eyeson-webrtc-android** exposed via `api(...)`, so `org.webrtc.*` types are part of the public API
-- Demo app: **Jetpack Compose**, **Hilt** (KSP), **DataStore**, plus kapt for the View sample's
-  data binding
+- Demo app: **Jetpack Compose**, **Hilt** (KSP), **DataStore**; the View sample uses view binding
 
 Versions live in `gradle/libs.versions.toml` (the `gradle` key is the AGP version) and
 `build-logic/convention/src/main/kotlin/EyesonConstants.kt`. SDK levels and Java settings live in
@@ -98,9 +98,12 @@ Nothing checks binary compatibility, so review each public change by hand. Commo
 - **New `EyesonEvent`**: add the subtype, the emit branch in `handleWebSocketEvents`/`handleCallEvents`
   (those `when`s are non-exhaustive, so a missing branch silently never fires), and a branch in the
   demo's `MeetingViewModel.handleEvent` (which has no `else` on purpose).
-- **New incoming message type**: enum entry, `@JsonClass(generateAdapter = true)` DTO,
-  `.withSubtype(...)` in the matching `moshi/adapter/*Adapter.kt`, and `toLocal()`. Without the
-  adapter entry it deserialises to `Unknown*Dto` and is dropped.
+- **New incoming message type**: enum entry, `@Serializable` DTO, a branch in the matching
+  `serializer/*Serializer.kt`, and `toLocal()`. Without the branch it deserialises to `Unknown*Dto`
+  and is dropped.
+- **JSON**: `NetworkModule.json` serves REST and WebSockets; its flags reproduce what Moshi did.
+  `JsonWireFormatTest` pins the wire format, so run `./gradlew :sdk:testProductionDebugUnitTest`
+  after touching DTOs or `serializer/`.
 - **Events**: emit via `emitEyesonEvent()`; terminal events go only through `leaveAndEmit()`. Never
   touch `_events` directly. Code after the cancel in `leave()` must not suspend.
 - **EGL**: `EyesonEglBase` is process-wide and never released. `SdkOptions.eglBase` throws if the SDK

@@ -1,15 +1,17 @@
 package com.eyeson.sdk.model.api
 
-import com.squareup.moshi.Json
-import com.squareup.moshi.JsonClass
+import com.eyeson.sdk.serializer.DateSerializer
+import kotlinx.serialization.SerialName
+import kotlinx.serialization.Serializable
 import java.util.*
 
-@JsonClass(generateAdapter = true)
+@Serializable
 internal data class RoomDto(
-    @Json(name = "id") val id: String,
-    @Json(name = "name") var name: String,
-    @Json(name = "ready") var ready: Boolean,
-    @Json(name = "started_at") val startedAt: Date,
-    @Json(name = "guest_token") var guestToken: String?
+    @SerialName("id") val id: String,
+    @SerialName("name") var name: String,
+    @SerialName("ready") var ready: Boolean,
+    @Serializable(with = DateSerializer::class)
+    @SerialName("started_at") val startedAt: Date,
+    @SerialName("guest_token") var guestToken: String?
 )
 

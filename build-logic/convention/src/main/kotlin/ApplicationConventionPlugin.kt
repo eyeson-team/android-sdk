@@ -7,10 +7,7 @@ import org.gradle.kotlin.dsl.configure
 class ApplicationConventionPlugin : Plugin<Project> {
     override fun apply(target: Project) {
         with(target) {
-            with(pluginManager) {
-                apply("com.android.application")
-                apply("org.jetbrains.kotlin.android")
-            }
+            pluginManager.apply("com.android.application")
 
             extensions.configure<ApplicationExtension> {
                 configureKotlin(this)

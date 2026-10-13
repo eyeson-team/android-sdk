@@ -2,48 +2,48 @@ package com.eyeson.sdk.model.api
 
 
 import com.eyeson.sdk.model.local.api.MeetingOptions
-import com.squareup.moshi.Json
-import com.squareup.moshi.JsonClass
+import kotlinx.serialization.SerialName
+import kotlinx.serialization.Serializable
 
-@JsonClass(generateAdapter = true)
+@Serializable
 internal data class MeetingOptionsDto(
-    @Json(name = "background_color")
+    @SerialName("background_color")
     val backgroundColor: String,
-    @Json(name = "broadcast_available")
+    @SerialName("broadcast_available")
     val broadcastAvailable: Boolean,
-    @Json(name = "custom_fields")
+    @SerialName("custom_fields")
     val customFields: Map<String, String>?,
-    @Json(name = "exit_url")
+    @SerialName("exit_url")
     val exitUrl: String?,
-    @Json(name = "kick_available")
+    @SerialName("kick_available")
     val kickAvailable: Boolean,
-    @Json(name = "layout")
+    @SerialName("layout")
     val layout: String,
-    @Json(name = "layout_available")
+    @SerialName("layout_available")
     val layoutAvailable: Boolean,
-    @Json(name = "layout_map")
+    @SerialName("layout_map")
     val layoutMap: List<List<Int>>?,
-    @Json(name = "layout_name")
+    @SerialName("layout_name")
     val layoutName: String?,
-    @Json(name = "layout_users")
+    @SerialName("layout_users")
     val layoutUsers: List<String>?,
-    @Json(name = "lock_available")
+    @SerialName("lock_available")
     val lockAvailable: Boolean,
-    @Json(name = "reaction_available")
+    @SerialName("reaction_available")
     val reactionAvailable: Boolean,
-    @Json(name = "recording_available")
+    @SerialName("recording_available")
     val recordingAvailable: Boolean,
-    @Json(name = "sfu_mode")
+    @SerialName("sfu_mode")
     val sfuMode: String,
-    @Json(name = "show_label")
+    @SerialName("show_label")
     val showLabel: Boolean,
-    @Json(name = "show_names")
+    @SerialName("show_names")
     val showNames: Boolean,
-    @Json(name = "suggest_guest_names")
+    @SerialName("suggest_guest_names")
     val suggestGuestNames: Boolean,
-    @Json(name = "voice_activation")
+    @SerialName("voice_activation")
     val voiceActivation: Boolean,
-    @Json(name = "widescreen")
+    @SerialName("widescreen")
     val widescreen: Boolean,
 ) {
     fun toLocal() = MeetingOptions(

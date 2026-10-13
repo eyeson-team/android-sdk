@@ -1,29 +1,32 @@
 package com.eyeson.sdk.model.api
 
 
-import com.squareup.moshi.Json
-import com.squareup.moshi.JsonClass
+import com.eyeson.sdk.serializer.DateSerializer
+import kotlinx.serialization.SerialName
+import kotlinx.serialization.Serializable
 import java.util.*
 
-@JsonClass(generateAdapter = true)
+@Serializable
 internal data class SnapshotDto(
-    @Json(name = "id") val id: String,
-    @Json(name = "name") val name: String,
-    @Json(name = "links") val links: Links,
-    @Json(name = "creator") val creator: Creator,
-    @Json(name = "created_at") val createdAt: Date
+    @SerialName("id") val id: String,
+    @SerialName("name") val name: String,
+    @SerialName("links") val links: Links,
+    @SerialName("creator") val creator: Creator,
+    @Serializable(with = DateSerializer::class)
+    @SerialName("created_at") val createdAt: Date
 ) {
-    @JsonClass(generateAdapter = true)
+    @Serializable
     data class Links(
-        @Json(name = "download") val download: String
+        @SerialName("download") val download: String
     )
 
-    @JsonClass(generateAdapter = true)
+    @Serializable
     data class Creator(
-        @Json(name = "id") val id: String,
-        @Json(name = "name") val name: String,
-        @Json(name = "avatar") val avatar: String?,
-        @Json(name = "guest") val guest: Boolean,
-        @Json(name = "joined_at") val joinedAt: Date
+        @SerialName("id") val id: String,
+        @SerialName("name") val name: String,
+        @SerialName("avatar") val avatar: String?,
+        @SerialName("guest") val guest: Boolean,
+        @Serializable(with = DateSerializer::class)
+        @SerialName("joined_at") val joinedAt: Date
     )
 }

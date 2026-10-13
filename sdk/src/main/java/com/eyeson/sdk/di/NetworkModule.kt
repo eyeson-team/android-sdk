@@ -2,52 +2,43 @@ package com.eyeson.sdk.di
 
 import android.os.Build
 import com.eyeson.sdk.BuildConfig
-import com.eyeson.sdk.model.meeting.base.MeetingBaseMessageDto
-import com.eyeson.sdk.moshi.adapter.AsStringAdapter
-import com.eyeson.sdk.moshi.adapter.DataChannelIncomingMessagesAdapter
-import com.eyeson.sdk.moshi.adapter.DefaultOnDataMismatchAdapter
-import com.eyeson.sdk.moshi.adapter.MeetingIncomingMessagesAdapter
-import com.eyeson.sdk.moshi.adapter.SeppIncomingCommandsAdapter
 import com.eyeson.sdk.network.EyesonApi
 import com.eyeson.sdk.network.EyesonRestClient
-import com.squareup.moshi.Moshi
-import com.squareup.moshi.adapters.Rfc3339DateJsonAdapter
+import kotlinx.serialization.json.Json
+import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.OkHttpClient
 import okhttp3.logging.HttpLoggingInterceptor
 import okhttp3.tls.HandshakeCertificates
 import okhttp3.tls.decodeCertificatePem
 import retrofit2.Retrofit
-import retrofit2.converter.moshi.MoshiConverterFactory
-import java.util.Date
+import retrofit2.converter.kotlinx.serialization.asConverterFactory
 import java.util.concurrent.ConcurrentHashMap
 
 internal object NetworkModule {
 
     private val restClients = ConcurrentHashMap<String, EyesonRestClient>()
 
-    val moshi: Moshi by lazy { provideMoshi() }
+    val json: Json by lazy { provideJson() }
     val okHttpClient: OkHttpClient by lazy { provideOkHttpClient() }
 
     /**
-     * One [EyesonRestClient] per API URL. [moshi] and [okHttpClient] are shared, so an additional
+     * One [EyesonRestClient] per API URL. [json] and [okHttpClient] are shared, so an additional
      * URL only adds a [Retrofit] instance.
      */
     fun restClient(apiUrl: String): EyesonRestClient {
         return restClients.getOrPut(apiUrl) {
-            provideEyesonRestClient(provideRetrofit(apiUrl, okHttpClient, moshi))
+            provideEyesonRestClient(provideRetrofit(apiUrl, okHttpClient, json))
         }
     }
 
-
-    private fun provideMoshi(): Moshi {
-        return Moshi.Builder()
-            .add(Date::class.java, Rfc3339DateJsonAdapter().nullSafe())
-            .add(SeppIncomingCommandsAdapter.provideSeppCommandsIncomingAdapterFactory())
-            .add(DefaultOnDataMismatchAdapter.newFactory(MeetingBaseMessageDto::class.java, null))
-            .add(MeetingIncomingMessagesAdapter.provideMeetingIncomingMessagesAdapterFactory())
-            .add(DataChannelIncomingMessagesAdapter.provideDataChannelIncomingMessagesAdapterFactory())
-            .add(AsStringAdapter.FACTORY)
-            .build()
+    private fun provideJson(): Json {
+        return Json {
+            ignoreUnknownKeys = true
+            explicitNulls = false
+            coerceInputValues = true
+            encodeDefaults = true
+            isLenient = true
+        }
     }
 
 
@@ -124,10 +115,10 @@ internal object NetworkModule {
     private fun provideRetrofit(
         apiUrl: String,
         okHttpClient: OkHttpClient,
-        moshi: Moshi,
+        json: Json,
     ): Retrofit {
         return Retrofit.Builder()
-            .addConverterFactory(MoshiConverterFactory.create(moshi))
+            .addConverterFactory(json.asConverterFactory("application/json".toMediaType()))
             .baseUrl(apiUrl)
             .client(okHttpClient)
             .build()
