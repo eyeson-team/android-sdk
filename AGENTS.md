@@ -69,7 +69,8 @@ utils/Logger.kt          # The only logger to use (never android.util.Log)
 
 ## Key Technologies
 
-- **Kotlin 2.0**, **AGP 8.12**, min SDK 23, compile/target SDK 35, Java 17 bytecode
+- **Kotlin 2.4**, **AGP 9.4** with built-in Kotlin (no `org.jetbrains.kotlin.android`), **Gradle 9.7**,
+  min SDK 23, compile/target SDK 35, Java 17 bytecode
 - **OkHttp + Retrofit + kotlinx.serialization** for REST and WebSockets
 - **Kotlin Coroutines/Flow** for the public events API
 - **eyeson-webrtc-android** exposed via `api(...)`, so `org.webrtc.*` types are part of the public API
