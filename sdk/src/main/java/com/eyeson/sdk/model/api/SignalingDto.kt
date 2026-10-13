@@ -1,21 +1,21 @@
 package com.eyeson.sdk.model.api
 
 
-import com.squareup.moshi.Json
-import com.squareup.moshi.JsonClass
+import kotlinx.serialization.SerialName
+import kotlinx.serialization.Serializable
 
-@JsonClass(generateAdapter = true)
+@Serializable
 internal data class SignalingDto(
-    @Json(name = "type") val type: String,
-    @Json(name = "options") val options: Options
+    @SerialName("type") val type: String,
+    @SerialName("options") val options: Options
 ) {
-    @JsonClass(generateAdapter = true)
+    @Serializable
     data class Options(
-        @Json(name = "client_id") val clientId: String,
-        @Json(name = "conf_id") val confId: String,
-        @Json(name = "auth_token") val authToken: String,
-        @Json(name = "endpoint") val endpoint: String,
-        @Json(name = "stun_servers") val stunServers: List<String>,
-        @Json(name = "turn_servers") val turnServers: List<TurnServerDto>
+        @SerialName("client_id") val clientId: String,
+        @SerialName("conf_id") val confId: String,
+        @SerialName("auth_token") val authToken: String,
+        @SerialName("endpoint") val endpoint: String,
+        @SerialName("stun_servers") val stunServers: List<String>,
+        @SerialName("turn_servers") val turnServers: List<TurnServerDto>
     )
 }

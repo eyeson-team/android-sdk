@@ -4,14 +4,14 @@ import com.eyeson.sdk.model.api.RecordingDto
 import com.eyeson.sdk.model.local.api.UserInfo
 import com.eyeson.sdk.model.local.meeting.RecordingLocal
 import com.eyeson.sdk.model.meeting.base.MeetingBaseMessageDto
-import com.squareup.moshi.Json
-import com.squareup.moshi.JsonClass
+import kotlinx.serialization.SerialName
+import kotlinx.serialization.Serializable
 import java.util.*
 
-@JsonClass(generateAdapter = true)
+@Serializable
 internal data class RecordingUpdateDto(
-    @Json(name = "type") override val type: String,
-    @Json(name = "recording") val recording: RecordingDto
+    @SerialName("type") override val type: String,
+    @SerialName("recording") val recording: RecordingDto
 ) : MeetingBaseMessageDto {
     override fun toLocal(): RecordingLocal {
         return RecordingLocal(

@@ -5,28 +5,28 @@ import com.eyeson.sdk.BuildConfig
 import com.eyeson.sdk.model.api.MeetingDto
 import com.eyeson.sdk.model.local.sepp.CallStart
 import com.eyeson.sdk.model.sepp.base.SeppBaseCommandDto
-import com.squareup.moshi.Json
-import com.squareup.moshi.JsonClass
+import kotlinx.serialization.SerialName
+import kotlinx.serialization.Serializable
 
-@JsonClass(generateAdapter = true)
+@Serializable
 internal data class CallStartDto(
-    @Json(name = "type") override val type: String,
-    @Json(name = "msg_id") val msgId: String,
-    @Json(name = "from") val from: String,
-    @Json(name = "to") val to: String,
-    @Json(name = "data") val data: Data
+    @SerialName("type") override val type: String,
+    @SerialName("msg_id") val msgId: String,
+    @SerialName("from") val from: String,
+    @SerialName("to") val to: String,
+    @SerialName("data") val data: Data
 ) : SeppBaseCommandDto {
-    @JsonClass(generateAdapter = true)
+    @Serializable
     data class Data(
-        @Json(name = "platform") val platform: String,
-        @Json(name = "sdp") val sdp: Sdp,
-        @Json(name = "display_name") val displayName: String,
-        @Json(name = "mute_video") val muteVideo: Boolean,
+        @SerialName("platform") val platform: String,
+        @SerialName("sdp") val sdp: Sdp,
+        @SerialName("display_name") val displayName: String,
+        @SerialName("mute_video") val muteVideo: Boolean,
     ) {
-        @JsonClass(generateAdapter = true)
+        @Serializable
         data class Sdp(
-            @Json(name = "type") val type: String,
-            @Json(name = "sdp") val sdp: String
+            @SerialName("type") val type: String,
+            @SerialName("sdp") val sdp: String
         )
     }
 

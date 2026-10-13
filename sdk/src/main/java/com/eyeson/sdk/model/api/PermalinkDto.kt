@@ -2,46 +2,49 @@ package com.eyeson.sdk.model.api
 
 
 import com.eyeson.sdk.model.local.api.PermalinkMeetingInfo
-import com.squareup.moshi.Json
-import com.squareup.moshi.JsonClass
+import com.eyeson.sdk.serializer.DateSerializer
+import kotlinx.serialization.SerialName
+import kotlinx.serialization.Serializable
 import java.util.Date
 
-@JsonClass(generateAdapter = true)
+@Serializable
 internal data class PermalinkDto(
-    @Json(name = "permalink")
+    @SerialName("permalink")
     val permalink: Permalink,
-    @Json(name = "room")
+    @SerialName("room")
     val room: Room,
-    @Json(name = "team")
+    @SerialName("team")
     val team: Team,
-    @Json(name = "options")
+    @SerialName("options")
     val options: MeetingOptionsDto,
 ) {
-    @JsonClass(generateAdapter = true)
+    @Serializable
     data class Permalink(
-        @Json(name = "id")
+        @SerialName("id")
         val id: String,
-        @Json(name = "created_at")
+        @SerialName("created_at")
         val createdAt: String,
-        @Json(name = "guest_token")
+        @SerialName("guest_token")
         val guestToken: String,
-        @Json(name = "expires_at")
+        @Serializable(with = DateSerializer::class)
+        @SerialName("expires_at")
         val expiresAt: Date?,
     )
 
-    @JsonClass(generateAdapter = true)
+    @Serializable
     data class Team(
-        @Json(name = "name")
+        @SerialName("name")
         val name: String,
     )
 
-    @JsonClass(generateAdapter = true)
+    @Serializable
     data class Room(
-        @Json(name = "id")
+        @SerialName("id")
         val id: String,
-        @Json(name = "name")
+        @SerialName("name")
         val name: String,
-        @Json(name = "started_at")
+        @Serializable(with = DateSerializer::class)
+        @SerialName("started_at")
         val startedAt: Date?,
     )
 

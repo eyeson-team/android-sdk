@@ -96,11 +96,14 @@ The format is based on [Keep a Changelog] and this project adheres to
 - Defaults
   - Camera resolution `640x360` in 4:3 meetings too (was `640x480`)
   - Screen share resolution `1920x1080` (was the display resolution)
+- JSON (de)serialization: Moshi -> kotlinx.serialization
 - Dependency updates
   - AndroidGradlePlugin `8.12.2`
   - Gradle `8.13`
   - AndroidxActivityCompose `1.9.0`
   - AndroidxComposeBom `2025.09.00`
+  - Retrofit `2.11.0`
+  - KotlinxSerializationJson `1.7.3`
 ### Removed
 - `EyesonEventListener`
 - `LocalBaseCommand` and `model.local.meeting.OptionsUpdate` from the public API

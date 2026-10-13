@@ -1,26 +1,26 @@
 package com.eyeson.sdk.model.api
 
-import com.squareup.moshi.Json
-import com.squareup.moshi.JsonClass
+import kotlinx.serialization.SerialName
+import kotlinx.serialization.Serializable
 
-@JsonClass(generateAdapter = true)
+@Serializable
 internal data class MeetingDto(
-    @Json(name = "access_key") var accessKey: String,
-    @Json(name = "ready") var ready: Boolean,
-    @Json(name = "locked") var locked: Boolean,
-    @Json(name = "room") var room: RoomDto,
-    @Json(name = "user") var user: UserDto,
-    @Json(name = "links") var links: Links,
-    @Json(name = "recording") var recording: RecordingDto?,
-    @Json(name = "broadcasts") var broadcasts: List<BroadcastDto>,
-    @Json(name = "snapshots") var snapshots: List<SnapshotDto>,
-    @Json(name = "signaling") var signaling: SignalingDto,
-    @Json(name = "options") var options: MeetingOptionsDto,
-    @Json(name = "playbacks") var playbacks: List<PlaybackDto>,
+    @SerialName("access_key") var accessKey: String,
+    @SerialName("ready") var ready: Boolean,
+    @SerialName("locked") var locked: Boolean,
+    @SerialName("room") var room: RoomDto,
+    @SerialName("user") var user: UserDto,
+    @SerialName("links") var links: Links,
+    @SerialName("recording") var recording: RecordingDto?,
+    @SerialName("broadcasts") var broadcasts: List<BroadcastDto>,
+    @SerialName("snapshots") var snapshots: List<SnapshotDto>,
+    @SerialName("signaling") var signaling: SignalingDto,
+    @SerialName("options") var options: MeetingOptionsDto,
+    @SerialName("playbacks") var playbacks: List<PlaybackDto>,
 ) {
-    @JsonClass(generateAdapter = true)
+    @Serializable
     data class Links(
-        @Json(name = "guest_join") var guestJoin: String?,
-        @Json(name = "websocket") var websocket: String,
+        @SerialName("guest_join") var guestJoin: String?,
+        @SerialName("websocket") var websocket: String,
     )
 }

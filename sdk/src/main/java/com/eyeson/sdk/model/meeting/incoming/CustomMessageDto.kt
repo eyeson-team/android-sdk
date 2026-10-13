@@ -2,16 +2,18 @@ package com.eyeson.sdk.model.meeting.incoming
 
 import com.eyeson.sdk.model.local.meeting.CustomMessageLocal
 import com.eyeson.sdk.model.meeting.base.MeetingBaseMessageDto
-import com.squareup.moshi.Json
-import com.squareup.moshi.JsonClass
+import com.eyeson.sdk.serializer.DateSerializer
+import kotlinx.serialization.SerialName
+import kotlinx.serialization.Serializable
 import java.util.*
 
-@JsonClass(generateAdapter = true)
+@Serializable
 internal data class CustomMessageDto(
-    @Json(name = "type") override val type: String,
-    @Json(name = "content") val content: String,
-    @Json(name = "cid") val userId: String,
-    @Json(name = "created_at") val createdAt: Date
+    @SerialName("type") override val type: String,
+    @SerialName("content") val content: String,
+    @SerialName("cid") val userId: String,
+    @Serializable(with = DateSerializer::class)
+    @SerialName("created_at") val createdAt: Date
 ) : MeetingBaseMessageDto {
     override fun toLocal(): CustomMessageLocal {
         return CustomMessageLocal(

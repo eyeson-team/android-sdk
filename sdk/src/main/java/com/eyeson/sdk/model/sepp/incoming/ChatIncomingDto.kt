@@ -3,25 +3,27 @@ package com.eyeson.sdk.model.sepp.incoming
 
 import com.eyeson.sdk.model.local.sepp.ChatIncoming
 import com.eyeson.sdk.model.sepp.base.SeppBaseCommandDto
-import com.squareup.moshi.Json
-import com.squareup.moshi.JsonClass
+import com.eyeson.sdk.serializer.DateSerializer
+import kotlinx.serialization.SerialName
+import kotlinx.serialization.Serializable
 import java.util.*
 
-@JsonClass(generateAdapter = true)
+@Serializable
 internal data class ChatIncomingDto(
-    @Json(name = "type") override val type: String,
-    @Json(name = "msg_id") val msgId: String,
-    @Json(name = "from") val from: String,
-    @Json(name = "to") val to: String,
-    @Json(name = "data") val data: Data
+    @SerialName("type") override val type: String,
+    @SerialName("msg_id") val msgId: String,
+    @SerialName("from") val from: String,
+    @SerialName("to") val to: String,
+    @SerialName("data") val data: Data
 ) : SeppBaseCommandDto {
-    @JsonClass(generateAdapter = true)
+    @Serializable
     data class Data(
-        @Json(name = "call_id") val callId: String,
-        @Json(name = "cid") val userId: String,
-        @Json(name = "content") val content: String,
-        @Json(name = "id") val messageId: String,
-        @Json(name = "ts") val timestamp: Date
+        @SerialName("call_id") val callId: String,
+        @SerialName("cid") val userId: String,
+        @SerialName("content") val content: String,
+        @SerialName("id") val messageId: String,
+        @Serializable(with = DateSerializer::class)
+        @SerialName("ts") val timestamp: Date
     )
 
     override fun toLocal(): ChatIncoming {

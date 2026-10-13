@@ -1,19 +1,19 @@
 package com.eyeson.sdk.model.api
 
 import com.eyeson.sdk.model.local.api.UserInfo
-import com.squareup.moshi.Json
-import com.squareup.moshi.JsonClass
+import kotlinx.serialization.SerialName
+import kotlinx.serialization.Serializable
 import java.util.*
 
-@JsonClass(generateAdapter = true)
+@Serializable
 internal data class UserDto(
-    @Json(name = "id") val id: String,
-    @Json(name = "room_id") val roomId: String,
-    @Json(name = "name") val name: String,
-    @Json(name = "avatar") val avatar: String?,
-    @Json(name = "guest") val guest: Boolean,
-    @Json(name = "blocked") val blocked: Boolean,
-    @Json(name = "ready") val ready: Boolean
+    @SerialName("id") val id: String,
+    @SerialName("room_id") val roomId: String,
+    @SerialName("name") val name: String,
+    @SerialName("avatar") val avatar: String?,
+    @SerialName("guest") val guest: Boolean,
+    @SerialName("blocked") val blocked: Boolean,
+    @SerialName("ready") val ready: Boolean
 ) {
     fun toLocal(joinedAt: Date): UserInfo {
         return UserInfo(

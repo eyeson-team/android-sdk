@@ -32,12 +32,12 @@ import com.eyeson.sdk.options.AudioOptions
 import com.eyeson.sdk.options.MediaOptions
 import com.eyeson.sdk.options.ScreenShareOptions
 import com.eyeson.sdk.options.VideoOptions
+import com.eyeson.sdk.serializer.DataChannelIncomingMessagesSerializer
 import com.eyeson.sdk.service.ScreenCapturerService
 import com.eyeson.sdk.utils.Logger
 import com.eyeson.sdk.utils.WebRTCUtils
 import com.eyeson.sdk.webrtc.PeerConnectionClient
 import com.eyeson.sdk.webrtc.PeerConnectionParameters
-import com.squareup.moshi.JsonDataException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -78,7 +78,7 @@ internal class CallLogic(
     private val sfuMode = AtomicBoolean(false)
     private val cameraIsFrontFacing = AtomicBoolean(true)
 
-    private val moshi = NetworkModule.moshi
+    private val json = NetworkModule.json
 
     private val connectionStatisticsRepository = ConnectionStatisticsRepository()
     private var screenCapturerService: ScreenCapturerService? = null
@@ -192,24 +192,24 @@ internal class CallLogic(
 
     private val dataChannelEvents = object : PeerConnectionClient.DataChannelEvents {
         override fun onMessageReceived(message: String) {
-            val adapter = moshi.adapter(DataChannelCommandDto::class.java)
-            try {
-                val command = adapter.fromJson(message)
-                command?.let {
-                    handleDataChannelCommands(it)
-                }
-            } catch (e: JsonDataException) {
+            val command = try {
+                json.decodeFromString(DataChannelIncomingMessagesSerializer, message)
+            } catch (e: IllegalArgumentException) {
+                // SerializationException is an IllegalArgumentException
                 Logger.e("DataChannelEvents: parsing FAILED $e")
                 e.printStackTrace()
+                return
             }
+            handleDataChannelCommands(command)
         }
     }
 
     private fun handleDataChannelCommands(command: DataChannelCommandDto) {
         when (command) {
             is PingDto -> {
-                val adapter = moshi.adapter(PongDto::class.java)
-                peerConnectionClient.sendDataChannelMessage(adapter.toJson(Pong().fromLocal()))
+                peerConnectionClient.sendDataChannelMessage(
+                    json.encodeToString(PongDto.serializer(), Pong().fromLocal())
+                )
             }
 
             !is UnknownCommandDto -> {

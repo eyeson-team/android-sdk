@@ -1,6 +1,6 @@
 plugins {
     alias(libs.plugins.eyeson.library)
-    alias(libs.plugins.ksp)
+    alias(libs.plugins.kotlin.serialization)
     id("maven-publish")
 }
 
@@ -75,10 +75,8 @@ dependencies {
     implementation(libs.okhttp.tls)
     implementation(libs.okhttp.logging)
     implementation(libs.retrofit)
-    implementation(libs.retrofit.converter.moshi)
-    implementation(libs.moshi)
-    implementation(libs.moshi.adapters)
-    ksp(libs.moshi.kotlin.codegen)
+    implementation(libs.retrofit.converter.kotlinx.serialization)
+    implementation(libs.kotlinx.serialization.json)
 
     testImplementation(libs.jUnit)
     testImplementation(libs.robolectric)

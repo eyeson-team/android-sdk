@@ -8,8 +8,8 @@ import com.eyeson.sdk.model.local.ws.WsFailure
 import com.eyeson.sdk.model.local.ws.WsOpen
 import com.eyeson.sdk.model.sepp.base.SeppBaseCommandDto
 import com.eyeson.sdk.model.sepp.base.UnknownCommandDto
+import com.eyeson.sdk.serializer.SeppIncomingCommandsSerializer
 import com.eyeson.sdk.utils.Logger
-import com.squareup.moshi.JsonDataException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -26,7 +26,7 @@ import java.util.concurrent.TimeUnit
 
 internal class SignalingConnection(private val meeting: MeetingDto) {
     private val signalingScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
-    private val moshi = NetworkModule.moshi
+    private val json = NetworkModule.json
     private val okHttpClient = NetworkModule.okHttpClient
 
     private var webSocketListener: WebSocketListener = object : WebSocketListener() {
@@ -38,15 +38,14 @@ internal class SignalingConnection(private val meeting: MeetingDto) {
         override fun onMessage(webSocket: WebSocket, text: String) {
             Logger.d("WebSocket onMessage: $text")
 
-            val adapter = moshi.adapter(SeppBaseCommandDto::class.java)
-            try {
-                val command = adapter.fromJson(text)
-                command?.let {
-                    handleMessages(it)
-                }
-            } catch (e: JsonDataException) {
+            val command = try {
+                json.decodeFromString(SeppIncomingCommandsSerializer, text)
+            } catch (e: IllegalArgumentException) {
+                // SerializationException is an IllegalArgumentException
                 Logger.e("WebSocketCommands.BaseCommand: parsing FAILED $e")
+                return
             }
+            handleMessages(command)
         }
 
         override fun onMessage(webSocket: WebSocket, bytes: ByteString) {

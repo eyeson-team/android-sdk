@@ -3,21 +3,21 @@ package com.eyeson.sdk.model.sepp.incoming
 
 import com.eyeson.sdk.model.local.sepp.CallTerminated
 import com.eyeson.sdk.model.sepp.base.SeppBaseCommandDto
-import com.squareup.moshi.Json
-import com.squareup.moshi.JsonClass
+import kotlinx.serialization.SerialName
+import kotlinx.serialization.Serializable
 
-@JsonClass(generateAdapter = true)
+@Serializable
 internal data class CallTerminatedDto(
-    @Json(name = "type") override val type: String,
-    @Json(name = "msg_id") val msgId: String,
-    @Json(name = "from") val from: String,
-    @Json(name = "to") val to: String,
-    @Json(name = "data") val data: Data
+    @SerialName("type") override val type: String,
+    @SerialName("msg_id") val msgId: String,
+    @SerialName("from") val from: String,
+    @SerialName("to") val to: String,
+    @SerialName("data") val data: Data
 ) : SeppBaseCommandDto {
-    @JsonClass(generateAdapter = true)
+    @Serializable
     data class Data(
-        @Json(name = "call_id") val callId: String,
-        @Json(name = "term_code") val termCode: Int
+        @SerialName("call_id") val callId: String,
+        @SerialName("term_code") val termCode: Int
     )
 
     override fun toLocal(): CallTerminated {

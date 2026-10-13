@@ -3,31 +3,33 @@ package com.eyeson.sdk.model.api
 
 import com.eyeson.sdk.model.local.api.Recording
 import com.eyeson.sdk.model.local.api.UserInfo
-import com.squareup.moshi.Json
-import com.squareup.moshi.JsonClass
+import com.eyeson.sdk.serializer.DateSerializer
+import kotlinx.serialization.SerialName
+import kotlinx.serialization.Serializable
 import java.util.*
 
-@JsonClass(generateAdapter = true)
+@Serializable
 internal data class RecordingDto(
-    @Json(name = "id") val id: String,
-    @Json(name = "created_at") val createdAt: Long,
-    @Json(name = "duration") val duration: Int?,
-    @Json(name = "links") val links: Links,
-    @Json(name = "user") val user: User
+    @SerialName("id") val id: String,
+    @SerialName("created_at") val createdAt: Long,
+    @SerialName("duration") val duration: Int?,
+    @SerialName("links") val links: Links,
+    @SerialName("user") val user: User
 ) {
-    @JsonClass(generateAdapter = true)
+    @Serializable
     data class Links(
-        @Json(name = "self") val self: String,
-        @Json(name = "download") val download: String?
+        @SerialName("self") val self: String,
+        @SerialName("download") val download: String?
     )
 
-    @JsonClass(generateAdapter = true)
+    @Serializable
     data class User(
-        @Json(name = "id") val id: String,
-        @Json(name = "name") val name: String,
-        @Json(name = "avatar") val avatar: String?,
-        @Json(name = "guest") val guest: Boolean,
-        @Json(name = "joined_at") val joinedAt: Date
+        @SerialName("id") val id: String,
+        @SerialName("name") val name: String,
+        @SerialName("avatar") val avatar: String?,
+        @SerialName("guest") val guest: Boolean,
+        @Serializable(with = DateSerializer::class)
+        @SerialName("joined_at") val joinedAt: Date
     )
 
     fun toLocal(): Recording {

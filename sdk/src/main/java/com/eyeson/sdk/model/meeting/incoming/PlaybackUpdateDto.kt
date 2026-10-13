@@ -3,13 +3,13 @@ package com.eyeson.sdk.model.meeting.incoming
 import com.eyeson.sdk.model.api.PlaybackDto
 import com.eyeson.sdk.model.local.meeting.PlaybackUpdateLocal
 import com.eyeson.sdk.model.meeting.base.MeetingBaseMessageDto
-import com.squareup.moshi.Json
-import com.squareup.moshi.JsonClass
+import kotlinx.serialization.SerialName
+import kotlinx.serialization.Serializable
 
-@JsonClass(generateAdapter = true)
+@Serializable
 internal data class PlaybackUpdateDto(
-    @Json(name = "type") override val type: String,
-    @Json(name = "playing") val playing: List<PlaybackDto>
+    @SerialName("type") override val type: String,
+    @SerialName("playing") val playing: List<PlaybackDto>
 ) : MeetingBaseMessageDto {
     override fun toLocal(): PlaybackUpdateLocal {
         return PlaybackUpdateLocal(

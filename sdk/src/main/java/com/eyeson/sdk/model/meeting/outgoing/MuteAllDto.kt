@@ -1,25 +1,29 @@
 package com.eyeson.sdk.model.meeting.outgoing
 
-import com.eyeson.sdk.moshi.adapter.AsString
-import com.squareup.moshi.Json
-import com.squareup.moshi.JsonClass
+import com.eyeson.sdk.serializer.AsStringSerializer
+import kotlinx.serialization.KSerializer
+import kotlinx.serialization.SerialName
+import kotlinx.serialization.Serializable
 
-@JsonClass(generateAdapter = true)
+@Serializable
 internal data class MuteAllDto(
-    @Json(name = "command") val command: String = "message",
-    @AsString
-    @Json(name = "identifier") var identifier: SubscribeToChannel.Identifier =
+    @SerialName("command") val command: String = "message",
+    @Serializable(with = ChannelIdentifierAsStringSerializer::class)
+    @SerialName("identifier") var identifier: SubscribeToChannel.Identifier =
         SubscribeToChannel.Identifier(SubscribeToChannel.ROOM_CHANNEL),
-    @AsString
-    @Json(name = "data") var data: Data = Data()
+    @Serializable(with = MuteAllDataAsStringSerializer::class)
+    @SerialName("data") var data: Data = Data()
 ) {
-    @JsonClass(generateAdapter = true)
+    @Serializable
     data class Data(
-        @Json(name = "message") val message: String = STFU,
-        @Json(name = "action") val action: String = STFU
+        @SerialName("message") val message: String = STFU,
+        @SerialName("action") val action: String = STFU
     )
 
     companion object {
         private const val STFU = "stfu"
     }
 }
+
+internal object MuteAllDataAsStringSerializer :
+    KSerializer<MuteAllDto.Data> by AsStringSerializer(MuteAllDto.Data.serializer())

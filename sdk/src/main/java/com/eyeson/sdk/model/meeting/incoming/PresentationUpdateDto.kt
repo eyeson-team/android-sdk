@@ -5,13 +5,13 @@ import com.eyeson.sdk.model.api.PresentationDto
 import com.eyeson.sdk.model.local.api.UserInfo
 import com.eyeson.sdk.model.local.meeting.PresentationUpdateLocal
 import com.eyeson.sdk.model.meeting.base.MeetingBaseMessageDto
-import com.squareup.moshi.Json
-import com.squareup.moshi.JsonClass
+import kotlinx.serialization.SerialName
+import kotlinx.serialization.Serializable
 
-@JsonClass(generateAdapter = true)
+@Serializable
 internal data class PresentationUpdateDto(
-    @Json(name = "type") override val type: String,
-    @Json(name = "presentation") val presentation: PresentationDto?
+    @SerialName("type") override val type: String,
+    @SerialName("presentation") val presentation: PresentationDto?
 ) : MeetingBaseMessageDto {
     override fun toLocal(): PresentationUpdateLocal {
         return PresentationUpdateLocal(

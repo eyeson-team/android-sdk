@@ -4,13 +4,13 @@ import com.eyeson.sdk.model.api.BroadcastDto
 import com.eyeson.sdk.model.local.api.UserInfo
 import com.eyeson.sdk.model.local.meeting.BroadcastUpdateLocal
 import com.eyeson.sdk.model.meeting.base.MeetingBaseMessageDto
-import com.squareup.moshi.Json
-import com.squareup.moshi.JsonClass
+import kotlinx.serialization.SerialName
+import kotlinx.serialization.Serializable
 
-@JsonClass(generateAdapter = true)
+@Serializable
 internal data class BroadcastUpdateDto(
-    @Json(name = "type") override val type: String,
-    @Json(name = "broadcasts") val broadcasts: List<BroadcastDto>
+    @SerialName("type") override val type: String,
+    @SerialName("broadcasts") val broadcasts: List<BroadcastDto>
 ) : MeetingBaseMessageDto {
     override fun toLocal(): BroadcastUpdateLocal {
         return BroadcastUpdateLocal(broadcasts.map {

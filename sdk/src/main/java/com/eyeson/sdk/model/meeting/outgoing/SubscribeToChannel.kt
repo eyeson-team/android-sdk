@@ -1,17 +1,19 @@
 package com.eyeson.sdk.model.meeting.outgoing
 
-import com.eyeson.sdk.moshi.adapter.AsString
-import com.squareup.moshi.Json
-import com.squareup.moshi.JsonClass
+import com.eyeson.sdk.serializer.AsStringSerializer
+import kotlinx.serialization.KSerializer
+import kotlinx.serialization.SerialName
+import kotlinx.serialization.Serializable
 
-@JsonClass(generateAdapter = true)
+@Serializable
 internal data class SubscribeToChannel(
-    @Json(name = "command") val command: String,
-    @AsString @Json(name = "identifier") var identifier: Identifier
+    @SerialName("command") val command: String,
+    @Serializable(with = ChannelIdentifierAsStringSerializer::class)
+    @SerialName("identifier") var identifier: Identifier
 ) {
-    @JsonClass(generateAdapter = true)
+    @Serializable
     data class Identifier(
-        @Json(name = "channel") val channel: String
+        @SerialName("channel") val channel: String
     )
 
     companion object {
@@ -35,3 +37,10 @@ internal data class SubscribeToChannel(
         }
     }
 }
+
+/**
+ * Shared by every outgoing ActionCable message, so their `identifier` strings match the one the
+ * channel was subscribed with.
+ */
+internal object ChannelIdentifierAsStringSerializer :
+    KSerializer<SubscribeToChannel.Identifier> by AsStringSerializer(SubscribeToChannel.Identifier.serializer())

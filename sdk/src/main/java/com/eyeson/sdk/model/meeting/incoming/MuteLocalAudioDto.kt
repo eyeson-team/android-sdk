@@ -3,22 +3,24 @@ package com.eyeson.sdk.model.meeting.incoming
 import com.eyeson.sdk.model.local.api.UserInfo
 import com.eyeson.sdk.model.local.meeting.MuteLocalAudioLocal
 import com.eyeson.sdk.model.meeting.base.MeetingBaseMessageDto
-import com.squareup.moshi.Json
-import com.squareup.moshi.JsonClass
+import com.eyeson.sdk.serializer.DateSerializer
+import kotlinx.serialization.SerialName
+import kotlinx.serialization.Serializable
 import java.util.*
 
-@JsonClass(generateAdapter = true)
+@Serializable
 internal data class MuteLocalAudioDto(
-    @Json(name = "type") override val type: String,
-    @Json(name = "user") val user: User
+    @SerialName("type") override val type: String,
+    @SerialName("user") val user: User
 ) : MeetingBaseMessageDto {
-    @JsonClass(generateAdapter = true)
+    @Serializable
     data class User(
-        @Json(name = "id") val id: String,
-        @Json(name = "name") val name: String,
-        @Json(name = "avatar") val avatar: String?,
-        @Json(name = "guest") val guest: Boolean,
-        @Json(name = "joined_at") val joinedAt: Date
+        @SerialName("id") val id: String,
+        @SerialName("name") val name: String,
+        @SerialName("avatar") val avatar: String?,
+        @SerialName("guest") val guest: Boolean,
+        @Serializable(with = DateSerializer::class)
+        @SerialName("joined_at") val joinedAt: Date
     )
 
     override fun toLocal(): MuteLocalAudioLocal {

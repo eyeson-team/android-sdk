@@ -1,11 +1,12 @@
 package com.eyeson.sdk.model.datachannel.base
 
 import com.eyeson.sdk.model.local.base.UnknownCommand
-import com.squareup.moshi.JsonClass
+import kotlinx.serialization.SerialName
+import kotlinx.serialization.Serializable
 
-@JsonClass(generateAdapter = true)
+@Serializable
 internal class UnknownCommandDto(
-    override val type: String = "Unknown command"
+    @SerialName("type") override val type: String = "Unknown command"
 ) : DataChannelCommandDto {
 
     override fun toLocal(): UnknownCommand {
