@@ -1,57 +1,54 @@
 [versions]
-accompanist = "0.36.0"
-androidMaterial = "1.13.0-alpha11"
-androidxActivityCompose = "1.9.0"
-androidxAnnotation = "1.9.1"
-androidxAppcompat = "1.7.0"
-androidxCamera = "1.4.1"
-androidxComposeBom = "2025.09.00"
-androidxCore = "1.15.0"
-androidxEspresso = "3.6.1"
-androidxFragment = "1.8.6"
-androidxHiltNavigationCompose = "1.2.0"
-androidxLifecycle = "2.8.7"
-androidxNavigation = "2.8.9"
-androidxTestExt = "1.2.1"
-coil = "2.7.0"
-constraintLayout = "2.2.1"
-datastorePreference = "1.1.3"
+accompanist = "0.37.3"
+androidMaterial = "1.14.0"
+androidxActivityCompose = "1.13.0"
+androidxAnnotation = "1.11.0"
+androidxAppcompat = "1.8.0"
+androidxComposeBom = "2026.09.00"
+androidxCore = "1.19.1"
+androidxEspresso = "3.7.0"
+androidxFragment = "1.9.1"
+androidxHilt = "1.4.0"
+androidxLifecycle = "2.11.0"
+androidxNavigation = "2.9.8"
+androidxTestExt = "1.3.0"
+androidxWindow = "1.5.1"
+coil = "3.6.3"
+constraintLayout = "2.2.2"
+datastorePreference = "1.2.1"
 desugarJdkLibsNio = "2.1.5"
 eyesonWebrtcAndroid = "1.0.1"
 gradle = "9.4.1"
 hilt = "2.60.1"
 jUnit = "4.13.2"
-kotlin = "2.4.10"
-kotlinxCoroutines = "1.8.1"
+kotlin = "2.4.21"
+kotlinxCoroutines = "1.11.0"
 kotlinxSerializationJson = "1.11.0"
-ksp = "2.3.11"
-media3 = "1.5.1"
-okhttp = "4.12.0"
-robolectric = "4.14.1"
-qrScanner = "2.1.2"
+ksp = "2.3.12"
+media3 = "1.11.1"
+okhttp = "5.4.0"
+robolectric = "4.17"
+qrScanner = "2.3.2"
 retrofit = "3.0.0"
 timber = "5.0.1"
 
 [libraries]
 accompanist-permissions = { group = "com.google.accompanist", name = "accompanist-permissions", version.ref = "accompanist" }
-accompanist-systemUiController = { group = "com.google.accompanist", name = "accompanist-systemuicontroller", version.ref = "accompanist" }
 android-desugarJdkLibsNio = { group = "com.android.tools", name = "desugar_jdk_libs_nio", version.ref = "desugarJdkLibsNio" }
 android-material = { group = "com.google.android.material", name = "material", version.ref = "androidMaterial" }
 androidx-activity-compose = { group = "androidx.activity", name = "activity-compose", version.ref = "androidxActivityCompose" }
 androidx-annotation = { group = "androidx.annotation", name = "annotation", version.ref = "androidxAnnotation" }
 androidx-appcompat = { group = "androidx.appcompat", name = "appcompat", version.ref = "androidxAppcompat" }
-androidx-camera-camera2 = { module = "androidx.camera:camera-camera2", version.ref = "androidxCamera" }
-androidx-camera-core = { module = "androidx.camera:camera-core", version.ref = "androidxCamera" }
-androidx-camera-lifecycle = { module = "androidx.camera:camera-lifecycle", version.ref = "androidxCamera" }
 androidx-compose-bom = { group = "androidx.compose", name = "compose-bom", version.ref = "androidxComposeBom" }
 androidx-compose-material3 = { group = "androidx.compose.material3", name = "material3" }
+androidx-compose-material-icons-core = { group = "androidx.compose.material", name = "material-icons-core" }
 androidx-compose-ui-tooling = { group = "androidx.compose.ui", name = "ui-tooling" }
 androidx-compose-ui-tooling-preview = { group = "androidx.compose.ui", name = "ui-tooling-preview" }
 androidx-constraintLayout = { group = "androidx.constraintlayout", name = "constraintlayout", version.ref = "constraintLayout" }
 androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "androidxCore" }
 androidx-datastore-preferences = { group = "androidx.datastore", name = "datastore-preferences", version.ref = "datastorePreference" }
 androidx-fragment = { group = "androidx.fragment", name = "fragment-ktx", version.ref = "androidxFragment" }
-androidx-hilt-navigation-compose = { group = "androidx.hilt", name = "hilt-navigation-compose", version.ref = "androidxHiltNavigationCompose" }
+androidx-hilt-lifecycle-viewmodel-compose = { group = "androidx.hilt", name = "hilt-lifecycle-viewmodel-compose", version.ref = "androidxHilt" }
 androidx-lifecycle-runtime-compose = { group = "androidx.lifecycle", name = "lifecycle-runtime-compose", version.ref = "androidxLifecycle" }
 androidx-lifecycle-runtime-ktx = { module = "androidx.lifecycle:lifecycle-runtime-ktx", version.ref = "androidxLifecycle" }
 androidx-lifecycle-viewmodel = { group = "androidx.lifecycle", name = "lifecycle-viewmodel-ktx", version.ref = "androidxLifecycle" }
@@ -61,7 +58,10 @@ androidx-media3-ui = { group = "androidx.media3", name = "media3-ui", version.re
 androidx-navigation-compose = { group = "androidx.navigation", name = "navigation-compose", version.ref = "androidxNavigation" }
 androidx-test-espresso-core = { group = "androidx.test.espresso", name = "espresso-core", version.ref = "androidxEspresso" }
 androidx-test-ext = { group = "androidx.test.ext", name = "junit-ktx", version.ref = "androidxTestExt" }
-coil-compose = { group = "io.coil-kt", name = "coil-compose", version.ref = "coil" }
+androidx-window = { group = "androidx.window", name = "window", version.ref = "androidxWindow" }
+androidx-window-core = { group = "androidx.window", name = "window-core", version.ref = "androidxWindow" }
+coil-compose = { group = "io.coil-kt.coil3", name = "coil-compose", version.ref = "coil" }
+coil-network-okhttp = { group = "io.coil-kt.coil3", name = "coil-network-okhttp", version.ref = "coil" }
 eyeson-webrtc-android = { group = "com.github.eyeson-team", name = "webrtc-android", version.ref = "eyesonWebrtcAndroid" }
 gradle-plugin = { module = "com.android.tools.build:gradle", version.ref = "gradle" }
 hilt-android = { group = "com.google.dagger", name = "hilt-android", version.ref = "hilt" }

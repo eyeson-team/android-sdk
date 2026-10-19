@@ -1,6 +1,5 @@
 package com.eyeson.android.ui.components
 
-import android.content.res.Configuration
 import androidx.annotation.FloatRange
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.fadeIn
@@ -59,7 +58,6 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.ImeAction
@@ -69,19 +67,19 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import coil.compose.SubcomposeAsyncImage
+import coil3.compose.SubcomposeAsyncImage
 import com.eyeson.android.R
 import com.eyeson.android.ui.meeting.ChatMessage
 import com.eyeson.android.ui.meeting.ChatMessage.IncomingMessage
 import com.eyeson.android.ui.meeting.ChatMessage.OutgoingMessage
-import com.eyeson.android.ui.meeting.isLandscape
 import com.eyeson.android.ui.theme.ChatHeader
 import com.eyeson.android.ui.theme.ChatMessage
 import com.eyeson.android.ui.theme.DarkGray900
 import com.eyeson.android.ui.theme.EyesonDemoTheme
 import timber.log.Timber
-import java.text.DecimalFormat
+import java.text.SimpleDateFormat
 import java.util.Date
+import java.util.Locale
 
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
@@ -103,7 +101,8 @@ fun Chat(
         mutableStateOf(TextFieldValue())
     }
 
-    val configuration: Configuration = LocalConfiguration.current
+    val windowSizeClass = rememberWindowSizeClass()
+    val isWideLayout = windowSizeClass.minWidthDp > windowSizeClass.minHeightDp
     Box(modifier) {
 
         Scrim(scrimColor, visible, onClose)
@@ -200,7 +199,7 @@ fun Chat(
                         IntOffset(fullSize.width / 4, 100)
                     } + fadeOut(),
                 ) {
-                    if (configuration.isLandscape() && visible) {
+                    if (isWideLayout && visible) {
                         val landscapeNavigationBarPadding =
                             WindowInsets.navigationBarsIgnoringVisibility.asPaddingValues()
                         val layoutDirection = LocalLayoutDirection.current
@@ -243,7 +242,8 @@ fun Chat(
 private val IncomingBubbleShape = RoundedCornerShape(0.dp, 16.dp, 16.dp, 16.dp)
 private val OutgoingBubbleShape = RoundedCornerShape(16.dp, 0.dp, 16.dp, 16.dp)
 
-@Suppress("DEPRECATION")
+private fun Date.formatTime(): String = SimpleDateFormat("HH:mm", Locale.getDefault()).format(this)
+
 @Composable
 fun ChatMessageIncoming(
     text: String,
@@ -269,15 +269,13 @@ fun ChatMessageIncoming(
                     .clip(CircleShape)
                     .align(Top)
             )
-            val format = DecimalFormat("00")
-
             Text(
                 text = from.uppercase(),
                 modifier = Modifier.padding(start = 12.dp),
                 style = ChatHeader
             )
             Text(
-                text = "${format.format(time.hours)}:${format.format(time.minutes)}",
+                text = time.formatTime(),
                 modifier = Modifier.padding(start = 4.dp),
                 style = ChatHeader.copy(
                     color = ChatHeader.color.copy(alpha = 0.6f)
@@ -294,7 +292,6 @@ fun ChatMessageIncoming(
     }
 }
 
-@Suppress("DEPRECATION")
 @Composable
 fun ChatMessageOutgoing(
     text: String,
@@ -307,9 +304,8 @@ fun ChatMessageOutgoing(
             .fillMaxWidth()
     ) {
         Row(horizontalArrangement = Arrangement.End, modifier = Modifier.fillMaxWidth()) {
-            val format = DecimalFormat("00")
             Text(
-                text = "${format.format(time.hours)}:${format.format(time.minutes)}",
+                text = time.formatTime(),
                 modifier = Modifier.padding(end = 4.dp),
                 style = ChatHeader.copy(
                     color = ChatHeader.color.copy(alpha = 0.6f)

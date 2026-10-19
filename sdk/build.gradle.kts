@@ -69,7 +69,6 @@ dependencies {
     api(libs.eyeson.webrtc.android)
 
     implementation(libs.kotlinx.coroutines.android)
-    implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.annotation)
     implementation(libs.okhttp)
     implementation(libs.okhttp.tls)

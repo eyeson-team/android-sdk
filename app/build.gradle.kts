@@ -59,7 +59,7 @@ dependencies {
 
     implementation(libs.hilt.android)
     ksp(libs.hilt.compiler)
-    implementation(libs.androidx.hilt.navigation.compose)
+    implementation(libs.androidx.hilt.lifecycle.viewmodel.compose)
 
     implementation(libs.timber)
     implementation(libs.androidx.core.ktx)
@@ -73,31 +73,25 @@ dependencies {
     implementation(libs.android.material)
 
     implementation(platform(libs.androidx.compose.bom))
-    androidTestImplementation(platform(libs.androidx.compose.bom))
-
-    implementation(libs.androidx.camera.core)
-    implementation(libs.androidx.camera.lifecycle)
-    implementation(libs.androidx.camera.camera2)
-    implementation(libs.androidx.lifecycle.runtime.ktx)
-
 
     implementation(libs.androidx.compose.material3)
+    implementation(libs.androidx.compose.material.icons.core)
     implementation(libs.androidx.compose.ui.tooling.preview)
     debugImplementation(libs.androidx.compose.ui.tooling)
     implementation(libs.androidx.activity.compose)
-    implementation(libs.androidx.lifecycle.viewmodel.compose)
     implementation(libs.androidx.navigation.compose)
-    implementation(libs.accompanist.systemUiController)
     implementation(libs.accompanist.permissions)
     implementation(libs.androidx.annotation)
     implementation(libs.androidx.datastore.preferences)
+    implementation(libs.androidx.window)
+    implementation(libs.androidx.window.core)
 
     implementation(libs.qrScanner)
     implementation(libs.okhttp)
     implementation(libs.okhttp.tls)
-    implementation(libs.okhttp.tls)
     implementation(libs.okhttp.logging)
     implementation(libs.coil.compose)
+    implementation(libs.coil.network.okhttp)
 
     implementation(libs.androidx.media3.exoplayer)
     implementation(libs.androidx.media3.ui)

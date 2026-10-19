@@ -1,8 +1,9 @@
 package com.eyeson.android
 
 import android.app.Application
-import coil.ImageLoader
-import coil.ImageLoaderFactory
+import coil3.ImageLoader
+import coil3.PlatformContext
+import coil3.SingletonImageLoader
 import com.eyeson.android.BuildConfig.DEBUG
 import dagger.hilt.android.HiltAndroidApp
 import timber.log.Timber
@@ -10,7 +11,7 @@ import javax.inject.Inject
 import javax.inject.Provider
 
 @HiltAndroidApp
-class EyesonDemoApp : Application(), ImageLoaderFactory {
+class EyesonDemoApp : Application(), SingletonImageLoader.Factory {
     @Inject
     lateinit var imageLoader: Provider<ImageLoader>
 
@@ -25,5 +26,5 @@ class EyesonDemoApp : Application(), ImageLoaderFactory {
         }
     }
 
-    override fun newImageLoader(): ImageLoader = imageLoader.get()
+    override fun newImageLoader(context: PlatformContext): ImageLoader = imageLoader.get()
 }

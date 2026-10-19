@@ -6,7 +6,6 @@ import android.app.NotificationManager
 import android.content.ClipData
 import android.content.ClipboardManager
 import android.content.Context
-import android.content.res.Configuration
 import android.media.projection.MediaProjectionManager
 import android.os.Build
 import android.widget.Toast
@@ -56,7 +55,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.pointer.pointerInput
-import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
@@ -69,7 +67,7 @@ import androidx.core.app.NotificationCompat
 import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.WindowInsetsControllerCompat
-import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.LocalLifecycleOwner
@@ -84,6 +82,7 @@ import com.eyeson.android.ui.components.KeepScreenOn
 import com.eyeson.android.ui.components.RecordingIndicator
 import com.eyeson.android.ui.components.applyRoundedCornerPadding
 import com.eyeson.android.ui.components.findActivity
+import com.eyeson.android.ui.components.rememberWindowSizeClass
 import com.eyeson.android.ui.theme.DarkGray800
 import com.eyeson.android.ui.theme.EyesonDemoTheme
 import com.eyeson.android.ui.theme.OverlayMenuHorizontalShape
@@ -428,14 +427,15 @@ fun MeetingScreen(
     }
 
     val context = LocalContext.current
-    val configuration: Configuration = LocalConfiguration.current
+    val windowSizeClass = rememberWindowSizeClass()
+    val isWideLayout = windowSizeClass.minWidthDp > windowSizeClass.minHeightDp
 
     KeepScreenOn()
 
 
     val meetingContent =
         @Composable { meetingContentModifier: Modifier, modifierLocalView: Modifier ->
-            val fullSizeRemote = if (configuration.isLandscape()) {
+            val fullSizeRemote = if (isWideLayout) {
                 false
             } else {
                 sfu
@@ -463,7 +463,7 @@ fun MeetingScreen(
         }
 
     Box {
-        if (configuration.isLandscape()) {
+        if (isWideLayout) {
             Row(
                 modifier = modifier
                     .background(DarkGray800)
@@ -592,7 +592,7 @@ fun MeetingScreen(
         }
     }
 
-    val (vertical, horizontal, overlayMenuShape) = if (configuration.isLandscape()) {
+    val (vertical, horizontal, overlayMenuShape) = if (isWideLayout) {
         Triple(1f, 0.7f, OverlayMenuHorizontalShape)
     } else {
         Triple(0.7f, 1f, OverlayMenuVerticalShape)
@@ -751,7 +751,7 @@ fun MeetingScreen(
             }
         }
 
-        val chatShape = if (configuration.isLandscape()) {
+        val chatShape = if (isWideLayout) {
             RoundedCornerShape(topStart = 16.dp, bottomStart = 16.dp)
         } else {
             RoundedCornerShape(topStart = 16.dp, topEnd = 16.dp)
@@ -765,7 +765,7 @@ fun MeetingScreen(
             contentShape = chatShape,
             verticalContentRatio = vertical,
             horizontalContentRatio = horizontal,
-            inputTextModifier = if (!configuration.isLandscape()) {
+            inputTextModifier = if (!isWideLayout) {
                 Modifier
                     .background(MaterialTheme.colorScheme.surface)
                     .clickable(
@@ -1041,8 +1041,6 @@ fun rememberVideoRendererWithLifecycle(
     }
     return videoRenderer
 }
-
-fun Configuration.isLandscape() = orientation == Configuration.ORIENTATION_LANDSCAPE
 
 private fun generateScreenShareNotification(context: Context): Notification {
     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {

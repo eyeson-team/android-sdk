@@ -2,8 +2,9 @@ package com.eyeson.android.di
 
 import android.content.Context
 import android.os.Build
-import coil.ImageLoader
-import coil.util.DebugLogger
+import coil3.ImageLoader
+import coil3.network.okhttp.OkHttpNetworkFetcherFactory
+import coil3.util.DebugLogger
 import com.eyeson.sdk.BuildConfig
 import dagger.Module
 import dagger.Provides
@@ -98,7 +99,9 @@ object NetworkModule {
         @ApplicationContext application: Context,
         okHttpClient: OkHttpClient
     ): ImageLoader = ImageLoader.Builder(application)
-        .okHttpClient(okHttpClient)
+        .components {
+            add(OkHttpNetworkFetcherFactory(callFactory = { okHttpClient }))
+        }
         .apply {
             if (BuildConfig.DEBUG) {
                 logger(DebugLogger())

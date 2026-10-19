@@ -8,7 +8,6 @@ import android.content.pm.PackageManager
 import android.hardware.camera2.CameraManager
 import androidx.annotation.FloatRange
 import androidx.annotation.IntRange
-import androidx.core.content.ContextCompat
 import com.eyeson.sdk.callLogic.CallLogic
 import com.eyeson.sdk.events.AudioMutedBy
 import com.eyeson.sdk.events.BroadcastUpdated
@@ -1487,14 +1486,14 @@ public class EyesonMeeting(
     private fun checkForNeededPermissions(mediaOptions: MediaOptions): List<NeededPermissions> {
         return buildList {
             if (mediaOptions.sendAudio &&
-                ContextCompat.checkSelfPermission(application, Manifest.permission.RECORD_AUDIO)
+                application.checkSelfPermission(Manifest.permission.RECORD_AUDIO)
                 == PackageManager.PERMISSION_DENIED
             ) {
                 add(NeededPermissions.RECORD_AUDIO)
             }
 
             if (mediaOptions.sendVideo &&
-                ContextCompat.checkSelfPermission(application, Manifest.permission.CAMERA)
+                application.checkSelfPermission(Manifest.permission.CAMERA)
                 == PackageManager.PERMISSION_DENIED
             ) {
                 add(NeededPermissions.CAMERA)

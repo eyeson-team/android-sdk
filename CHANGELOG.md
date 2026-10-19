@@ -99,22 +99,51 @@ The format is based on [Keep a Changelog] and this project adheres to
 - JSON (de)serialization: Moshi -> kotlinx.serialization
 - Demo app
   - View sample: data binding -> view binding
+  - Predictive back disabled
+  - Meeting layout follows the window size class instead of the orientation
+  - `hiltViewModel` from `hilt-lifecycle-viewmodel-compose` instead of `hilt-navigation-compose`
 - Dependency updates
   - AndroidGradlePlugin `9.4.1`
-  - Gradle `9.7.1`
-  - Kotlin `2.4.10`
-  - KSP `2.3.11`
+  - Gradle `9.8.1`
+  - Kotlin `2.4.21`
+  - KSP `2.3.12`
   - Hilt `2.60.1`
-  - AndroidxActivityCompose `1.9.0`
-  - AndroidxComposeBom `2025.09.00`
+  - OkHttp `5.4.0`
+  - KotlinxCoroutines `1.11.0`
+  - AndroidxCore `1.19.1`
+  - AndroidxAnnotation `1.11.0`
+  - AndroidxActivityCompose `1.13.0`
+  - AndroidxComposeBom `2026.09.00`
+  - AndroidxLifecycle `2.11.0`
+  - AndroidxNavigation `2.9.8`
+  - AndroidxHilt `1.4.0`
+  - AndroidxFragment `1.9.1`
+  - AndroidxAppcompat `1.8.0`
+  - AndroidxConstraintLayout `2.2.2`
+  - AndroidxDatastore `1.2.1`
+  - Media3 `1.11.1`
+  - Material `1.14.0`
+  - Accompanist `0.37.3`
+  - CodeScanner `2.3.2`
   - Retrofit `3.0.0`
   - KotlinxSerializationJson `1.11.0`
+  - Coil `3.6.3`
+  - AndroidxWindow `1.5.1`
+  - AndroidxEspresso `3.7.0`
+  - AndroidxTestExt `1.3.0`
+- API level to 37
+  - SDK: compileSdk
+  - Demo apk: targetSdk and compileSdk
 - Consuming apps need
-  - Kotlin `2.3`+, as the SDK is built with Kotlin `2.4.10`
-  - `compileSdk` `35`+
+  - Kotlin `2.3`+, as the SDK is built with Kotlin `2.4.21`
+  - `compileSdk` `36`+, required by OkHttp `5.4.0`
+  - OkHttp `5`, resolved transitively in place of OkHttp `4`
 ### Removed
 - `EyesonEventListener`
 - `LocalBaseCommand` and `model.local.meeting.OptionsUpdate` from the public API
+- AndroidX Core dependency
+- Demo app
+  - Unused CameraX and Accompanist SystemUiController dependencies
 ### Fixed
 - Custom API URL ignored for every `EyesonMeeting` after the first
 - `join` stuck as a no-op after `onPermissionsNeeded` or `onMeetingJoinFailed`

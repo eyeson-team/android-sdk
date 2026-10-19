@@ -11,7 +11,6 @@ dependencyResolutionManagement {
     repositories {
         google()
         mavenCentral()
-        maven("https://kotlin.bintray.com/kotlinx/")
         maven("https://jitpack.io")
     }
 }
