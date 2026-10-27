@@ -56,6 +56,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalResources
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
@@ -102,6 +103,7 @@ fun MeetingRout(
     modifier: Modifier = Modifier,
 ) {
     val context = LocalContext.current
+    val resources = LocalResources.current
 
     val meetingState by viewModel.meetingState
     val presentationActive by viewModel.presentationActive.collectAsStateWithLifecycle()
@@ -155,7 +157,7 @@ fun MeetingRout(
         if (it.resultCode != AppCompatActivity.RESULT_OK || it.data == null) {
             Toast.makeText(
                 context,
-                context.getString(R.string.screen_sharing_permission_denied),
+                resources.getString(R.string.screen_sharing_permission_denied),
                 Toast.LENGTH_SHORT
             ).show()
         } else {
@@ -178,7 +180,7 @@ fun MeetingRout(
         if (it.resultCode != AppCompatActivity.RESULT_OK || it.data == null) {
             Toast.makeText(
                 context,
-                context.getString(R.string.screen_sharing_permission_denied),
+                resources.getString(R.string.screen_sharing_permission_denied),
                 Toast.LENGTH_SHORT
             ).show()
         } else {
@@ -206,7 +208,7 @@ fun MeetingRout(
             is MeetingState.ConnectionFailed -> {
                 Toast.makeText(
                     context,
-                    context.getString(R.string.connecting_to_meeting_failed),
+                    resources.getString(R.string.connecting_to_meeting_failed),
                     Toast.LENGTH_SHORT
                 ).show()
                 onOnBack()
@@ -236,7 +238,7 @@ fun MeetingRout(
                 }?.let {
                     Toast.makeText(
                         context,
-                        context.getString(it),
+                        resources.getString(it),
                         Toast.LENGTH_SHORT
                     ).show()
                     onOnBack()
@@ -253,8 +255,7 @@ fun MeetingRout(
     DisposableEffect(key1 = lifecycle) {
         val observer = LifecycleEventObserver { _, event ->
             when {
-                event.targetState == Lifecycle.State.CREATED -> {
-
+                event == Lifecycle.Event.ON_CREATE -> {
                     MeetingActiveService.start(context)
                 }
 
@@ -426,6 +427,7 @@ fun MeetingScreen(
     }
 
     val context = LocalContext.current
+    val resources = LocalResources.current
     val windowSizeClass = rememberWindowSizeClass()
     val isWideLayout = windowSizeClass.minWidthDp > windowSizeClass.minHeightDp
 
@@ -728,7 +730,7 @@ fun MeetingScreen(
                         muteAll()
                         Toast.makeText(
                             context,
-                            context.getString(R.string.you_muted_all_other_participants),
+                            resources.getString(R.string.you_muted_all_other_participants),
                             Toast.LENGTH_SHORT
                         ).show()
 
