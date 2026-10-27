@@ -30,13 +30,16 @@ import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.launch
+import kotlinx.serialization.json.Json
+import okhttp3.OkHttpClient
 import java.util.concurrent.atomic.AtomicBoolean
 
 internal class WebSocketCommunicator(
     @Volatile private var meeting: MeetingDto,
+    private val json: Json = NetworkModule.json,
+    private val okHttpClient: OkHttpClient = NetworkModule.okHttpClient,
 ) {
     private val communicatorScope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
-    private val json = NetworkModule.json
 
     private var meetingCommunicator: MeetingConnection? = null
     private val meetingReady = AtomicBoolean(false)
@@ -100,7 +103,7 @@ internal class WebSocketCommunicator(
 
     private suspend fun connectToMeetingWs(): MeetingConnection {
         return coroutineScope {
-            val meetingCommunicator = MeetingConnection(meeting)
+            val meetingCommunicator = MeetingConnection(meeting, json, okHttpClient)
             meetingCommunicator.connect()
 
             meetingCommunicator.events.collectIn(communicatorScope) {
@@ -112,7 +115,7 @@ internal class WebSocketCommunicator(
 
     private suspend fun connectToSignalingWs(): SignalingConnection {
         return coroutineScope {
-            val signaling = SignalingConnection(meeting)
+            val signaling = SignalingConnection(meeting, json, okHttpClient)
             signaling.connect()
 
             signaling.events.collectIn(communicatorScope) {

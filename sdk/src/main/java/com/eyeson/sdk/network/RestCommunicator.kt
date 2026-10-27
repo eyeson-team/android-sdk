@@ -13,8 +13,12 @@ import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.coroutineScope
 import retrofit2.Response
 
-internal class RestCommunicator(private val apiUrl: String) {
-    private val restClient by lazy { NetworkModule.restClient(apiUrl) }
+internal class RestCommunicator(
+    private val apiUrl: String,
+    restClientFactory: (apiUrl: String) -> EyesonRestClient = NetworkModule::restClient,
+) {
+    // Lazy, so that an apiUrl Retrofit rejects throws inside the requests below.
+    private val restClient by lazy { restClientFactory(apiUrl) }
 
     suspend fun getMeetingInfo(accessKey: String): MeetingDto = coroutineScope {
         val meetingInfo = restClient.getMeetingInfo(accessKey)

@@ -45,6 +45,7 @@ import kotlinx.coroutines.cancel
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.launch
+import kotlinx.serialization.json.Json
 import org.webrtc.Camera1Enumerator
 import org.webrtc.Camera2Enumerator
 import org.webrtc.CameraEnumerator
@@ -68,6 +69,7 @@ internal class CallLogic(
     screenShareOptions: ScreenShareOptions,
     private val videoCodecHardwareAcceleration: Boolean,
     private val mediaOptions: MediaOptions,
+    private val json: Json = NetworkModule.json,
 ) {
     private val callLogicScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
 
@@ -77,8 +79,6 @@ internal class CallLogic(
 
     private val sfuMode = AtomicBoolean(false)
     private val cameraIsFrontFacing = AtomicBoolean(true)
-
-    private val json = NetworkModule.json
 
     private val connectionStatisticsRepository = ConnectionStatisticsRepository()
     private var screenCapturerService: ScreenCapturerService? = null

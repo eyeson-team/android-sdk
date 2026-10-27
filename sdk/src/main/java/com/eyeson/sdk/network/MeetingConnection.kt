@@ -18,6 +18,7 @@ import kotlinx.coroutines.cancel
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.launch
+import kotlinx.serialization.json.Json
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.Response
@@ -26,10 +27,12 @@ import okhttp3.WebSocketListener
 import okio.ByteString
 import java.util.concurrent.TimeUnit
 
-internal class MeetingConnection(private val meeting: MeetingDto) {
+internal class MeetingConnection(
+    private val meeting: MeetingDto,
+    private val json: Json = NetworkModule.json,
+    private val okHttpClient: OkHttpClient = NetworkModule.okHttpClient,
+) {
     private val meetingScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
-    private val json = NetworkModule.json
-    private val okHttpClient = NetworkModule.okHttpClient
 
     private var webSocketListener: WebSocketListener = object : WebSocketListener() {
         override fun onOpen(webSocket: WebSocket, response: Response) {
