@@ -102,6 +102,8 @@ The format is based on [Keep a Changelog] and this project adheres to
   - Predictive back disabled
   - Meeting layout follows the window size class instead of the orientation
   - `hiltViewModel` from `hilt-lifecycle-viewmodel-compose` instead of `hilt-navigation-compose`
+  - Navigation Compose -> Navigation 3, with typed keys for the meeting's join modes
+  - minSdk 24, required by Navigation 3
 - Dependency updates
   - AndroidGradlePlugin `9.4.1`
   - Gradle `9.8.1`
@@ -115,7 +117,7 @@ The format is based on [Keep a Changelog] and this project adheres to
   - AndroidxActivityCompose `1.13.0`
   - AndroidxComposeBom `2026.09.00`
   - AndroidxLifecycle `2.11.0`
-  - AndroidxNavigation `2.9.8`
+  - AndroidxNavigation3 `1.2.0`
   - AndroidxHilt `1.4.0`
   - AndroidxFragment `1.9.1`
   - AndroidxAppcompat `1.8.0`

@@ -72,9 +72,10 @@ import com.google.accompanist.permissions.MultiplePermissionsState
 import com.google.accompanist.permissions.PermissionState
 import com.google.accompanist.permissions.PermissionStatus
 import com.google.accompanist.permissions.rememberMultiplePermissionsState
+import androidx.core.net.toUri
 
 
-const val PERMALINK_URL = "https://docs.eyeson.com/docs/rest/features/permalink/"
+const val PERMALINK_URL = "https://docs.eyeson.com/docs/rest/references/permalink"
 
 @OptIn(ExperimentalPermissionsApi::class)
 @Composable
@@ -329,6 +330,7 @@ private fun DefaultConnect(
             onValueChange = onAccessKeyChange,
             label = stringResource(id = R.string.label_access_key).uppercase(),
             value = screenState.accessKey,
+            clearable = true,
             modifier = Modifier
                 .padding(top = 16.dp)
         )
@@ -342,6 +344,7 @@ private fun DefaultConnect(
             onValueChange = onGuestNameChange,
             label = stringResource(id = R.string.label_guest_name).uppercase(),
             value = screenState.guestName,
+            clearable = true,
             modifier = Modifier
                 .padding(top = 16.dp)
         )
@@ -350,6 +353,7 @@ private fun DefaultConnect(
             onValueChange = onGuestTokenChange,
             label = stringResource(id = R.string.label_guest_token).uppercase(),
             value = screenState.guestToken,
+            clearable = true,
             modifier = Modifier
                 .padding(top = 8.dp)
         )
@@ -410,6 +414,7 @@ private fun PermalinkConnect(
             onValueChange = onUserTokenPermalinkChange,
             label = stringResource(id = R.string.label_user_token).uppercase(),
             value = screenState.userTokenPermalink,
+            clearable = true,
             modifier = Modifier
                 .padding(top = 16.dp)
         )
@@ -422,6 +427,7 @@ private fun PermalinkConnect(
             onValueChange = onGuestNamePermalinkChange,
             label = stringResource(id = R.string.label_guest_name).uppercase(),
             value = screenState.guestNamePermalink,
+            clearable = true,
             modifier = Modifier
                 .padding(top = 16.dp)
         )
@@ -430,6 +436,7 @@ private fun PermalinkConnect(
             onValueChange = onGuestTokenPermalinkChange,
             label = stringResource(id = R.string.label_guest_token).uppercase(),
             value = screenState.guestTokenPermalink,
+            clearable = true,
             modifier = Modifier
                 .padding(top = 8.dp)
         )
@@ -455,7 +462,7 @@ private fun PermissionsDialog(modifier: Modifier = Modifier) {
             Button(
                 onClick = {
                     Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS).apply {
-                        data = Uri.parse("package:" + context.packageName)
+                        data = ("package:" + context.packageName).toUri()
                         context.startActivity(this)
                     }
                 },

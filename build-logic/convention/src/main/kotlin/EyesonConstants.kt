@@ -6,4 +6,6 @@ object EyesonConstants {
     const val COMPILE_SDK = 37
     const val TARGET_SDK = 37
     const val MIN_SDK = 23
+
+    const val DEMO_APP_MIN_SDK = 24
 }

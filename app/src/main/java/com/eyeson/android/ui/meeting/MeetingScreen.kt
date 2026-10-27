@@ -67,7 +67,6 @@ import androidx.core.app.NotificationCompat
 import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.WindowInsetsControllerCompat
-import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.LocalLifecycleOwner
@@ -98,9 +97,9 @@ import kotlin.math.roundToInt
 
 @Composable
 fun MeetingRout(
+    viewModel: MeetingViewModel,
     onBack: () -> Unit,
     modifier: Modifier = Modifier,
-    viewModel: MeetingViewModel = hiltViewModel(),
 ) {
     val context = LocalContext.current
 

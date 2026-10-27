@@ -2,6 +2,7 @@ plugins {
     alias(libs.plugins.eyeson.application)
     alias(libs.plugins.hilt)
     alias(libs.plugins.compose)
+    alias(libs.plugins.kotlin.serialization)
     alias(libs.plugins.ksp)
 }
 
@@ -11,6 +12,7 @@ android {
         applicationId = "com.eyeson.android"
         versionCode = EyesonConstants.DEMO_APP_VERSION
         versionName = EyesonConstants.VERSION
+        minSdk = EyesonConstants.DEMO_APP_MIN_SDK
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
@@ -67,6 +69,7 @@ dependencies {
     implementation(libs.androidx.constraintLayout)
     implementation(libs.androidx.lifecycle.viewmodel)
     implementation(libs.androidx.lifecycle.viewmodel.compose)
+    implementation(libs.androidx.lifecycle.viewmodel.navigation3)
     implementation(libs.androidx.lifecycle.runtime.compose)
     implementation(libs.androidx.lifecycle.runtime.ktx)
     implementation(libs.androidx.fragment)
@@ -79,7 +82,8 @@ dependencies {
     implementation(libs.androidx.compose.ui.tooling.preview)
     debugImplementation(libs.androidx.compose.ui.tooling)
     implementation(libs.androidx.activity.compose)
-    implementation(libs.androidx.navigation.compose)
+    implementation(libs.androidx.navigation3.runtime)
+    implementation(libs.androidx.navigation3.ui)
     implementation(libs.accompanist.permissions)
     implementation(libs.androidx.annotation)
     implementation(libs.androidx.datastore.preferences)

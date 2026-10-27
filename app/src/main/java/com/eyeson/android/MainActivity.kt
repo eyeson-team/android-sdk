@@ -22,7 +22,7 @@ class MainActivity : AppCompatActivity() {
         if (compose) {
             setContent {
                 EyesonDemoTheme {
-                    EyesonDemoNavHost()
+                    EyesonDemoNavDisplay()
                 }
             }
         } else {

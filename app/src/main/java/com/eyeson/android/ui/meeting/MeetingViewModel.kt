@@ -11,7 +11,6 @@ import android.media.AudioManager
 import androidx.annotation.OptIn
 import androidx.appcompat.app.AppCompatActivity.CAMERA_SERVICE
 import androidx.compose.runtime.mutableStateOf
-import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import androidx.media3.common.C
@@ -23,12 +22,7 @@ import androidx.media3.common.Player.STATE_IDLE
 import androidx.media3.common.Player.STATE_READY
 import androidx.media3.common.util.UnstableApi
 import androidx.media3.exoplayer.ExoPlayer
-import com.eyeson.android.EyesonNavigationParameter.ACCESS_KEY
-import com.eyeson.android.EyesonNavigationParameter.GUEST_NAME
-import com.eyeson.android.EyesonNavigationParameter.GUEST_NAME_PERMALINK
-import com.eyeson.android.EyesonNavigationParameter.GUEST_TOKEN
-import com.eyeson.android.EyesonNavigationParameter.GUEST_TOKEN_PERMALINK
-import com.eyeson.android.EyesonNavigationParameter.USER_TOKEN
+import com.eyeson.android.EyesonDemoDestination.Meeting.JoinMode
 import com.eyeson.android.R
 import com.eyeson.android.data.SettingsRepository
 import com.eyeson.android.ui.meeting.ChatMessage.IncomingMessage
@@ -82,6 +76,9 @@ import com.eyeson.sdk.options.ScreenShareMaxResolution
 import com.eyeson.sdk.options.ScreenShareOptions
 import com.eyeson.sdk.options.VideoOptions
 import com.eyeson.sdk.options.VideoResolution
+import dagger.assisted.Assisted
+import dagger.assisted.AssistedFactory
+import dagger.assisted.AssistedInject
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
@@ -97,16 +94,20 @@ import org.webrtc.VideoSink
 import timber.log.Timber
 import java.util.Date
 import java.util.UUID
-import javax.inject.Inject
 import kotlin.time.Duration.Companion.milliseconds
 
 @OptIn(UnstableApi::class)
-@HiltViewModel
-class MeetingViewModel @Inject constructor(
-    private val savedStateHandle: SavedStateHandle,
+@HiltViewModel(assistedFactory = MeetingViewModel.Factory::class)
+class MeetingViewModel @AssistedInject constructor(
+    @Assisted private val joinMode: JoinMode,
     private val application: Application,
     private val settingsRepository: SettingsRepository,
 ) : ViewModel() {
+
+    @AssistedFactory
+    interface Factory {
+        fun create(joinMode: JoinMode): MeetingViewModel
+    }
 
     var meetingState = mutableStateOf<MeetingState>(MeetingState.Initial)
         private set
@@ -651,10 +652,10 @@ class MeetingViewModel @Inject constructor(
             receiveVideo = !meetingSettings.audioOnly
         )
 
-        val joinResult = when {
-            savedStateHandle.get<String>(ACCESS_KEY) != null -> {
+        val joinResult = when (joinMode) {
+            is JoinMode.AccessKey -> {
                 eyesonMeeting.join(
-                    accessKey = checkNotNull(savedStateHandle.get<String>(ACCESS_KEY)),
+                    accessKey = joinMode.accessKey,
                     frontCamera = !meetingSettings.rearCamOnStart,
                     local = local,
                     remote = remote,
@@ -665,10 +666,10 @@ class MeetingViewModel @Inject constructor(
                 )
             }
 
-            savedStateHandle.get<String>(GUEST_TOKEN) != null -> {
+            is JoinMode.Guest -> {
                 eyesonMeeting.joinAsGuest(
-                    guestToken = checkNotNull(savedStateHandle.get<String>(GUEST_TOKEN)),
-                    name = checkNotNull(savedStateHandle.get<String>(GUEST_NAME)),
+                    guestToken = joinMode.guestToken,
+                    name = joinMode.guestName,
                     id = null,
                     avatar = null,
                     frontCamera = !meetingSettings.rearCamOnStart,
@@ -681,9 +682,9 @@ class MeetingViewModel @Inject constructor(
                 )
             }
 
-            savedStateHandle.get<String>(USER_TOKEN) != null -> {
+            is JoinMode.UserTokenPermalink -> {
                 eyesonMeeting.connectPermalink(
-                    userToken = checkNotNull(savedStateHandle.get<String>(USER_TOKEN)),
+                    userToken = joinMode.userToken,
                     frontCamera = !meetingSettings.rearCamOnStart,
                     local = local,
                     remote = remote,
@@ -694,14 +695,12 @@ class MeetingViewModel @Inject constructor(
                 )
             }
 
-            savedStateHandle.get<String>(GUEST_TOKEN_PERMALINK) != null -> {
+            is JoinMode.GuestPermalink -> {
                 viewModelScope.launch {
 
                     var permalinkMeetingInfo: PermalinkMeetingInfo?
                     while (true) {
-                        permalinkMeetingInfo = eyesonMeeting.getPermalinkMeetingInfo(
-                            checkNotNull(savedStateHandle.get<String>(GUEST_TOKEN_PERMALINK))
-                        )
+                        permalinkMeetingInfo = eyesonMeeting.getPermalinkMeetingInfo(joinMode.guestToken)
                         when {
                             permalinkMeetingInfo == null -> {
                                 meetingState.value =
@@ -719,8 +718,8 @@ class MeetingViewModel @Inject constructor(
 
                     if (reportJoinNotStarted(
                             eyesonMeeting.joinAsGuest(
-                                guestToken = checkNotNull(savedStateHandle.get<String>(GUEST_TOKEN_PERMALINK)),
-                                name = checkNotNull(savedStateHandle.get<String>(GUEST_NAME_PERMALINK)),
+                                guestToken = joinMode.guestToken,
+                                name = joinMode.guestName,
                                 id = null,
                                 avatar = null,
                                 frontCamera = !meetingSettings.rearCamOnStart,
@@ -741,10 +740,6 @@ class MeetingViewModel @Inject constructor(
                 // Placeholder, not a real result: the join above only happens once the permalink
                 // meeting has started, and reports itself from inside the coroutine.
                 EyesonMeeting.JoinResult.Joining
-            }
-
-            else -> {
-                return
             }
         }
 

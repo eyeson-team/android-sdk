@@ -315,6 +315,7 @@ fun VideoPlayback(
                     onValueChange = { onVideoUrlChange(it) },
                     label = stringResource(id = R.string.video_url_hint).uppercase(),
                     value = videoUrl,
+                    clearable = true,
                     modifier = Modifier
                         .padding(top = 16.dp, end = 16.dp)
                 )

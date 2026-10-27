@@ -1,29 +1,14 @@
 package com.eyeson.android.ui.start
 
-import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
-import androidx.lifecycle.viewModelScope
-import com.eyeson.android.EyesonNavigationParameter
-import dagger.assisted.Assisted
-import dagger.assisted.AssistedFactory
-import dagger.assisted.AssistedInject
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.launch
-import timber.log.Timber
 import javax.inject.Inject
 
-@HiltViewModel(assistedFactory = StartViewModel.Factory::class)
-class StartViewModel @AssistedInject constructor(
-    @Assisted savedStateHandle: SavedStateHandle?,
-) : ViewModel() {
-
-    @AssistedFactory
-    interface Factory {
-        fun create(savedStateHandle: SavedStateHandle?): StartViewModel
-    }
+@HiltViewModel
+class StartViewModel @Inject constructor() : ViewModel() {
 
     private val _uiState = MutableStateFlow(
         StartScreenState(
@@ -36,19 +21,6 @@ class StartViewModel @AssistedInject constructor(
         )
     )
     val uiState: StateFlow<StartScreenState> = _uiState.asStateFlow()
-
-    init {
-        viewModelScope.launch {
-            savedStateHandle?.getStateFlow(
-                key = EyesonNavigationParameter.GUEST_TOKEN,
-                initialValue = ""
-            )?.collect {
-                if (it.isNotBlank()) {
-                    _uiState.value = _uiState.value.copy(guestToken = it)
-                }
-            }
-        }
-    }
 
     fun setAccessKey(accessKey: String) {
         _uiState.value = _uiState.value.copy(accessKey = accessKey)

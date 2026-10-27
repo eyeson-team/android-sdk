@@ -8,6 +8,10 @@ import androidx.compose.foundation.relocation.BringIntoViewRequester
 import androidx.compose.foundation.relocation.bringIntoViewRequester
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Close
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextField
@@ -23,21 +27,23 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.onFocusEvent
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.eyeson.android.R
 import com.eyeson.android.ui.theme.EyesonDemoTheme
 import kotlinx.coroutines.launch
 
-@OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun EyesonDemoTextField(
     onValueChange: (String) -> Unit,
     modifier: Modifier = Modifier,
     label: String = "",
     value: String = "",
+    clearable: Boolean = false,
 ) {
     val bringIntoViewRequester = remember { BringIntoViewRequester() }
     val coroutineScope = rememberCoroutineScope()
@@ -52,6 +58,18 @@ fun EyesonDemoTextField(
                 style = MaterialTheme.typography.labelSmall,
                 color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.69f)
             )
+        },
+        trailingIcon = if (clearable && value.isNotEmpty()) {
+            {
+                IconButton(onClick = { onValueChange("") }) {
+                    Icon(
+                        imageVector = Icons.Filled.Close,
+                        contentDescription = stringResource(id = R.string.clear)
+                    )
+                }
+            }
+        } else {
+            null
         },
         textStyle = MaterialTheme.typography.bodyLarge.copy(fontSize = 16.sp),
         maxLines = 1,
@@ -95,7 +113,8 @@ fun EyesonDemoTextFieldPreview() {
                     .padding(24.dp),
                 onValueChange = { email = it },
                 label = "Email",
-                value = email
+                value = email,
+                clearable = true
             )
         }
     }
