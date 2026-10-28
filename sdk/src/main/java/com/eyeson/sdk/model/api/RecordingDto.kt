@@ -7,10 +7,12 @@ import com.eyeson.sdk.serializer.DateSerializer
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import java.util.*
+import java.util.concurrent.TimeUnit
 
 @Serializable
 internal data class RecordingDto(
     @SerialName("id") val id: String,
+    /** Epoch seconds, unlike the ISO 8601 strings the API uses elsewhere. */
     @SerialName("created_at") val createdAt: Long,
     @SerialName("duration") val duration: Int?,
     @SerialName("links") val links: Links,
@@ -37,7 +39,7 @@ internal data class RecordingDto(
             id = id,
             duration = duration,
             downloadLink = links.download,
-            createdAt = Date(createdAt),
+            createdAt = Date(TimeUnit.SECONDS.toMillis(createdAt)),
             user = UserInfo(
                 id = user.id,
                 name = user.name,

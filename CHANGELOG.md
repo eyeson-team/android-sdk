@@ -156,6 +156,7 @@ The format is based on [Keep a Changelog] and this project adheres to
 - `isFrontCamera` wrong after joining with the back camera, so `stopScreenShare` returned to the
   wrong camera
 - Opus `maxaveragebitrate` duplicated, or written to a second `a=fmtp` line
+- `Recording.createdAt` in January 1970, because the API's epoch seconds were read as milliseconds
 ## [Released]
 ## [1.2.0] - 2025-03-24
 ### Added

@@ -7,6 +7,7 @@ import com.eyeson.sdk.model.meeting.base.MeetingBaseMessageDto
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import java.util.*
+import java.util.concurrent.TimeUnit
 
 @Serializable
 internal data class RecordingUpdateDto(
@@ -18,7 +19,7 @@ internal data class RecordingUpdateDto(
             id = recording.id,
             duration = recording.duration,
             downloadLink = recording.links.download,
-            createdAt = Date(recording.createdAt),
+            createdAt = Date(TimeUnit.SECONDS.toMillis(recording.createdAt)),
             user = UserInfo(
                 id = recording.user.id,
                 name = recording.user.name,
