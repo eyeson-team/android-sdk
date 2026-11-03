@@ -101,10 +101,12 @@ Nothing checks binary compatibility, so review each public change by hand. Commo
   demo's `MeetingViewModel.handleEvent` (which has no `else` on purpose).
 - **New incoming message type**: enum entry, `@Serializable` DTO, a branch in the matching
   `serializer/*Serializer.kt`, and `toLocal()`. Without the branch it deserialises to `Unknown*Dto`
-  and is dropped.
+  and is dropped. For the meeting and signalling sockets also add a fixture of a real message to
+  `sdk/src/test/resources/meeting|signaling/<type>.json` and a mapping test to
+  `MeetingMessagesTest`/`SignalingMessagesTest`; their coverage test fails without the fixture.
 - **JSON**: `NetworkModule.json` serves REST and WebSockets; its flags reproduce what Moshi did.
-  `JsonWireFormatTest` pins the wire format, so run `./gradlew :sdk:testProductionDebugUnitTest`
-  after touching DTOs or `serializer/`.
+  `JsonWireFormatTest` and the `*MessagesTest`s pin the wire format, so run
+  `./gradlew :sdk:testProductionDebugUnitTest` after touching DTOs or `serializer/`.
 - **Events**: emit via `emitEyesonEvent()`; terminal events go only through `leaveAndEmit()`. Never
   touch `_events` directly. Code after the cancel in `leave()` must not suspend.
 - **EGL**: `EyesonEglBase` is process-wide and never released. `SdkOptions.eglBase` throws if the SDK
