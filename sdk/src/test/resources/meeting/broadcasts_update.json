@@ -1,0 +1,25 @@
+{
+  "type": "broadcasts_update",
+  "broadcasts": [
+    {
+      "id": "generic",
+      "platform": "generic",
+      "player_url": "",
+      "user": {
+        "id": "user-1",
+        "name": "John Doe",
+        "avatar": null,
+        "guest": false,
+        "joined_at": "2023-12-11T09:48:34.433Z"
+      },
+      "room": {
+        "id": "room-1",
+        "name": "Test Room",
+        "ready": true,
+        "started_at": "2023-12-11T09:48:32.031Z",
+        "shutdown": false,
+        "guest_token": "test-guest-token"
+      }
+    }
+  ]
+}

@@ -1,0 +1,10 @@
+{
+  "type": "stfu",
+  "user": {
+    "id": "user-2",
+    "name": "Jane Doe",
+    "avatar": "https://media.example.test/avatars/user-2?ts=1793710516",
+    "guest": false,
+    "joined_at": "2026-11-03T12:55:49.298Z"
+  }
+}

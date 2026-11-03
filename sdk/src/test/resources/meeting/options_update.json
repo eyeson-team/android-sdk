@@ -1,0 +1,24 @@
+{
+  "type": "options_update",
+  "options": {
+    "show_names": true,
+    "show_label": true,
+    "exit_url": null,
+    "recording_available": true,
+    "broadcast_available": true,
+    "layout_available": true,
+    "layout": "auto",
+    "reaction_available": true,
+    "suggest_guest_names": true,
+    "lock_available": true,
+    "kick_available": true,
+    "sfu_mode": "ptp",
+    "layout_users": ["", "", "", "", "", "", "", "", ""],
+    "layout_name": "nine",
+    "layout_map": null,
+    "voice_activation": false,
+    "custom_fields": {},
+    "widescreen": true,
+    "background_color": "#121212"
+  }
+}

@@ -1,0 +1,20 @@
+{
+  "type": "source_update",
+  "msg_id": "msg-8",
+  "from": "conf-1",
+  "to": "client-1",
+  "data": {
+    "call_id": "call-1",
+    "asrc": [0, 1, 2],
+    "vsrc": [1],
+    "bcast": true,
+    "dims": [
+      { "w": 1280, "h": 720, "x": 0, "y": 0 }
+    ],
+    "l": 0,
+    "src": ["signaling-2", "signaling-3", "client-1"],
+    "tovl": true,
+    "psrc": 1,
+    "dsrc": 1
+  }
+}

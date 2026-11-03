@@ -4,6 +4,9 @@ import android.os.Build
 import com.eyeson.sdk.BuildConfig
 import com.eyeson.sdk.exceptions.internal.FaultyInfoException
 import com.eyeson.sdk.utils.TestLogger
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.cancelAndJoin
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.runTest
 import mockwebserver3.Dispatcher
 import mockwebserver3.MockResponse
@@ -271,6 +274,38 @@ class RestCommunicatorTest {
 
         assertNull(communicator.sendChatMessage("test-access-key", "hello"))
         assertTrue(TestLogger.messages.any { it.startsWith("Chat message failed") })
+    }
+
+    @Test
+    fun cancellationIsNotTurnedIntoNull() = runTest {
+        server.enqueue(MockResponse.Builder().code(201).headersDelay(2, TimeUnit.SECONDS).build())
+        var completed = false
+
+        val request = launch(Dispatchers.Default) {
+            communicator.sendChatMessage("test-access-key", "hello")
+            completed = true
+        }
+        takeRequest()
+        request.cancelAndJoin()
+
+        assertFalse(completed)
+        assertFalse(TestLogger.messages.any { it.startsWith("Chat message failed") })
+    }
+
+    @Test
+    fun successfulResponseThatIsNotJsonIsAGenericError() = runTest {
+        // Like the sign-in page of a captive portal.
+        val portalPage = MockResponse(
+            code = 200,
+            headers = headersOf("Content-Type", "text/html"),
+            body = "<html><body>Sign in to the Wi-Fi</body></html>"
+        )
+        server.enqueue(portalPage)
+        server.enqueue(portalPage)
+
+        val error = assertFails { communicator.getMeetingInfo("test-access-key") }
+        assertFalse(error is FaultyInfoException)
+        assertNull(communicator.getUserInfo("test-access-key", "signaling-2"))
     }
 
     @Test

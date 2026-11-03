@@ -1,0 +1,23 @@
+{
+  "type": "source_update",
+  "msg_id": "msg-9",
+  "from": "conf-1",
+  "to": "client-1",
+  "data": {
+    "call_id": "call-1",
+    "asrc": [0, 1, 2, 3],
+    "vsrc": [1, 2, 3],
+    "bcast": true,
+    "dims": [
+      { "w": 640, "h": 360, "x": 0, "y": 0 },
+      { "w": 640, "h": 360, "x": 640, "y": 0 },
+      { "w": 640, "h": 360, "x": 0, "y": 360 },
+      { "w": 640, "h": 360, "x": 640, "y": 360 }
+    ],
+    "l": 1,
+    "src": ["signaling-2", "signaling-3", "client-1", "media-playback-1"],
+    "tovl": true,
+    "psrc": -1,
+    "dsrc": -1
+  }
+}

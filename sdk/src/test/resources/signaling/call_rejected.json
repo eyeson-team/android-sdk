@@ -1,0 +1,9 @@
+{
+  "type": "call_rejected",
+  "msg_id": "msg-2",
+  "from": "conf-1",
+  "to": "client-1",
+  "data": {
+    "reject_code": 403
+  }
+}

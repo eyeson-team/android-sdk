@@ -1,0 +1,13 @@
+{
+  "type": "playback_update",
+  "playing": [
+    {
+      "play_id": "demo-video",
+      "url": "https://media.example.test/videos/demo-video.webm",
+      "name": null,
+      "audio": true,
+      "loop_count": 0,
+      "replacement_id": null
+    }
+  ]
+}

@@ -8,6 +8,7 @@ import okhttp3.Response
 import okhttp3.WebSocket
 import okhttp3.WebSocketListener
 import okhttp3.internal.ws.RealWebSocket
+import okio.ByteString
 import java.io.IOException
 import java.util.concurrent.CompletableFuture
 import java.util.concurrent.LinkedBlockingQueue
@@ -21,8 +22,31 @@ internal const val SUBSCRIBE_USER_CHANNEL =
 
 private const val TIMEOUT_SECONDS = 5L
 
-internal fun fixture(name: String): String =
-    checkNotNull(object {}.javaClass.getResource("/rest/$name")) { "Missing fixture $name" }.readText()
+internal fun fixture(name: String, dir: String = "rest"): String =
+    checkNotNull(object {}.javaClass.getResource("/$dir/$name")) { "Missing fixture $dir/$name" }
+        .readText()
+
+/** [message] in the ActionCable envelope the meeting socket wraps every RoomChannel message in. */
+internal fun envelope(message: String): String =
+    """{"identifier":"{\"channel\":\"RoomChannel\"}","message":$message}"""
+
+/**
+ * Replaces [old] with [new]. Fails if [old] is missing, so that a variant of a fixture can't
+ * silently stop differing from it.
+ */
+internal fun String.replacing(old: String, new: String): String {
+    check(old in this) { "'$old' not found" }
+    return replace(old, new)
+}
+
+/** Polls until [condition] holds, for state that can only be observed from the outside. */
+internal fun awaitCondition(description: String, condition: () -> Boolean) {
+    val deadline = System.nanoTime() + TimeUnit.SECONDS.toNanos(TIMEOUT_SECONDS)
+    while (!condition()) {
+        if (System.nanoTime() > deadline) fail("Timed out waiting until $description")
+        Thread.sleep(10)
+    }
+}
 
 /**
  * The meeting of `meeting.json`, with its meeting socket on [server] at `/rt` and its signaling
@@ -60,6 +84,10 @@ internal class ServerSocket : WebSocketListener() {
         check(awaitOpen().send(text))
     }
 
+    fun sendBinary(bytes: ByteString) {
+        check(awaitOpen().send(bytes))
+    }
+
     /**
      * Ends the connection without a close frame, like a network failure. `cancel()` only works on
      * the client side, so this fails the server's socket instead.
@@ -70,6 +98,9 @@ internal class ServerSocket : WebSocketListener() {
 
     fun takeMessage(): String =
         messages.poll(TIMEOUT_SECONDS, TimeUnit.SECONDS) ?: fail("The client sent no message")
+
+    /** Whether the client sent a message that hasn't been taken yet. */
+    fun hasMessages(): Boolean = messages.isNotEmpty()
 
     fun takeClosing(): Pair<Int, String> =
         closings.poll(TIMEOUT_SECONDS, TimeUnit.SECONDS) ?: fail("The client did not close")

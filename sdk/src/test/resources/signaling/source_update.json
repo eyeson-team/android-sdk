@@ -1,0 +1,21 @@
+{
+  "type": "source_update",
+  "msg_id": "msg-7",
+  "from": "conf-1",
+  "to": "client-1",
+  "data": {
+    "call_id": "call-1",
+    "asrc": [0, 1, 2],
+    "vsrc": [2, 1],
+    "bcast": true,
+    "dims": [
+      { "w": 640, "h": 720, "x": 0, "y": 0 },
+      { "w": 640, "h": 720, "x": 640, "y": 0 }
+    ],
+    "l": 4,
+    "src": ["signaling-2", "signaling-3", "client-1"],
+    "tovl": true,
+    "psrc": -1,
+    "dsrc": -1
+  }
+}

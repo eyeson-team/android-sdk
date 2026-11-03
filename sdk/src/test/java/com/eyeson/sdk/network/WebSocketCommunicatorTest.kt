@@ -7,8 +7,10 @@ import com.eyeson.sdk.model.api.MeetingDto
 import com.eyeson.sdk.model.local.base.LocalBaseCommand
 import com.eyeson.sdk.model.local.call.ResumeCallLocal
 import com.eyeson.sdk.model.local.call.StartCallLocal
+import com.eyeson.sdk.model.local.meeting.MeetingLockedLocal
 import com.eyeson.sdk.model.local.meeting.MuteLocalAudioLocal
 import com.eyeson.sdk.model.local.sepp.CallAccepted
+import com.eyeson.sdk.model.local.sepp.CallResume
 import com.eyeson.sdk.model.local.sepp.CallStart
 import com.eyeson.sdk.model.local.ws.ReconnectSignaling
 import com.eyeson.sdk.model.local.ws.WsFailure
@@ -28,13 +30,14 @@ import kotlin.test.AfterTest
 import kotlin.test.BeforeTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertFalse
 import kotlin.test.assertIs
 import kotlin.test.fail
 
 /**
  * Pins how [WebSocketCommunicator] drives the meeting and signaling sockets: signaling connects
- * once the room is ready, each socket reconnects once after a failure, and calls are started,
- * resumed and terminated over signaling.
+ * once, when the room is first ready, each socket reconnects once per successful open after a
+ * failure, and calls are started, resumed and terminated over signaling.
  */
 class WebSocketCommunicatorTest {
 
@@ -214,6 +217,100 @@ class WebSocketCommunicatorTest {
     }
 
     @Test
+    fun roomReadyAfterMeetingReconnectKeepsSignaling() = runTest {
+        communicator.events.test {
+            val (meetingSocket, signalingSocket) = startCall()
+
+            val reconnectedSocket = enqueueSocket(meetingResponses)
+            meetingSocket.drop()
+            assertEquals(WsOpen, awaitItem())
+
+            reconnectedSocket.send(roomReady(readyMeeting))
+            reconnectedSocket.send(lock(true))
+            // Handled in order, so room_ready has been handled too.
+            assertEquals(MeetingLockedLocal(locked = true), awaitItem())
+            // Lets a second signaling connection, were one opened, reach the server.
+            Thread.sleep(300)
+
+            signalingSocket.send(callAccepted("c1"))
+            assertEquals(CallAccepted("c1", "v=0"), awaitItem())
+            expectNoEvents()
+        }
+
+        assertEquals(
+            listOf("/rt", "/call", "/rt"),
+            List(server.requestCount) { takeRequest().url.encodedPath }
+        )
+    }
+
+    @Test
+    fun signalingDropAfterAResumeAsksForReconnectAgain() = runTest {
+        communicator.events.test {
+            val (_, signalingSocket) = startCall()
+            signalingSocket.send(callAccepted("c1"))
+            assertEquals(CallAccepted("c1", "v=0"), awaitItem())
+
+            signalingSocket.drop()
+            assertEquals(ReconnectSignaling, awaitItem())
+            val resumedSocket = enqueueSocket(signalingResponses)
+            communicator.reconnectToSignaling(readyMeeting)
+            assertEquals(ResumeCallLocal(readyMeeting, "c1"), awaitItem())
+
+            resumedSocket.drop()
+            assertEquals(ReconnectSignaling, awaitItem())
+            expectNoEvents()
+        }
+    }
+
+    @Test
+    fun resumeCallSendsCallResumeWithTheNewMeeting() = runTest {
+        communicator.events.test {
+            val (_, signalingSocket) = startCall()
+            signalingSocket.send(callAccepted("c1"))
+            assertEquals(CallAccepted("c1", "v=0"), awaitItem())
+            signalingSocket.drop()
+            assertEquals(ReconnectSignaling, awaitItem())
+
+            val newMeeting = testMeeting(server, authToken = "new-token").let {
+                it.copy(
+                    signaling = it.signaling.copy(
+                        options = it.signaling.options.copy(clientId = "client-2")
+                    )
+                )
+            }
+            val resumedSocket = enqueueSocket(signalingResponses)
+            communicator.reconnectToSignaling(newMeeting)
+            assertEquals(ResumeCallLocal(newMeeting, "c1"), awaitItem())
+
+            communicator.resumeCall(CallResume("c1", "v=1"))
+
+            val callResume = resumedSocket.takeJson()
+            assertEquals("call_resume", callResume.string("type"))
+            assertEquals("client-2", callResume.string("from"))
+            assertEquals("conf-1", callResume.string("to"))
+            val data = callResume.getValue("data").jsonObject
+            assertEquals("c1", data.string("call_id"))
+            assertEquals("offer", data.getValue("sdp").jsonObject.string("type"))
+            assertEquals("v=1", data.getValue("sdp").jsonObject.string("sdp"))
+        }
+    }
+
+    @Test
+    fun terminateCallBeforeCallAcceptedOnlyClosesBothSockets() = runTest {
+        communicator.events.test {
+            val (meetingSocket, signalingSocket) = startCall()
+
+            communicator.terminateCall()
+
+            assertEquals(1001 to "BYE", signalingSocket.takeClosing())
+            assertEquals(1001 to "BYE", meetingSocket.takeClosing())
+            // A call_terminate would have arrived before the close.
+            assertFalse(signalingSocket.hasMessages())
+            expectNoEvents()
+        }
+    }
+
+    @Test
     fun terminateCallSendsCallTerminateAndClosesBothSockets() = runTest {
         communicator.events.test {
             val (meetingSocket, signalingSocket) = startCall()
@@ -262,14 +359,16 @@ class WebSocketCommunicatorTest {
 
     private fun JsonObject.string(key: String): String = getValue(key).jsonPrimitive.content
 
-    private fun roomReady(meeting: MeetingDto): String =
-        """{"identifier":"{\"channel\":\"RoomChannel\"}","message":{"type":"room_ready",
-            "content":${json.encodeToString(MeetingDto.serializer(), meeting)}}}"""
+    private fun roomReady(meeting: MeetingDto): String = envelope(
+        """{"type":"room_ready","content":${json.encodeToString(MeetingDto.serializer(), meeting)}}"""
+    )
 
-    private fun muteLocalAudio(byUserId: String): String =
-        """{"identifier":"{\"channel\":\"RoomChannel\"}","message":{"type":"stfu",
-            "user":{"id":"$byUserId","name":"Jane Doe","avatar":null,"guest":false,
-            "joined_at":"2025-03-17T09:07:50.743Z"}}}"""
+    private fun muteLocalAudio(byUserId: String): String = envelope(
+        """{"type":"stfu","user":{"id":"$byUserId","name":"Jane Doe","avatar":null,"guest":false,
+            "joined_at":"2025-03-17T09:07:50.743Z"}}"""
+    )
+
+    private fun lock(locked: Boolean): String = envelope("""{"type":"lock","locked":$locked}""")
 
     private fun callAccepted(callId: String): String =
         """{"type":"call_accepted","msg_id":"m1","from":"conf","to":"client",

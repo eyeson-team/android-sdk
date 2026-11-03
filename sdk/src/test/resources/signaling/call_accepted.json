@@ -1,0 +1,13 @@
+{
+  "type": "call_accepted",
+  "msg_id": "msg-1",
+  "from": "conf-1",
+  "to": "client-1",
+  "data": {
+    "call_id": "call-1",
+    "sdp": {
+      "type": "answer",
+      "sdp": "v=0\r\no=- 3852782210 3852782210 IN IP4 127.0.0.1\r\n"
+    }
+  }
+}

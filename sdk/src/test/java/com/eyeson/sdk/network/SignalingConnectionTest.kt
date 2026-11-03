@@ -56,6 +56,22 @@ class SignalingConnectionTest {
     }
 
     @Test
+    fun bearerTokenIsRedactedInHttpLog() = runTest {
+        server.enqueue(serverSocket.upgrade())
+
+        connection.events.test {
+            connection.connect()
+            assertEquals(WsOpen, awaitItem())
+        }
+
+        assertTrue(
+            TestLogger.messages.any { it.contains("Authorization: ***") },
+            "The redacted header of the upgrade request was not logged"
+        )
+        assertTrue(TestLogger.messages.none { it.contains("test-auth-token") })
+    }
+
+    @Test
     fun onlyKnownCommandsAreEmitted() = runTest {
         server.enqueue(serverSocket.upgrade())
 
