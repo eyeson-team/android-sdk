@@ -46,7 +46,7 @@ EyesonAudioManager.kt    # Public audio routing helper (process-global audio sta
 options/                 # Public: SdkOptions, MediaOptions, AudioOptions, VideoOptions
 events/                  # Public: EyesonEvent (sealed) and its payload types
 model/local/api|statistic/  # Public models; everything else under model/ is internal
-network/                 # REST (Retrofit), meeting + signalling WebSockets
+network/                 # REST (Ktor resources), meeting + signalling WebSockets (Ktor)
 callLogic/               # CallLogic: wires signalling to the PeerConnection
 webrtc/                  # PeerConnectionClient, VideoRenderer (public), EyesonEglBase
 serializer/              # kotlinx.serialization: incoming-message polymorphism, AsString, Date
@@ -71,7 +71,8 @@ utils/Logger.kt          # The only logger to use (never android.util.Log)
 
 - **Kotlin 2.4**, **AGP 9.4** with built-in Kotlin (no `org.jetbrains.kotlin.android`), **Gradle 9.8**,
   min SDK 23 (demo app 24), compile/target SDK 37, Java 17 bytecode
-- **OkHttp + Retrofit + kotlinx.serialization** for REST and WebSockets
+- **Ktor client (OkHttp engine) + kotlinx.serialization** for REST and WebSockets; tests run them
+  against OkHttp's MockWebServer
 - **Kotlin Coroutines/Flow** for the public events API
 - **eyeson-webrtc-android** exposed via `api(...)`, so `org.webrtc.*` types are part of the public API
 - Demo app: **Jetpack Compose**, **Hilt** (KSP), **DataStore**; the View sample uses view binding

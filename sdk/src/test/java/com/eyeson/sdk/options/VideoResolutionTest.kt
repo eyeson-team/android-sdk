@@ -1,8 +1,8 @@
 package com.eyeson.sdk.options
 
-import org.junit.Assert.assertEquals
-import org.junit.Assert.assertNotEquals
-import org.junit.Test
+import kotlin.test.assertEquals
+import kotlin.test.assertNotEquals
+import kotlin.test.Test
 
 /**
  * [VideoResolution] is an open class, so it has to provide value semantics itself. The change
@@ -24,7 +24,7 @@ class VideoResolutionTest {
 
     @Test
     fun differentSizesAreNotEqual() {
-        assertNotEquals(Resolution16by9.DEFAULT, Resolution16by9.HIGH)
+        assertNotEquals<VideoResolution>(Resolution16by9.DEFAULT, Resolution16by9.HIGH)
         assertNotEquals(VideoResolution(640, 360), VideoResolution(360, 640))
     }
 

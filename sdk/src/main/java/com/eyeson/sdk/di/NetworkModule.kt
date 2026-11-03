@@ -2,33 +2,38 @@ package com.eyeson.sdk.di
 
 import android.os.Build
 import com.eyeson.sdk.BuildConfig
-import com.eyeson.sdk.network.EyesonApi
 import com.eyeson.sdk.network.EyesonRestClient
+import com.eyeson.sdk.utils.Logger
+import io.ktor.client.HttpClient
+import io.ktor.client.engine.okhttp.OkHttp
+import io.ktor.client.plugins.UserAgent
+import io.ktor.client.plugins.logging.LogLevel
+import io.ktor.client.plugins.logging.Logging
+import io.ktor.client.plugins.websocket.WebSockets
+import io.ktor.http.HttpHeaders
 import kotlinx.serialization.json.Json
-import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.OkHttpClient
-import okhttp3.logging.HttpLoggingInterceptor
 import okhttp3.tls.HandshakeCertificates
 import okhttp3.tls.decodeCertificatePem
-import retrofit2.Retrofit
-import retrofit2.converter.kotlinx.serialization.asConverterFactory
 import java.util.concurrent.ConcurrentHashMap
+import java.util.concurrent.TimeUnit
+import io.ktor.client.plugins.logging.Logger as KtorLogger
 
 internal object NetworkModule {
 
-    private val restClients = ConcurrentHashMap<String, EyesonRestClient>()
+    private val USER_AGENT =
+        "eyeson-android-sdk/${BuildConfig.SDK_VERSION} (Android ${Build.VERSION.SDK_INT})"
+    private const val WEB_SOCKET_PING_INTERVAL_SECONDS = 5L
 
     val json: Json by lazy { provideJson() }
-    val okHttpClient: OkHttpClient by lazy { provideOkHttpClient() }
+    private val okHttpClient: OkHttpClient by lazy { provideOkHttpClient() }
+    val httpClient: HttpClient by lazy { provideHttpClient(okHttpClient) }
 
-    /**
-     * One [EyesonRestClient] per API URL. [json] and [okHttpClient] are shared, so an additional
-     * URL only adds a [Retrofit] instance.
-     */
+    private val restClients = ConcurrentHashMap<String, EyesonRestClient>()
+
+    // Cached, as each one derives a client that stays attached to httpClient's engine.
     fun restClient(apiUrl: String): EyesonRestClient {
-        return restClients.getOrPut(apiUrl) {
-            provideEyesonRestClient(provideRetrofit(apiUrl, okHttpClient, json))
-        }
+        return restClients.getOrPut(apiUrl) { EyesonRestClient(httpClient, json, apiUrl) }
     }
 
     private fun provideJson(): Json {
@@ -83,22 +88,7 @@ internal object NetworkModule {
     """.trimIndent().decodeCertificatePem()
 
     private fun provideOkHttpClient(): OkHttpClient {
-        val logging = HttpLoggingInterceptor()
-        logging.level =
-            if (BuildConfig.DEBUG) {
-                HttpLoggingInterceptor.Level.BODY
-            } else {
-                HttpLoggingInterceptor.Level.NONE
-            }
-
         val builder = OkHttpClient.Builder()
-            .addInterceptor(logging)
-            .addNetworkInterceptor { chain ->
-                val requestBuilder = chain.request().newBuilder()
-                    .addHeader("Accept", "application/json")
-                val newRequest = requestBuilder.build()
-                chain.proceed(newRequest)
-            }
 
         if (Build.VERSION.SDK_INT <= 25) {
             val certificates = HandshakeCertificates.Builder()
@@ -112,21 +102,32 @@ internal object NetworkModule {
         return builder.build()
     }
 
-    private fun provideRetrofit(
-        apiUrl: String,
-        okHttpClient: OkHttpClient,
-        json: Json,
-    ): Retrofit {
-        return Retrofit.Builder()
-            .addConverterFactory(json.asConverterFactory("application/json".toMediaType()))
-            .baseUrl(apiUrl)
-            .client(okHttpClient)
+    private fun provideHttpClient(okHttpClient: OkHttpClient): HttpClient {
+        val webSocketClient = okHttpClient.newBuilder()
+            .pingInterval(WEB_SOCKET_PING_INTERVAL_SECONDS, TimeUnit.SECONDS)
             .build()
+
+        return HttpClient(OkHttp) {
+            engine {
+                preconfigured = okHttpClient
+                webSocketFactory = webSocketClient
+            }
+            install(WebSockets)
+            install(UserAgent) {
+                agent = USER_AGENT
+            }
+            install(Logging) {
+                logger = HttpLogger
+                // Ktor's BODY leaves out headers.
+                level = if (BuildConfig.DEBUG) LogLevel.ALL else LogLevel.NONE
+                sanitizeHeader { it == HttpHeaders.Authorization }
+            }
+        }
     }
 
-    private fun provideEyesonRestClient(retrofit: Retrofit): EyesonRestClient {
-        val restService = retrofit.create(EyesonApi::class.java)
-        return EyesonRestClient(restService)
-    }
+}
 
+// Top level, so that Logger tags it HttpLogger.
+private object HttpLogger : KtorLogger {
+    override fun log(message: String) = Logger.d(message)
 }

@@ -1,9 +1,9 @@
 package com.eyeson.sdk.webrtc
 
-import com.eyeson.sdk.utils.Logger
-import org.junit.Assert.assertEquals
-import org.junit.Before
-import org.junit.Test
+import com.eyeson.sdk.utils.TestLogger
+import kotlin.test.assertEquals
+import kotlin.test.BeforeTest
+import kotlin.test.Test
 
 /**
  * `PeerConnectionClient.setOpusMaxAverageBitrate` munges the remote SDP on every join, and a
@@ -11,10 +11,9 @@ import org.junit.Test
  */
 class OpusMaxAverageBitrateTest {
 
-    @Before
-    fun disableLogging() {
-        // android.util.Log is not available in local unit tests.
-        Logger.enabled = false
+    @BeforeTest
+    fun setUp() {
+        TestLogger.install()
     }
 
     private fun sdp(vararg lines: String) = lines.joinToString("\r\n")
