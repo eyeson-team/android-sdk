@@ -16,6 +16,7 @@ import com.eyeson.sdk.model.sepp.base.UnknownCommandDto
 import com.eyeson.sdk.model.sepp.incoming.CallAcceptedDto
 import com.eyeson.sdk.model.sepp.incoming.ChatIncomingDto
 import kotlin.test.assertEquals
+import kotlin.test.assertIs
 import kotlin.test.assertNull
 import kotlin.test.assertFailsWith
 import kotlin.test.assertTrue
@@ -63,8 +64,7 @@ class JsonWireFormatTest {
                 "data":{"call_id":"c1","sdp":{"type":"answer","sdp":"v=0"}}}"""
         )
 
-        assertTrue(command is CallAcceptedDto)
-        command as CallAcceptedDto
+        assertIs<CallAcceptedDto>(command)
         assertEquals("call_accepted", command.type)
         assertEquals("c1", command.data.callId)
         assertEquals("v=0", command.data.sdp.sdp)
