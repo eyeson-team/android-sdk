@@ -3,123 +3,38 @@ package com.eyeson.sdk.network
 import com.eyeson.sdk.di.NetworkModule
 import com.eyeson.sdk.model.api.MeetingDto
 import com.eyeson.sdk.model.local.base.LocalBaseCommand
-import com.eyeson.sdk.model.local.ws.WsClosed
-import com.eyeson.sdk.model.local.ws.WsFailure
-import com.eyeson.sdk.model.local.ws.WsOpen
-import com.eyeson.sdk.model.sepp.base.SeppBaseCommandDto
 import com.eyeson.sdk.model.sepp.base.UnknownCommandDto
 import com.eyeson.sdk.serializer.SeppIncomingCommandsSerializer
 import com.eyeson.sdk.utils.Logger
-import kotlinx.coroutines.CoroutineScope
+import io.ktor.client.HttpClient
+import io.ktor.client.request.HttpRequestBuilder
+import io.ktor.client.request.bearerAuth
+import io.ktor.client.request.url
+import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.SupervisorJob
-import kotlinx.coroutines.cancel
-import kotlinx.coroutines.flow.MutableSharedFlow
-import kotlinx.coroutines.flow.asSharedFlow
-import kotlinx.coroutines.launch
 import kotlinx.serialization.json.Json
-import okhttp3.OkHttpClient
-import okhttp3.Request
-import okhttp3.Response
-import okhttp3.WebSocket
-import okhttp3.WebSocketListener
-import okio.ByteString
-import java.util.concurrent.TimeUnit
 
 internal class SignalingConnection(
     private val meeting: MeetingDto,
     private val json: Json = NetworkModule.json,
-    private val okHttpClient: OkHttpClient = NetworkModule.okHttpClient,
-) {
-    private val signalingScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
+    httpClient: HttpClient = NetworkModule.httpClient,
+    ioDispatcher: CoroutineDispatcher = Dispatchers.IO,
+) : WebSocketConnection(httpClient, ioDispatcher) {
 
-    private var webSocketListener: WebSocketListener = object : WebSocketListener() {
-        override fun onOpen(webSocket: WebSocket, response: Response) {
-            Logger.d("WebSocket onOpen $response")
-            emitEvent(WsOpen(response))
-        }
-
-        override fun onMessage(webSocket: WebSocket, text: String) {
-            Logger.d("WebSocket onMessage: $text")
-
-            val command = try {
-                json.decodeFromString(SeppIncomingCommandsSerializer, text)
-            } catch (e: IllegalArgumentException) {
-                // SerializationException is an IllegalArgumentException
-                Logger.e("WebSocketCommands.BaseCommand: parsing FAILED $e")
-                return
-            }
-            handleMessages(command)
-        }
-
-        override fun onMessage(webSocket: WebSocket, bytes: ByteString) {
-            Logger.d("WebSocket onMessage byte")
-        }
-
-        override fun onClosed(webSocket: WebSocket, code: Int, reason: String) {
-            Logger.d("WebSocket onClosed $code $reason")
-            emitEvent(WsClosed(code, reason))
-        }
-
-        override fun onFailure(webSocket: WebSocket, t: Throwable, response: Response?) {
-            Logger.e("WebSocket onFailure $response; $t")
-            emitEvent(WsFailure(response))
-        }
+    override fun HttpRequestBuilder.configureRequest() {
+        url(webSocketUrl(meeting.signaling.options.endpoint))
+        bearerAuth(meeting.signaling.options.authToken)
     }
 
-    private val socket: WebSocket by lazy {
-        val client = okHttpClient.newBuilder()
-            .pingInterval(PING_INTERVAL, TimeUnit.SECONDS)
-            .build()
+    override fun decode(text: String): LocalBaseCommand? {
+        Logger.d("WebSocket onMessage: $text")
 
-        val request = Request.Builder()
-            .url(meeting.signaling.options.endpoint)
-            .addHeader("Authorization", "Bearer ${meeting.signaling.options.authToken}")
-            .build()
-
-        client.newWebSocket(request, webSocketListener)
-    }
-
-    private val _events = MutableSharedFlow<LocalBaseCommand>(0)
-    val events = _events.asSharedFlow()
-
-    fun connect() {
-        socket.request()
-    }
-
-    fun sendMessage(message: String): Boolean {
-        return socket.send(message)
-    }
-
-    fun disconnect() {
-        signalingScope.cancel()
-        socket.close(1001, "BYE")
-    }
-
-    private fun handleMessages(message: SeppBaseCommandDto) {
-        when (message) {
+        return when (val command = json.decodeFromString(SeppIncomingCommandsSerializer, text)) {
             is UnknownCommandDto -> {
-                Logger.d("Received a not supported message: $message")
+                Logger.d("Received a not supported message: $command")
                 null
             }
-
-            else -> {
-                message.toLocal()
-            }
-        }?.let {
-            emitEvent(it)
-        }
-
-    }
-
-    private fun emitEvent(event: LocalBaseCommand) {
-        signalingScope.launch {
-            _events.emit(event)
+            else -> command.toLocal()
         }
     }
-
-    companion object {
-        private const val PING_INTERVAL = 5L
-    }
-
 }

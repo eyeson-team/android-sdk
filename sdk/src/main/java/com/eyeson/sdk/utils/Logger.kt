@@ -11,6 +11,10 @@ internal class Logger {
         var enabled = DEBUG
         private const val MAX_TAG_LENGTH = 23
 
+        // Replaced in local unit tests, where android.util.Log is not available.
+        var printer: (priority: Int, tag: String, message: String) -> Unit =
+            { priority, tag, message -> Log.println(priority, tag, message) }
+
         private fun log(priority: Int, message: String, force: Boolean) {
             if (enabled || force) {
                 val tag = Throwable().stackTrace
@@ -30,7 +34,7 @@ internal class Logger {
                             tag
                         }
                     }
-                Log.println(priority, tag, message)
+                printer(priority, tag, message)
             }
         }
 

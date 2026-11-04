@@ -1,0 +1,7 @@
+{
+  "avatar": "https://media.example.test/avatar.png",
+  "guest": true,
+  "id": "user-2",
+  "joined_at": "2025-03-17T09:07:50.743Z",
+  "name": "Jane Doe"
+}

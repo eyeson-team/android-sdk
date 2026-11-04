@@ -1,0 +1,10 @@
+{
+  "type": "call_terminated",
+  "msg_id": "msg-3",
+  "from": "conf-1",
+  "to": "client-1",
+  "data": {
+    "call_id": "call-1",
+    "term_code": 200
+  }
+}

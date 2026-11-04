@@ -1,0 +1,13 @@
+{
+  "type": "sdp_update",
+  "msg_id": "msg-5",
+  "from": "conf-1",
+  "to": "client-1",
+  "data": {
+    "call_id": "call-1",
+    "sdp": {
+      "type": "offer",
+      "sdp": "v=0\r\no=- 4002704705 4002704706 IN IP4 127.0.0.1\r\ns=-\r\nt=0 0\r\na=sfu-mode:on\r\n"
+    }
+  }
+}

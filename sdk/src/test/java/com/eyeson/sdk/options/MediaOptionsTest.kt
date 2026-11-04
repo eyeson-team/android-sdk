@@ -1,8 +1,9 @@
 package com.eyeson.sdk.options
 
-import org.junit.Assert.assertFalse
-import org.junit.Assert.assertTrue
-import org.junit.Test
+import kotlin.test.assertFailsWith
+import kotlin.test.assertFalse
+import kotlin.test.assertTrue
+import kotlin.test.Test
 
 class MediaOptionsTest {
 
@@ -22,14 +23,18 @@ class MediaOptionsTest {
         assertFalse(options.sendVideo)
     }
 
-    @Test(expected = IllegalArgumentException::class)
+    @Test
     fun nothingAtAllIsRejected() {
-        MediaOptions(sendAudio = false, receiveAudio = false, sendVideo = false, receiveVideo = false)
+        assertFailsWith<IllegalArgumentException> {
+            MediaOptions(sendAudio = false, receiveAudio = false, sendVideo = false, receiveVideo = false)
+        }
     }
 
-    @Test(expected = IllegalArgumentException::class)
+    @Test
     fun copyToNothingAtAllIsRejected() {
-        MediaOptions(sendVideo = false, receiveVideo = false)
-            .copy(sendAudio = false, receiveAudio = false)
+        assertFailsWith<IllegalArgumentException> {
+            MediaOptions(sendVideo = false, receiveVideo = false)
+                .copy(sendAudio = false, receiveAudio = false)
+        }
     }
 }

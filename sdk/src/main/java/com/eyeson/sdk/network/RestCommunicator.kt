@@ -11,19 +11,16 @@ import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.coroutineScope
-import retrofit2.Response
 
 internal class RestCommunicator(
     private val apiUrl: String,
     restClientFactory: (apiUrl: String) -> EyesonRestClient = NetworkModule::restClient,
 ) {
-    // Lazy, so that an apiUrl Retrofit rejects throws inside the requests below.
+    // Lazy, so that an invalid apiUrl throws inside the requests below.
     private val restClient by lazy { restClientFactory(apiUrl) }
 
-    suspend fun getMeetingInfo(accessKey: String): MeetingDto = coroutineScope {
-        val meetingInfo = restClient.getMeetingInfo(accessKey)
-        meetingInfo.body() ?: throw FaultyInfoException(meetingInfo.code())
-    }
+    suspend fun getMeetingInfo(accessKey: String): MeetingDto =
+        restClient.getMeetingInfo(accessKey).bodyOrThrow()
 
     suspend fun getMeetingInfoAsGuest(
         guestToken: String,
@@ -31,21 +28,22 @@ internal class RestCommunicator(
         id: String?,
         avatar: String?,
     ): MeetingDto =
-        coroutineScope {
-            val meetingInfo = restClient.joinMeetingAsGuest(guestToken, name, id, avatar)
-            meetingInfo.body() ?: throw FaultyInfoException(meetingInfo.code())
-        }
+        restClient.joinMeetingAsGuest(guestToken, name, id, avatar).bodyOrThrow()
 
-    // A failed lookup must not cancel the other lookups of the batch below, nor the event
-    // collector that requested it.
-    suspend fun getUserInfo(accessKey: String, userId: String): UserWithSignaling? =
-        coroutineScope {
-            val userInfo = responseOrNull("User info lookup for $userId") {
-                restClient.getUserInfo(accessKey, userId)
-            }
-            val user = userInfo?.body()?.toLocal() ?: return@coroutineScope null
-            UserWithSignaling(user, userId)
-        }
+    suspend fun startPermalinkMeeting(userToken: String): MeetingDto =
+        restClient.startPermalinkMeeting(userToken).bodyOrThrow()
+
+    suspend fun getPermalinkMeetingInfo(token: String): PermalinkMeetingInfo? =
+        responseOrNull("Permalink meeting info") {
+            restClient.getPermalinkMeetingInfo(token)
+        }?.body?.toLocal()
+
+    suspend fun getUserInfo(accessKey: String, userId: String): UserWithSignaling? {
+        val user = responseOrNull("User info lookup for $userId") {
+            restClient.getUserInfo(accessKey, userId)
+        }?.body?.toLocal() ?: return null
+        return UserWithSignaling(user, userId)
+    }
 
     suspend fun getUserInfo(accessKey: String, userIds: List<String>): List<UserWithSignaling> =
         coroutineScope {
@@ -56,21 +54,15 @@ internal class RestCommunicator(
             }.awaitAll().filterNotNull()
         }
 
-    // The functions below return the HTTP status code, or null if the request got no response.
-
     suspend fun sendChatMessage(accessKey: String, message: String): Int? =
-        coroutineScope {
-            responseOrNull("Chat message") {
-                restClient.sendChatMessage(accessKey, message)
-            }?.code()
-        }
+        responseOrNull("Chat message") {
+            restClient.sendChatMessage(accessKey, message)
+        }?.code
 
     suspend fun sendCustomMessage(accessKey: String, content: String): Int? =
-        coroutineScope {
-            responseOrNull("Custom message") {
-                restClient.sendCustomMessage(accessKey, content)
-            }?.code()
-        }
+        responseOrNull("Custom message") {
+            restClient.sendCustomMessage(accessKey, content)
+        }?.code
 
     suspend fun videoPlayback(
         accessKey: String,
@@ -80,57 +72,34 @@ internal class RestCommunicator(
         replacementId: String?,
         audio: Boolean,
         loopCount: Int,
-    ): Int? = coroutineScope {
+    ): Int? =
         responseOrNull("Video playback start") {
             restClient.videoPlayback(accessKey, url, name, playId, replacementId, audio, loopCount)
-        }?.code()
-    }
+        }?.code
 
-
-    suspend fun stopVideoPlayback(
-        accessKey: String,
-        playId: String,
-    ): Int? = coroutineScope {
+    suspend fun stopVideoPlayback(accessKey: String, playId: String): Int? =
         responseOrNull("Video playback stop") {
             restClient.stopVideoPlayback(accessKey, playId)
-        }?.code()
-    }
+        }?.code
 
-    suspend fun startPresentation(
-        accessKey: String,
-    ): Int? = coroutineScope {
+    suspend fun startPresentation(accessKey: String): Int? =
         responseOrNull("Presentation start") {
             restClient.startPresentation(accessKey)
-        }?.code()
-    }
+        }?.code
 
-    suspend fun stopPresentation(
-        accessKey: String,
-    ): Int? = coroutineScope {
+    suspend fun stopPresentation(accessKey: String): Int? =
         responseOrNull("Presentation stop") {
             restClient.stopPresentation(accessKey)
-        }?.code()
-    }
+        }?.code
 
-    suspend fun getPermalinkMeetingInfo(token: String): PermalinkMeetingInfo? = coroutineScope {
-        val permalinkInfo = responseOrNull("Permalink meeting info") {
-            restClient.getPermalinkMeetingInfo(token)
-        }
-        permalinkInfo?.body()?.toLocal()
-    }
+    private fun <T> RestResponse<T>.bodyOrThrow(): T = body ?: throw FaultyInfoException(code)
 
-    suspend fun startPermalinkMeeting(userToken: String): MeetingDto = coroutineScope {
-        val meetingInfo = restClient.startPermalinkMeeting(userToken)
-        meetingInfo.body() ?: throw FaultyInfoException(meetingInfo.code())
-    }
-
-    /**
-     * Runs [request] and returns null if it throws instead of producing a response: a network
-     * failure, a body that does not parse, or an [apiUrl] Retrofit rejects. Most callers run in
-     * launches without an exception handler, where an exception would crash the host app. An
-     * error status is a response and is returned as is.
-     */
-    private inline fun <T> responseOrNull(description: String, request: () -> Response<T>): Response<T>? {
+    // Most callers launch without an exception handler, where a throw would crash the host app.
+    // An error status is a response and is returned as is.
+    private inline fun <T> responseOrNull(
+        description: String,
+        request: () -> RestResponse<T>,
+    ): RestResponse<T>? {
         return try {
             request()
         } catch (e: Exception) {

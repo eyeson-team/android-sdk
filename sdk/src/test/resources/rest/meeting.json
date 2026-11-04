@@ -1,0 +1,82 @@
+{
+  "access_key": "test-access-key",
+  "ready": true,
+  "locked": false,
+  "room": {
+    "id": "room-1",
+    "name": "Test Room",
+    "ready": true,
+    "started_at": "2025-03-13T15:50:21.347Z",
+    "shutdown": false,
+    "guest_token": "test-guest-token"
+  },
+  "team": {
+    "name": "Test Team"
+  },
+  "user": {
+    "id": "user-1",
+    "room_id": "room-1",
+    "name": "John Doe",
+    "avatar": null,
+    "guest": false,
+    "blocked": false,
+    "ready": true
+  },
+  "links": {
+    "self": "https://api.example.test/rooms/test-access-key",
+    "gui": "https://app.example.test/?test-access-key",
+    "guest_join": "https://app.example.test/?guest=test-guest-token",
+    "websocket": "https://api.example.test/rt?access_key=test-access-key"
+  },
+  "options": {
+    "show_names": true,
+    "show_label": true,
+    "exit_url": null,
+    "recording_available": true,
+    "broadcast_available": true,
+    "layout_available": true,
+    "layout": "auto",
+    "reaction_available": true,
+    "suggest_guest_names": true,
+    "lock_available": false,
+    "kick_available": true,
+    "sfu_mode": "disabled",
+    "layout_users": null,
+    "layout_name": null,
+    "layout_map": null,
+    "voice_activation": false,
+    "custom_fields": {},
+    "widescreen": true,
+    "background_color": "#121212"
+  },
+  "playbacks": [],
+  "image_sources": [],
+  "presentation": null,
+  "broadcasts": [],
+  "recording": null,
+  "snapshots": [],
+  "waiting_list": [],
+  "signaling": {
+    "type": "sepp",
+    "options": {
+      "client_id": "client-1",
+      "conf_id": "conf-1",
+      "auth_token": "test-auth-token",
+      "endpoint": "wss://sig.example.test/call",
+      "stun_servers": [
+        "stun:nuts.example.test:3478"
+      ],
+      "turn_servers": [
+        {
+          "urls": [
+            "turn:nuts.example.test:3478",
+            "turn:nuts.example.test:3478?transport=tcp",
+            "turns:nuts.example.test:443?transport=tcp"
+          ],
+          "username": "1741967443:client-1",
+          "password": "test-turn-password"
+        }
+      ]
+    }
+  }
+}

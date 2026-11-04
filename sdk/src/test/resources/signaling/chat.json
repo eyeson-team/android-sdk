@@ -1,0 +1,13 @@
+{
+  "type": "chat",
+  "msg_id": "msg-6",
+  "from": "conf-1",
+  "to": "client-1",
+  "data": {
+    "call_id": "call-1",
+    "cid": "signaling-2",
+    "content": "This is a chat message.",
+    "id": "",
+    "ts": "2022-02-17T09:45:06Z"
+  }
+}

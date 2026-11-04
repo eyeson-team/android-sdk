@@ -22,42 +22,55 @@ import com.eyeson.sdk.model.sepp.outgoing.CallTerminateDto
 import com.eyeson.sdk.model.sepp.outgoing.MuteVideoDto
 import com.eyeson.sdk.model.sepp.outgoing.fromLocal
 import com.eyeson.sdk.utils.collectIn
+import io.ktor.client.HttpClient
+import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
-import kotlinx.coroutines.coroutineScope
-import kotlinx.coroutines.flow.MutableSharedFlow
-import kotlinx.coroutines.flow.asSharedFlow
-import kotlinx.coroutines.launch
+import kotlinx.coroutines.channels.Channel
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.receiveAsFlow
+import kotlinx.coroutines.isActive
 import kotlinx.serialization.json.Json
-import okhttp3.OkHttpClient
 import java.util.concurrent.atomic.AtomicBoolean
 
 internal class WebSocketCommunicator(
     @Volatile private var meeting: MeetingDto,
     private val json: Json = NetworkModule.json,
-    private val okHttpClient: OkHttpClient = NetworkModule.okHttpClient,
+    private val httpClient: HttpClient = NetworkModule.httpClient,
+    defaultDispatcher: CoroutineDispatcher = Dispatchers.Default,
+    private val ioDispatcher: CoroutineDispatcher = Dispatchers.IO,
 ) {
-    private val communicatorScope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
+    private val communicatorScope = CoroutineScope(SupervisorJob() + defaultDispatcher)
 
-    private var meetingCommunicator: MeetingConnection? = null
+    @Volatile
+    private var meetingConnection: MeetingConnection? = null
     private val meetingReady = AtomicBoolean(false)
+
+    @Volatile
     private var callId: String = ""
 
     private val meetingTryToReconnect = AtomicBoolean(true)
     private val signalingTryToReconnect = AtomicBoolean(true)
 
+    @Volatile
     private var signalingConnection: SignalingConnection? = null
     private val signalingIsReconnecting = AtomicBoolean(false)
 
-    private val _events = MutableSharedFlow<LocalBaseCommand>(0)
-    val events = _events.asSharedFlow()
+    private val _events = Channel<LocalBaseCommand>(Channel.UNLIMITED)
+    val events: Flow<LocalBaseCommand> = _events.receiveAsFlow()
 
     fun connect() {
-        communicatorScope.launch {
-            meetingCommunicator = connectToMeetingWs()
-        }
+        val connection = MeetingConnection(meeting, json, httpClient, ioDispatcher)
+        meetingConnection = connection
+        connection.open { handleMeetingCommands(it) }
+    }
+
+    fun reconnectToSignaling(newMeetingInfo: MeetingDto) {
+        meeting = newMeetingInfo
+        signalingIsReconnecting.set(true)
+        connectToSignaling()
     }
 
     fun startCall(callStart: CallStart, videoOnStart: Boolean, version: String) {
@@ -77,7 +90,7 @@ internal class WebSocketCommunicator(
 
     fun sendMuteAll() {
         val muteAll = MuteAllDto()
-        meetingCommunicator?.sendMessage(json.encodeToString(MuteAllDto.serializer(), muteAll))
+        meetingConnection?.sendMessage(json.encodeToString(MuteAllDto.serializer(), muteAll))
     }
 
     fun terminateCall() {
@@ -89,7 +102,7 @@ internal class WebSocketCommunicator(
                 json.encodeToString(CallTerminateDto.serializer(), callTerminateDto)
             )
         }
-        meetingCommunicator?.disconnect()
+        meetingConnection?.disconnect()
         signalingConnection?.disconnect()
     }
 
@@ -100,39 +113,26 @@ internal class WebSocketCommunicator(
         signalingConnection?.sendMessage(json.encodeToString(MuteVideoDto.serializer(), muteVideoDto))
     }
 
-
-    private suspend fun connectToMeetingWs(): MeetingConnection {
-        return coroutineScope {
-            val meetingCommunicator = MeetingConnection(meeting, json, okHttpClient)
-            meetingCommunicator.connect()
-
-            meetingCommunicator.events.collectIn(communicatorScope) {
-                handleMeetingCommands(it)
-            }
-            meetingCommunicator
-        }
+    private fun connectToSignaling() {
+        val connection = SignalingConnection(meeting, json, httpClient, ioDispatcher)
+        signalingConnection = connection
+        connection.open { handleSignalingCommands(it) }
     }
 
-    private suspend fun connectToSignalingWs(): SignalingConnection {
-        return coroutineScope {
-            val signaling = SignalingConnection(meeting, json, okHttpClient)
-            signaling.connect()
-
-            signaling.events.collectIn(communicatorScope) {
-                handleSignalingCommands(it)
-            }
-            signaling
+    private fun WebSocketConnection.open(handle: (LocalBaseCommand) -> Unit) {
+        if (!communicatorScope.isActive) {
+            return
         }
+        events.collectIn(communicatorScope) { handle(it) }
+        connect()
     }
 
     private fun handleMeetingCommands(command: LocalBaseCommand) {
         when (command) {
             is RoomReady -> {
                 if (meetingReady.compareAndSet(false, true)) {
-                    communicatorScope.launch {
-                        meeting = command.meeting
-                        signalingConnection = connectToSignalingWs()
-                    }
+                    meeting = command.meeting
+                    connectToSignaling()
                 }
             }
 
@@ -144,8 +144,8 @@ internal class WebSocketCommunicator(
 
             is WsFailure -> {
                 if (meetingTryToReconnect.getAndSet(false)) {
-                    meetingCommunicator?.disconnect()
-                    meetingCommunicator = null
+                    meetingConnection?.disconnect()
+                    meetingConnection = null
                     connect()
                 } else {
                     emitEvent(command)
@@ -184,7 +184,7 @@ internal class WebSocketCommunicator(
                 if (signalingTryToReconnect.getAndSet(false)) {
                     signalingConnection?.disconnect()
                     signalingConnection = null
-                    emitEvent(ReconnectSignaling(command.response))
+                    emitEvent(ReconnectSignaling)
                 } else {
                     emitEvent(command)
                 }
@@ -196,21 +196,11 @@ internal class WebSocketCommunicator(
         }
     }
 
-    fun reconnectToSignaling(newMeetingInfo: MeetingDto) {
-        meeting = newMeetingInfo
-        signalingIsReconnecting.set(true)
-        communicatorScope.launch {
-            signalingConnection = connectToSignalingWs()
-        }
-    }
-
     private fun emitEvent(event: LocalBaseCommand) {
-        communicatorScope.launch {
-            _events.emit(event)
-        }
+        _events.trySend(event)
     }
 
-    companion object {
+    private companion object {
         const val TERMINATE_CALL_CODE_OK = 200
         const val CALL_START_VERSION_PREFIX = "android-"
     }

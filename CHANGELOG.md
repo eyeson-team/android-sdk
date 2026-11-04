@@ -97,6 +97,12 @@ The format is based on [Keep a Changelog] and this project adheres to
   - Camera resolution `640x360` in 4:3 meetings too (was `640x480`)
   - Screen share resolution `1920x1080` (was the display resolution)
 - JSON (de)serialization: Moshi -> kotlinx.serialization
+- REST and WebSocket client: Retrofit and OkHttp -> Ktor `3.6.0` with the OkHttp engine
+  - `User-Agent` is `eyeson-android-sdk/<version> (Android <API level>)` (was `okhttp/<version>`)
+  - `startVideoPlayback` sends the documented form fields `url`, `play_id`, `replacement_id`,
+    `name`, `audio` and `loop_count` (was `playback[url]`, `playback[play_id]`, ...)
+  - `MeetingTerminated` with `ERROR` when a WebSocket connection is rejected (was `FORBIDDEN`
+    for HTTP 403)
 - Demo app
   - View sample: data binding -> view binding
   - Predictive back disabled
@@ -110,7 +116,7 @@ The format is based on [Keep a Changelog] and this project adheres to
   - Kotlin `2.4.21`
   - KSP `2.3.12`
   - Hilt `2.60.1`
-  - OkHttp `5.4.0`
+  - OkHttp `5.5.0`
   - KotlinxCoroutines `1.11.0`
   - AndroidxCore `1.19.1`
   - AndroidxAnnotation `1.11.0`
@@ -127,7 +133,6 @@ The format is based on [Keep a Changelog] and this project adheres to
   - Material `1.14.0`
   - Accompanist `0.37.3`
   - CodeScanner `2.3.2`
-  - Retrofit `3.0.0`
   - KotlinxSerializationJson `1.11.0`
   - Coil `3.6.3`
   - AndroidxWindow `1.5.1`
@@ -138,7 +143,7 @@ The format is based on [Keep a Changelog] and this project adheres to
   - Demo apk: targetSdk and compileSdk
 - Consuming apps need
   - Kotlin `2.3`+, as the SDK is built with Kotlin `2.4.21`
-  - `compileSdk` `36`+, required by OkHttp `5.4.0`
+  - `compileSdk` `36`+, required by OkHttp `5.5.0`
   - OkHttp `5`, resolved transitively in place of OkHttp `4`
 ### Removed
 - `EyesonEventListener`
@@ -157,6 +162,12 @@ The format is based on [Keep a Changelog] and this project adheres to
   wrong camera
 - Opus `maxaveragebitrate` duplicated, or written to a second `a=fmtp` line
 - `Recording.createdAt` in January 1970, because the API's epoch seconds were read as milliseconds
+- `SdkOptions.apiUrl` without a trailing slash failing every request
+- Server closing the meeting or signaling socket treated as a network failure; the meeting now
+  ends with `CallTerminationReason.OK`
+- Meeting and signaling events lost when they arrived right after connecting, which could keep the
+  call from starting
+- Meeting and signaling events arriving out of order
 ## [Released]
 ## [1.2.0] - 2025-03-24
 ### Added

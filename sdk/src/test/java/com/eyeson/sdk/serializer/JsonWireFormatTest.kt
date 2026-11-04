@@ -15,11 +15,12 @@ import com.eyeson.sdk.model.meeting.outgoing.SubscribeToChannel
 import com.eyeson.sdk.model.sepp.base.UnknownCommandDto
 import com.eyeson.sdk.model.sepp.incoming.CallAcceptedDto
 import com.eyeson.sdk.model.sepp.incoming.ChatIncomingDto
-import org.junit.Assert.assertEquals
-import org.junit.Assert.assertNull
-import org.junit.Assert.assertThrows
-import org.junit.Assert.assertTrue
-import org.junit.Test
+import kotlin.test.assertEquals
+import kotlin.test.assertIs
+import kotlin.test.assertNull
+import kotlin.test.assertFailsWith
+import kotlin.test.assertTrue
+import kotlin.test.Test
 import com.eyeson.sdk.model.datachannel.base.UnknownCommandDto as UnknownDataChannelCommandDto
 
 /**
@@ -63,8 +64,7 @@ class JsonWireFormatTest {
                 "data":{"call_id":"c1","sdp":{"type":"answer","sdp":"v=0"}}}"""
         )
 
-        assertTrue(command is CallAcceptedDto)
-        command as CallAcceptedDto
+        assertIs<CallAcceptedDto>(command)
         assertEquals("call_accepted", command.type)
         assertEquals("c1", command.data.callId)
         assertEquals("v=0", command.data.sdp.sdp)
@@ -167,7 +167,7 @@ class JsonWireFormatTest {
 
     @Test
     fun malformedJsonThrowsIllegalArgumentException() {
-        assertThrows(IllegalArgumentException::class.java) {
+        assertFailsWith<IllegalArgumentException> {
             decodeDataChannel("""{"type":""")
         }
     }

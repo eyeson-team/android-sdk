@@ -1,0 +1,93 @@
+{
+  "type": "room_setup",
+  "content": {
+    "access_key": "test-access-key",
+    "ready": false,
+    "locked": false,
+    "room": {
+      "id": "room-1",
+      "name": "Test Room",
+      "ready": false,
+      "started_at": "2026-11-03T15:04:19.787Z",
+      "shutdown": false,
+      "guest_token": "test-guest-token"
+    },
+    "team": {
+      "name": "Test Team"
+    },
+    "user": {
+      "id": "john.doe@example.test",
+      "room_id": "room-1",
+      "name": "John Doe",
+      "avatar": "https://media.example.test/avatars/user-1?ts=1793710549",
+      "guest": false,
+      "blocked": false,
+      "ready": false
+    },
+    "links": {
+      "self": "https://api.example.test/rooms/test-access-key",
+      "gui": "https://app.example.test/?test-access-key",
+      "guest_join": "https://app.example.test/?guest=test-guest-token",
+      "websocket": "https://api.example.test/rt?access_key=test-access-key"
+    },
+    "options": {
+      "show_names": true,
+      "show_label": true,
+      "exit_url": null,
+      "recording_available": true,
+      "broadcast_available": true,
+      "layout_available": true,
+      "layout": "auto",
+      "reaction_available": true,
+      "suggest_guest_names": true,
+      "lock_available": true,
+      "kick_available": true,
+      "sfu_mode": "ptp",
+      "layout_users": null,
+      "layout_name": null,
+      "layout_map": null,
+      "voice_activation": false,
+      "custom_fields": {
+        "virtual_background": "true",
+        "virtual_background_allow_guest": "true",
+        "virtual_background_allow_local_image": "true",
+        "locale": "en",
+        "clientlog_auth": "test-clientlog-auth",
+        "feedback_url": "https://accounts.example.test/pages/after-call",
+        "premium": "true"
+      },
+      "widescreen": true,
+      "background_color": "#121212"
+    },
+    "playbacks": [],
+    "image_sources": [],
+    "presentation": null,
+    "broadcasts": [],
+    "recording": null,
+    "snapshots": [],
+    "waiting_list": [],
+    "signaling": {
+      "type": "sepp",
+      "options": {
+        "client_id": "client-1",
+        "conf_id": "conf-1",
+        "auth_token": "test-setup-token",
+        "endpoint": "wss://sig.example.test/call",
+        "stun_servers": [
+          "stun:nuts.example.test:3478"
+        ],
+        "turn_servers": [
+          {
+            "urls": [
+              "turn:nuts.example.test:3478",
+              "turn:nuts.example.test:3478?transport=tcp",
+              "turns:nuts.example.test:443?transport=tcp"
+            ],
+            "username": "1793804660:client-1",
+            "password": "test-turn-password"
+          }
+        ]
+      }
+    }
+  }
+}

@@ -1,0 +1,13 @@
+{
+  "type": "memberlist",
+  "msg_id": "msg-11",
+  "from": "conf-1",
+  "to": "client-1",
+  "data": {
+    "call_id": "call-1",
+    "count": 2,
+    "add": [],
+    "del": ["signaling-3"],
+    "media": []
+  }
+}

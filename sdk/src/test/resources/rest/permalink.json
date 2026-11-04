@@ -1,0 +1,44 @@
+{
+  "permalink": {
+    "id": "permalink-1",
+    "created_at": "2024-05-14T13:34:19.468Z",
+    "user_token": null,
+    "guest_token": "test-guest-token",
+    "expires_at": null
+  },
+  "room": {
+    "id": "permalink-1",
+    "name": "Test Room",
+    "started_at": null
+  },
+  "team": {
+    "name": "Test Team"
+  },
+  "user": null,
+  "options": {
+    "show_names": true,
+    "show_label": true,
+    "exit_url": null,
+    "recording_available": true,
+    "broadcast_available": true,
+    "layout_available": true,
+    "layout": "auto",
+    "reaction_available": true,
+    "suggest_guest_names": true,
+    "lock_available": false,
+    "kick_available": true,
+    "sfu_mode": "ptp",
+    "layout_users": null,
+    "layout_name": null,
+    "layout_map": null,
+    "voice_activation": false,
+    "custom_fields": {},
+    "widescreen": true,
+    "background_color": "#121212"
+  },
+  "links": {
+    "self": "https://api.example.test/permalink/permalink-1",
+    "gui": null,
+    "guest_join": "https://app.example.test/permalink?guest=test-guest-token"
+  }
+}

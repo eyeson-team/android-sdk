@@ -1,0 +1,11 @@
+{
+  "type": "recording",
+  "msg_id": "msg-13",
+  "from": "conf-1",
+  "to": "client-1",
+  "data": {
+    "call_id": "call-1",
+    "active": true,
+    "enabled": true
+  }
+}

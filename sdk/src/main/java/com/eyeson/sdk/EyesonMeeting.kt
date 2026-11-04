@@ -802,13 +802,7 @@ public class EyesonMeeting(
             }
 
             is WsFailure -> {
-                leaveAndEmit(
-                    MeetingTerminated(
-                        CallTerminationReason.fromTerminationCode(
-                            command.response?.code ?: CallTerminationReason.ERROR.terminationCode
-                        )
-                    )
-                )
+                leaveAndEmit(MeetingTerminated(CallTerminationReason.ERROR))
             }
 
             is WsClosed -> {
